@@ -1,5 +1,13 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 11:31 — Área do cliente demonstrativa
+- Criada `conta.html` como primeira base responsiva da futura área do cliente.
+- Adicionadas seções de perfil local, favoritos, histórico e repetição de pedido, sem criar autenticação ou dados reais.
+- O perfil aceita somente um apelido demonstrativo e o mantém no `localStorage` deste navegador.
+- Favoritos, histórico e repetição permanecem explicitamente bloqueados até existir catálogo/backend reais, evitando simular pedidos inexistentes.
+- A página não contém links ou acesso a Caixa, Estoque, Produção ou Administração.
+- Revisão feita após a criação: página autônoma, responsiva, sem dependências externas e com retorno explícito ao cardápio público.
+
 ## 2026-08-19 10:26 — Acompanhamento demonstrativo
 - Criada `acompanhamento.html` com consulta de pedido por código em modo totalmente demonstrativo.
 - Adicionado código fictício claramente identificado como **DEMO-0001** apenas para testar a interface.
