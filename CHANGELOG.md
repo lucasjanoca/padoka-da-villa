@@ -1,5 +1,14 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 12:31 — Base protegida do painel interno
+- Criada `internal.html` como primeira base responsiva da área operacional.
+- O painel interno continua fora da navegação pública do cliente e recebeu `noindex,nofollow`.
+- Preparada interface de login, sem criar usuário, senha padrão ou credencial demonstrativa.
+- O envio do formulário permanece bloqueado até existir autenticação real e permissões por cargo.
+- Adicionada visão somente informativa dos módulos planejados: Pedidos, Caixa/PDV, Estoque, Produção, Perdas e Relatórios.
+- Nenhum módulo operacional, dado interno, venda, estoque ou permissão foi liberado nesta etapa.
+- Revisão feita após a criação: página autônoma, responsiva e sem dependências externas; o único retorno disponível leva ao site público.
+
 ## 2026-08-19 11:31 — Área do cliente demonstrativa
 - Criada `conta.html` como primeira base responsiva da futura área do cliente.
 - Adicionadas seções de perfil local, favoritos, histórico e repetição de pedido, sem criar autenticação ou dados reais.
