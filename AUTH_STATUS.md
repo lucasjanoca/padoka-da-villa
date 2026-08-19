@@ -16,6 +16,12 @@ Atualizado em 19/08/2026.
 - No primeiro acesso, o cliente confirma/edita nome e informa WhatsApp; aniversário e marketing são opcionais.
 - Depois do onboarding, o perfil é salvo em `padoka_profiles` com o UUID real do usuário autenticado.
 - Foi criada a Edge Function pública `padoka-public-config` para entregar ao site somente a configuração pública necessária do cliente Supabase, sem gravar chave administrativa no GitHub.
+- `pagamento.html` agora cria pedidos reais no banco por meio de `padoka_create_order`, sempre vinculados ao usuário autenticado.
+- Os pedidos atuais são marcados como `is_test = true` enquanto cardápio/preços/Pix oficiais ainda não foram aprovados.
+- `acompanhamento.html` consulta o pedido real do cliente e recebe atualizações de status pelo Supabase Realtime.
+- `pedidos.html` consulta a fila real e só funciona para usuários existentes em `padoka_staff_users`.
+- Ao abrir um pedido novo na área interna, o estado pode mudar de `received` para `seen`, permitindo ao cliente ver quando a padaria visualizou.
+- `internal.html` usa login real e recusa usuários que não tenham permissão específica da equipe PADOKA.
 
 ## Isolamento das contas
 
@@ -44,3 +50,7 @@ Origem do site:
 Retorno da conta PADOKA:
 
 `https://lucasjanoca.github.io/padoka-da-villa/conta.html`
+
+## Segurança revisada
+
+Depois das migrations PADOKA, o advisor de segurança foi executado. Os avisos criados inicialmente para funções PADOKA `SECURITY DEFINER` foram corrigidos. Os avisos restantes encontrados pelo advisor pertencem a objetos preexistentes de outros sistemas do projeto e não foram alterados nesta etapa para evitar interferência entre clientes.
