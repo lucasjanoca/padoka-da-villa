@@ -57,6 +57,18 @@ Módulos ainda em evolução:
 - usuários/permissões avançadas
 - auditoria operacional
 
+### Próxima camada operacional preparada
+
+A migration `supabase/003_operational_inventory_production_losses.sql` prepara, **sem ainda alterar o ambiente publicado**, a substituição dos estados locais de Gestão por objetos reais e isolados no Supabase correto:
+- `padoka_inventory`
+- `padoka_inventory_movements`
+- `padoka_production_plans`
+- `padoka_losses`
+- RPC `padoka_adjust_inventory`
+- RPC `padoka_register_loss`
+
+A migration inclui RLS, permissões por perfil interno, histórico de movimentação e proteção contra estoque negativo. Ela **não deve ser aplicada no InfoTech.io**. O `gestao.html` continua com a implementação atual até a migration poder ser aplicada e revisada no projeto `yncspxfsvlqdnodlsosb`, evitando quebrar a versão publicada.
+
 ## Banco Supabase
 
 Todos os objetos exclusivos do projeto usam prefixo `padoka_` para não colidir com outros clientes existentes no mesmo Supabase.
