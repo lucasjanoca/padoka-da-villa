@@ -1,5 +1,15 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 07:27 — Carrinho funcional
+- O botão **Carrinho** agora abre um painel lateral responsivo no site público.
+- O carrinho passou a armazenar itens por produto, e não apenas uma contagem total.
+- Adicionados controles para aumentar, diminuir e remover itens.
+- A quantidade total permanece persistida localmente no navegador.
+- O total do pedido é calculado automaticamente quando houver preços reais; enquanto os produtos estiverem sem preço confirmado, o sistema mostra **Preço a confirmar**.
+- O botão **Continuar pedido** fica desativado com carrinho vazio e, no modo demonstrativo atual, ainda não inicia pagamento nem pedido real.
+- Adicionados fechamento por botão, clique fora e tecla `Esc`, além de rótulos de acessibilidade nos controles.
+- Nenhum módulo interno foi exposto ao cliente público.
+
 ## 2026-08-19 06:26 — Base pública funcional
 - Criado `index.html` executável para substituir o estado de documentação apenas.
 - Adicionado layout responsivo para desktop e celular.
