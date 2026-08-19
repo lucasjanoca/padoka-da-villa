@@ -1,5 +1,15 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 10:26 — Acompanhamento demonstrativo
+- Criada `acompanhamento.html` com consulta de pedido por código em modo totalmente demonstrativo.
+- Adicionado código fictício claramente identificado como **DEMO-0001** apenas para testar a interface.
+- Fluxo visual mostra as etapas previstas: pedido recebido, em preparação, pronto para retirada e concluído.
+- Códigos diferentes do demonstrativo exibem mensagem de não encontrado, sem consultar qualquer backend.
+- `pagamento.html` agora oferece acesso explícito ao acompanhamento demonstrativo sem indicar pagamento real.
+- O botão de gerar Pix continua bloqueado até existir configuração oficial.
+- Nenhum pedido, pagamento ou status real é criado, e nenhum módulo interno foi exposto ao cliente público.
+- Revisão feita após o commit: página criada e links entre `index.html`, `pagamento.html` e `acompanhamento.html` confirmados no código.
+
 ## 2026-08-19 09:29 — Pix demonstrativo seguro
 - Criada `pagamento.html` como etapa isolada e responsiva de preparação do pagamento.
 - Pix mantido como forma inicial prevista, sem inventar chave, QR Code ou código copia e cola.
