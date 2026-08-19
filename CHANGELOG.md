@@ -1,5 +1,12 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 16:29 — Gestão operacional protegida por staff
+- `gestao.html` agora valida sessão real do Supabase antes de exibir Produtos, Estoque, Produção, Perdas, Relatórios e Configurações.
+- O acesso exige registro ativo do usuário em `padoka_staff_users`; cliente comum ou visitante direto vê somente uma tela de acesso restrito.
+- A validação usa exclusivamente a configuração pública do backend PADOKA (`yncspxfsvlqdnodlsosb`) via `padoka-public-config` e não altera o projeto InfoTech.io.
+- A navegação interna e os módulos só são renderizados depois da autorização, mantendo Caixa/Estoque/Produção/Admin fora do alcance público.
+- Nenhuma migration foi aplicada nesta etapa; os dados locais já existentes dos módulos em evolução foram preservados para evitar perda ou quebra enquanto a persistência transacional real ainda não foi migrada.
+
 ## 2026-08-19 21:xx — PDV protegido por permissão interna
 - `pdv.html` deixou de abrir diretamente para qualquer visitante que conheça a URL.
 - Antes de exibir Caixa/PDV, a página agora valida sessão real do Supabase e exige registro ativo do usuário em `padoka_staff_users`.
