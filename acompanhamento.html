@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Acompanhar pedido • PADOKA DA VILLA</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5efe5;color:#171717}.wrap{width:min(760px,calc(100% - 28px));margin:auto}header{background:#171717;color:#fff;padding:20px 0}.brand{font-weight:900;letter-spacing:.08em;color:#fff;text-decoration:none}main{padding:34px 0 64px}.card{background:#fffaf2;border:1px solid #ded4c8;border-radius:22px;padding:22px;margin-top:18px}.search{display:grid;grid-template-columns:1fr auto;gap:10px}.field{border:1px solid #ded4c8;border-radius:14px;padding:14px 15px;font:inherit;text-transform:uppercase}.btn{border:0;border-radius:14px;padding:14px 17px;font:inherit;font-weight:800;cursor:pointer;background:#171717;color:#fff}.muted{color:#6b645c;line-height:1.55}.result{display:none}.result.show{display:block}.badge{display:inline-block;padding:7px 10px;border-radius:999px;background:#eee5d9;font-size:12px;font-weight:800}.timeline{list-style:none;padding:0}.timeline li{padding:12px 0;border-bottom:1px solid #ded4c8}.timeline li:last-child{border:0}.timeline strong{display:block}.timeline span{color:#6b645c;font-size:13px}.error{display:none;color:#8a3f32;font-weight:700}.actions{display:flex;gap:10px;margin-top:20px}.actions a{color:#171717;text-decoration:none;background:#fff;border:1px solid #ded4c8;border-radius:14px;padding:12px 15px;font-weight:800}@media(max-width:560px){.search{grid-template-columns:1fr}.actions{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a class="brand" href="index.html">PADOKA DA VILLA</a></div></header>
+<main class="wrap">
+<h1>Acompanhar pedido</h1><p class="muted">Demonstração de como o cliente poderá consultar o andamento por código. Nenhum pedido real é consultado nesta versão.</p>
+<section class="card"><h2>Consultar código</h2><div class="search"><input id="code" class="field" type="text" maxlength="30" autocomplete="off" placeholder="Ex.: DEMO-0001"><button id="searchBtn" class="btn" type="button">Acompanhar</button></div><p class="muted">Teste visual: <strong>DEMO-0001</strong>.</p><p id="error" class="error" role="alert">Código não encontrado nesta demonstração.</p></section>
+<section id="result" class="card result" aria-live="polite"><span class="badge">DEMONSTRAÇÃO</span><h2>Pedido DEMO-0001</h2><ol class="timeline"><li><strong>Pedido recebido</strong><span>Etapa prevista após a confirmação real.</span></li><li><strong>Em preparação</strong><span>Status visual demonstrativo.</span></li><li><strong>Pronto para retirada</strong><span>Etapa futura de aviso ao cliente.</span></li><li><strong>Concluído</strong><span>Etapa final após retirada ou entrega.</span></li></ol><p class="muted"><strong>Importante:</strong> os dados acima não representam um pedido real.</p></section>
+<div class="actions"><a href="index.html">Voltar ao cardápio</a><a href="pagamento.html">Ver pagamento</a></div>
+</main>
+<script>
+const input=document.querySelector('#code'),button=document.querySelector('#searchBtn'),result=document.querySelector('#result'),error=document.querySelector('#error');function lookup(){const ok=input.value.trim().toUpperCase()==='DEMO-0001';result.classList.toggle('show',ok);error.style.display=ok?'none':'block'}button.addEventListener('click',lookup);input.addEventListener('keydown',e=>{if(e.key==='Enter')lookup()});
+</script>
+</body></html>
