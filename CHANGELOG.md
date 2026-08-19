@@ -1,5 +1,17 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 18:28 — Camada operacional segura preparada
+- Revisados `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md` e o estado atual da Gestão antes de alterar o projeto.
+- Confirmado que `gestao.html` ainda mantém estoque, produção, perdas e configurações em `localStorage`; esses dados não foram migrados automaticamente para evitar perda ou inconsistência.
+- Criada `supabase/003_operational_inventory_production_losses.sql` como próxima migration do backend **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`).
+- A migration prepara `padoka_inventory`, `padoka_inventory_movements`, `padoka_production_plans` e `padoka_losses`, todos isolados pelo prefixo `padoka_`.
+- Adicionadas RPCs `padoka_adjust_inventory` e `padoka_register_loss` com validação de perfil interno, histórico de movimentação e bloqueio de estoque negativo.
+- Preparadas RLS e permissões separando leitura da equipe e operações de estoque/produção por função; nenhum acesso público/anon foi concedido.
+- Nenhum trigger global foi criado em `auth.users`; os únicos triggers novos são restritos às próprias tabelas operacionais PADOKA.
+- A migration foi revisada no repositório, mas **não foi aplicada** porque o conector Supabase disponível nesta execução continua expondo somente o projeto InfoTech.io. O InfoTech.io permaneceu intocado.
+- Como não houve alteração efetiva de banco/RLS no backend PADOKA nesta execução, não foi possível/necessário rodar advisors de segurança do projeto correto.
+- `README.md` atualizado para registrar a migration preparada e impedir que a interface seja conectada a tabelas ainda inexistentes no ambiente publicado.
+
 ## 2026-08-19 17:28 — Detalhes reais no acompanhamento do cliente
 - `acompanhamento.html` ganhou detalhes expansíveis por pedido, mantendo a página mobile-first e sem campo de pesquisa.
 - Os itens agora são lidos de `padoka_order_items` e agrupados pelo `order_id`; a proteção continua dependendo do RLS já existente, que permite ao cliente ler somente itens ligados aos próprios pedidos.
