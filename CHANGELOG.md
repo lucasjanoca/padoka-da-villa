@@ -1,5 +1,14 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 09:29 — Pix demonstrativo seguro
+- Criada `pagamento.html` como etapa isolada e responsiva de preparação do pagamento.
+- Pix mantido como forma inicial prevista, sem inventar chave, QR Code ou código copia e cola.
+- Botão de geração permanece bloqueado até existir configuração oficial.
+- Tela explica as etapas futuras: revisão, geração do Pix, confirmação e liberação do acompanhamento.
+- Nenhuma cobrança, transação ou confirmação falsa de pagamento é realizada.
+- A página permite retornar ao cardápio e não expõe nenhum módulo interno.
+- Integração direta do agendamento para esta tela fica para uma rodada posterior, evitando alterar de forma arriscada o fluxo atual antes de validar a base.
+
 ## 2026-08-19 08:31 — Retirada agendada demonstrativa
 - O botão **Continuar pedido** do carrinho agora abre uma etapa real de agendamento, sem criar compra ou cobrança.
 - Adicionadas duas modalidades demonstrativas: **Retirar na padaria** e **Padoca Noturna**.
