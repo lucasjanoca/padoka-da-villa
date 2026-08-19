@@ -1,5 +1,16 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 14:30 — Catálogo autoritativo e checkout endurecido
+- Criada e aplicada no projeto **Sites De Clientes!** a tabela `padoka_products`, isolada por prefixo e com RLS.
+- Os 16 produtos atuais foram registrados como `is_demo = true`; continuam demonstrativos até aprovação da PADOKA.
+- A RPC `padoka_create_order` deixou de confiar em nome e preço enviados pelo navegador. O servidor agora resolve produto e preço pelo `product_id` ativo em `padoka_products` e calcula o total no banco.
+- Adicionadas validações de quantidade, itens desconhecidos/inativos, dados de retirada e limite de linhas antes de criar o pedido.
+- O checkout `pagamento.html` passou a carregar o catálogo ativo do Supabase, detectar carrinho desatualizado e enviar ao RPC somente `product_id` + quantidade.
+- `pagamento.html` informa explicitamente que os valores exibidos foram conferidos no servidor, mantendo Pix/cobrança desativados.
+- Registrada a migration em `supabase/002_server_authoritative_test_catalog.sql`.
+- `README.md` atualizado para refletir o estado real: Auth/pedidos/Realtime no Supabase e módulos ainda pendentes.
+- Advisor de segurança executado após a migration; nenhum novo alerta de segurança da PADOKA foi criado. Os avisos restantes são preexistentes de outros sistemas do projeto compartilhado e não foram alterados.
+
 ## 2026-08-19 13:35 — Contas, onboarding e andamento de pedidos
 - `conta.html` agora tem fluxo mobile-first de entrada com opções de Google, e-mail/senha e código/link, mantendo essas integrações claramente em modo de preparação até o Auth real ser configurado.
 - Primeiro acesso passa por onboarding: nome editável, e-mail, telefone/WhatsApp obrigatório, aniversário opcional, consentimento de privacidade obrigatório e marketing opcional.
