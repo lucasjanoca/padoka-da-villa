@@ -2,11 +2,16 @@
 
 Pacote criado para evoluir de um site de pedidos para um sistema operacional completo de padaria.
 
+## Estado atual
+
+O repositório já possui uma base pública funcional em `index.html`, responsiva e executável diretamente no navegador. Ela contém banner de destaque, informações públicas, busca de cardápio, categorias e carrinho demonstrativo.
+
 ## Separação correta
 
 ### Site do cliente — `index.html`
 O cliente vê somente:
 - início / identidade PADOKA DA VILLA
+- banner de campanhas e destaques
 - cardápio e categorias
 - pesquisa
 - carrinho
@@ -21,8 +26,13 @@ O cliente vê somente:
 
 **Não existe link de Caixa, Estoque, Produção ou Administração no site público.**
 
+### Dados públicos confirmados
+- Endereço: Av. 1º de Maio, 959 - Vila Pedroso, Cerquilho - SP, 18528-344.
+- Horário provisório informado: 05:00 às 18:00.
+- Campanha prevista: **Padoca Noturna**, com pedidos feitos antecipadamente e entrega especial por volta das 02:00 em frente à empresa. Os detalhes finais da campanha continuam editáveis.
+
 ### Sistema interno — `internal.html`
-Protegido por login e cargos:
+Planejado/protegido por login e cargos:
 - Dono/Admin
 - Gerente
 - Caixa
@@ -30,7 +40,7 @@ Protegido por login e cargos:
 - Produção
 - Estoque
 
-Módulos:
+Módulos planejados:
 - dashboard
 - pedidos por etapa
 - Caixa / PDV
@@ -47,13 +57,13 @@ Módulos:
 - configurações
 
 ### Programa desktop
-`desktop-pdv/` contém o projeto Electron para empacotar o Caixa/PDV como aplicativo Windows. Também há um launcher PowerShell para abrir o PDV em modo aplicativo no Microsoft Edge.
+`desktop-pdv/` está previsto para conter o projeto Electron para empacotar o Caixa/PDV como aplicativo Windows. Também poderá haver um launcher para abrir o PDV em modo aplicativo no Microsoft Edge.
 
 ## Banco Supabase
 
-A pasta `supabase/migrations/` contém a estrutura completa com prefixo `padoka_`, criada justamente para poder ficar temporariamente dentro de um projeto Supabase compartilhado de clientes sem colidir com outros sistemas.
+A estrutura prevista usará prefixo `padoka_` para poder ficar temporariamente dentro de um projeto Supabase compartilhado de clientes sem colidir com outros sistemas.
 
-Inclui:
+Estrutura prevista:
 - catálogo
 - pedidos
 - clientes
@@ -75,50 +85,33 @@ Inclui:
 
 ## Modo atual
 
-`js/config.js` está em `mode: 'demo'`, então o sistema funciona localmente com dados demonstrativos usando o navegador.
-
-Para ligar ao Supabase, copie os valores de `js/config.supabase.example.js` para `js/config.js`, troque para `mode: 'supabase'`, informe URL e chave pública do projeto e aplique as migrations na ordem.
+O site público funciona em modo demonstrativo local, sem depender de backend. Produtos e preços são exemplos claramente marcados como demonstrativos.
 
 ## Rodar a demonstração
 
-Windows: execute `START_DEMO.bat`.
-
-Ou:
+Abra `index.html` diretamente no navegador ou execute:
 
 ```bash
 python -m http.server 8000
 ```
 
-- Cliente: `http://localhost:8000/index.html`
-- Interno: `http://localhost:8000/internal.html`
-
-### Login demo interno
-
-E-mail: `demo@padoka.local`
-Senha: `demo123`
-
-No modo demo é possível escolher o cargo para validar permissões e telas.
-
-## Código de barras de teste
-
-`7890000000011` → Pão francês demonstrativo.
+Cliente: `http://localhost:8000/index.html`
 
 ## O que ainda depende da padaria
 
-O código está preparado, mas os seguintes dados não devem ser inventados:
+Os seguintes dados não devem ser inventados:
 - cardápio real
 - preços reais
 - códigos reais
 - chave Pix
-- horário de funcionamento
 - funcionários reais
 - CNPJ / IE e dados fiscais
 - sistema fiscal atual
 - modelo de impressora
 - modelo de balança
 - modelo do leitor
-- regras definitivas de retirada
+- regras definitivas de retirada e da Padoca Noturna
 
 ## Fiscal
 
-A emissão fiscal não foi ativada. O PDV pode ser testado operacionalmente, mas não deve substituir o emissor fiscal atual até a definição da integração NFC-e adequada.
+A emissão fiscal não foi ativada. O futuro PDV poderá ser testado operacionalmente, mas não deve substituir o emissor fiscal atual até a definição da integração NFC-e adequada.
