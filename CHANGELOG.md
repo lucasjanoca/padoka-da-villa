@@ -1,5 +1,14 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 17:28 — Detalhes reais no acompanhamento do cliente
+- `acompanhamento.html` ganhou detalhes expansíveis por pedido, mantendo a página mobile-first e sem campo de pesquisa.
+- Os itens agora são lidos de `padoka_order_items` e agrupados pelo `order_id`; a proteção continua dependendo do RLS já existente, que permite ao cliente ler somente itens ligados aos próprios pedidos.
+- O estado `ready` ganhou destaque principal **“Pode vir buscar!”**, sem alterar a sequência Recebido → Visto → Confirmado → Preparo → Pronto → Retirado.
+- Os detalhes exibem itens, valores calculados a partir dos itens persistidos, modalidade de retirada, data/horário e código do pedido.
+- Foi adicionada sanitização de texto antes de inserir nomes/códigos vindos do banco no HTML.
+- A atualização em tempo real de status foi preservada; uma falha secundária ao carregar itens não impede o cliente de acompanhar o andamento.
+- Nenhuma mudança de banco/RLS foi aplicada nesta etapa. O conector Supabase disponível nesta execução expôs somente o projeto **InfoTech.io**, portanto ele não foi alterado; o backend correto da PADOKA continua sendo `yncspxfsvlqdnodlsosb`.
+
 ## 2026-08-19 16:29 — Gestão operacional protegida por staff
 - `gestao.html` agora valida sessão real do Supabase antes de exibir Produtos, Estoque, Produção, Perdas, Relatórios e Configurações.
 - O acesso exige registro ativo do usuário em `padoka_staff_users`; cliente comum ou visitante direto vê somente uma tela de acesso restrito.
