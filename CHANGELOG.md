@@ -1,5 +1,17 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 13:07 — Redesign mobile-first do site público
+- `index.html` redesenhado com foco principal em celular e navegação semelhante a aplicativo.
+- Cardápio agora usa grade de **2 produtos lado a lado no celular**, evitando uma lista de um item por linha.
+- Adicionados 16 produtos demonstrativos distribuídos entre Pães, Salgados, Lanches, Doces e Bebidas.
+- Incluídos valores demonstrativos em reais e carrinho com cálculo de subtotal/total.
+- Adicionadas fotografias reais ilustrativas de alimentos e padaria, substituindo os antigos blocos/emoji de produto.
+- Criados cards de destaque para Padoca Noturna e café da manhã, busca, filtros horizontais por categoria e navegação inferior mobile.
+- Carrinho foi redesenhado como bottom sheet no celular e painel lateral em telas maiores.
+- Fluxo de retirada continua funcional e agora encaminha a simulação validada para `pagamento.html`.
+- Mantido aviso explícito de que fotos e preços são apenas de demonstração até a PADOKA fornecer catálogo, preços e imagens oficiais.
+- Área pública continua sem qualquer navegação para Caixa, Estoque, Produção ou Administração.
+
 ## 2026-08-19 12:31 — Base protegida do painel interno
 - Criada `internal.html` como primeira base responsiva da área operacional.
 - O painel interno continua fora da navegação pública do cliente e recebeu `noindex,nofollow`.
