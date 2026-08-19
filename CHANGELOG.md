@@ -1,5 +1,20 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 13:35 — Contas, onboarding e andamento de pedidos
+- `conta.html` agora tem fluxo mobile-first de entrada com opções de Google, e-mail/senha e código/link, mantendo essas integrações claramente em modo de preparação até o Auth real ser configurado.
+- Primeiro acesso passa por onboarding: nome editável, e-mail, telefone/WhatsApp obrigatório, aniversário opcional, consentimento de privacidade obrigatório e marketing opcional.
+- Endereço não é exigido sem modalidade de entrega e CPF não é solicitado por padrão.
+- A conta do cliente passou a listar somente pedidos vinculados ao seu `customerId` local e permite abrir o acompanhamento de cada pedido.
+- `pagamento.html` exige um perfil de cliente para a demonstração e cria pedidos vinculados à conta, com cliente, retirada, total, histórico e estado inicial `received`.
+- Criada `pedidos.html`, prévia interna que mostra a fila e permite evoluir o pedido por **Recebido → Visto → Confirmado → Em preparo → Pronto → Concluído**, além de cancelamento.
+- Abrir um pedido novo no painel interno marca a visualização, preenchendo `seenAt` e permitindo ao cliente saber se a padaria já viu o pedido.
+- `acompanhamento.html` foi conectado aos pedidos locais e ganhou linha do tempo completa com recebido, visto, confirmado, preparo, pronto e concluído.
+- `internal.html` agora aponta para a prévia de Pedidos sem liberar os demais módulos internos e mantém o login operacional real bloqueado.
+- `index.html` passou a usar a identidade visual da PADOKA no cabeçalho e manteve o cardápio em grade de 2 produtos por linha no celular.
+- Adicionado `assets/logo-padoka.svg`, reconstruído fielmente a partir da referência de logo enviada, para substituir o símbolo genérico no protótipo.
+- Adicionado `supabase/001_customer_accounts_orders.sql` com estrutura futura de perfis, funcionários, pedidos, itens, eventos de status, RLS e políticas para clientes/staff. O arquivo está preparado, mas **não foi aplicado ao projeto InfoTech.io**.
+- O fluxo conectado nesta etapa continua local ao navegador para demonstração. A sincronização real entre celular do cliente e painel da padaria depende da conexão do projeto Supabase correto da PADOKA e da configuração do Google OAuth.
+
 ## 2026-08-19 13:29 — Pedido demonstrativo conectado à conta e acompanhamento
 - `pagamento.html` passou a revisar os dados de retirada salvos pelo carrinho antes de continuar.
 - Adicionado botão seguro para criar **pedido de demonstração local**, sem Pix, cobrança, QR Code ou transação real.
