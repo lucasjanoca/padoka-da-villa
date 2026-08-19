@@ -1,5 +1,13 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 21:xx — PDV protegido por permissão interna
+- `pdv.html` deixou de abrir diretamente para qualquer visitante que conheça a URL.
+- Antes de exibir Caixa/PDV, a página agora valida sessão real do Supabase e exige registro ativo do usuário em `padoka_staff_users`.
+- Usuário sem sessão ou sem permissão interna vê somente uma tela de acesso restrito e retorno ao painel administrativo.
+- O catálogo visual e a leitura por código interno continuam disponíveis apenas depois da autorização.
+- Removida a finalização de venda demonstrativa que simulava sucesso sem persistência; a tela agora informa claramente que a finalização real depende da função transacional de vendas/estoque no Supabase correto.
+- Nenhuma mudança de banco foi feita nesta etapa porque o conector Supabase disponível na sessão expôs somente o projeto InfoTech.io; ele não foi alterado.
+
 ## 2026-08-19 14:30 — Catálogo autoritativo e checkout endurecido
 - Criada e aplicada no projeto **Sites De Clientes!** a tabela `padoka_products`, isolada por prefixo e com RLS.
 - Os 16 produtos atuais foram registrados como `is_demo = true`; continuam demonstrativos até aprovação da PADOKA.
@@ -94,7 +102,7 @@
 - A escolha fica salva localmente no navegador apenas como simulação.
 - Fluxo responsivo em modal, com retorno ao carrinho, fechamento por `Esc` e clique fora.
 - Nenhum pedido é enviado e nenhum pagamento é iniciado; o site continua seguro para demonstração pública.
-- Nenhum módulo interno foi exposto ao cliente público.
+- Nenhum módulo interno foi exposto na navegação pública.
 
 ## 2026-08-19 07:27 — Carrinho funcional
 - O botão **Carrinho** agora abre um painel lateral responsivo no site público.
