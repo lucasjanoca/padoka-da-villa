@@ -1,5 +1,16 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 20:26 — Fila interna de pedidos reforçada
+- Relidos `README.md`, `CHANGELOG.md` e `AUTH_STATUS.md` antes de continuar, preservando o backend correto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) e sem qualquer alteração no projeto InfoTech.io.
+- `pedidos.html` continua exigindo sessão real e registro ativo em `padoka_staff_users`; nenhum link ou acesso interno foi exposto ao cliente público.
+- A renderização da fila agora sanitiza código, nome, telefone, status e demais textos vindos do banco antes de inseri-los no HTML, reduzindo risco de conteúdo inesperado na interface interna.
+- O botão **Ver detalhes** passou a carregar os itens reais do pedido sob demanda a partir de `padoka_order_items`, exibindo quantidade e valor por item sem carregar toda a base antecipadamente.
+- Pedidos concluídos ou cancelados deixam de oferecer a ação de cancelamento; cancelamentos ativos agora pedem confirmação explícita antes de alterar o status visível ao cliente.
+- Atualizações de status bloqueiam temporariamente os botões enquanto a gravação está em andamento e mostram feedback amigável de sucesso/erro, evitando cliques duplicados.
+- Adicionado filtro de pedidos cancelados e mantida a ordem mais recente primeiro, com atualização em tempo real da fila.
+- Nenhuma migration, RLS ou objeto de banco foi alterado nesta execução; portanto não houve advisor de segurança a executar no backend PADOKA. As migrations 003 e 004 continuam preparadas e ainda não aplicadas.
+- Confirmado em `assets/catalog.js` que expresso, cappuccino, suco e água seguem usando imagens distintas e coerentes entre si.
+
 ## 2026-08-19 19:27 — Transação segura do PDV preparada
 - Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `pdv.html` e a migration operacional 003 antes de continuar.
 - Confirmado novamente que o conector Supabase disponível nesta execução expõe apenas **InfoTech.io**; nenhum objeto, migration ou advisor foi executado nesse projeto.
