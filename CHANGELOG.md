@@ -1,5 +1,16 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 13:29 — Pedido demonstrativo conectado à conta e acompanhamento
+- `pagamento.html` passou a revisar os dados de retirada salvos pelo carrinho antes de continuar.
+- Adicionado botão seguro para criar **pedido de demonstração local**, sem Pix, cobrança, QR Code ou transação real.
+- Cada pedido demonstrativo recebe código `PDK-...`, inicia em **Recebido** e é salvo em `padoka_orders_v1`.
+- O pedido é associado ao perfil local da conta quando houver um cliente demonstrativo cadastrado.
+- O novo pedido fica disponível em **Minha Conta** e pode ser aberto diretamente em `acompanhamento.html?code=...`.
+- Estrutura do pedido já inclui histórico e campos para evoluir pelos estados: Recebido, Visto, Confirmado, Em preparo, Pronto e Concluído.
+- O carrinho local é limpo após criar a simulação, evitando duplicação acidental ao testar novamente.
+- A página continua deixando explícito que o Pix real ainda depende da chave/configuração oficial e que nenhum pagamento verdadeiro é efetuado.
+- Logo PADOKA usada no cabeçalho; nenhum módulo interno foi exposto ao cliente público.
+
 ## 2026-08-19 13:07 — Redesign mobile-first do site público
 - `index.html` redesenhado com foco principal em celular e navegação semelhante a aplicativo.
 - Cardápio agora usa grade de **2 produtos lado a lado no celular**, evitando uma lista de um item por linha.
