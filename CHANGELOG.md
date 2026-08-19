@@ -1,5 +1,16 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 08:31 — Retirada agendada demonstrativa
+- O botão **Continuar pedido** do carrinho agora abre uma etapa real de agendamento, sem criar compra ou cobrança.
+- Adicionadas duas modalidades demonstrativas: **Retirar na padaria** e **Padoca Noturna**.
+- Retirada na loja respeita a janela provisória de **05:00 às 18:00**.
+- Padoca Noturna usa uma janela demonstrativa em torno das **02:00**, mantendo os detalhes finais claramente pendentes de confirmação.
+- Adicionados campos de data, horário e nome para retirada, com validação antes de salvar.
+- A escolha fica salva localmente no navegador apenas como simulação.
+- Fluxo responsivo em modal, com retorno ao carrinho, fechamento por `Esc` e clique fora.
+- Nenhum pedido é enviado e nenhum pagamento é iniciado; o site continua seguro para demonstração pública.
+- Nenhum módulo interno foi exposto ao cliente público.
+
 ## 2026-08-19 07:27 — Carrinho funcional
 - O botão **Carrinho** agora abre um painel lateral responsivo no site público.
 - O carrinho passou a armazenar itens por produto, e não apenas uma contagem total.
