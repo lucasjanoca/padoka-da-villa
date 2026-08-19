@@ -1,5 +1,18 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 19:27 — Transação segura do PDV preparada
+- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `pdv.html` e a migration operacional 003 antes de continuar.
+- Confirmado novamente que o conector Supabase disponível nesta execução expõe apenas **InfoTech.io**; nenhum objeto, migration ou advisor foi executado nesse projeto.
+- Criada `supabase/004_pdv_sales_transaction.sql`, destinada exclusivamente ao backend **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) e dependente da migration 003.
+- A migration prepara `padoka_sales`, `padoka_sale_items` e a RPC `padoka_create_sale`, todos isolados por prefixo `padoka_` e sem trigger global em `auth.users`.
+- A RPC restringe criação de venda a `owner`, `manager`, `cashier` e `attendant`, valida itens e forma de pagamento, resolve produtos/preços ativos no servidor e não confia em total enviado pelo navegador.
+- A baixa de estoque é preparada dentro da mesma transação da venda, com lock das linhas de `padoka_inventory`, rejeição por estoque insuficiente e registro correspondente em `padoka_inventory_movements` com origem `sale`.
+- Vendas permanecem com `is_test = true` quando qualquer produto usado ainda estiver marcado como demonstrativo no catálogo, evitando transformar dados provisórios em operação oficial silenciosamente.
+- RLS de leitura foi preparada somente para staff autenticado; `anon` não recebe acesso às tabelas nem à RPC.
+- `pdv.html` **não foi conectado ainda** à RPC para não quebrar a versão publicada antes da aplicação/revisão das migrations 003 e 004 no Supabase correto.
+- Como nenhuma alteração de banco foi aplicada no backend PADOKA nesta execução, os advisors de segurança do projeto correto não puderam ser executados nesta rodada.
+- `README.md` atualizado com a dependência e o plano seguro de ativação do PDV transacional.
+
 ## 2026-08-19 18:28 — Camada operacional segura preparada
 - Revisados `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md` e o estado atual da Gestão antes de alterar o projeto.
 - Confirmado que `gestao.html` ainda mantém estoque, produção, perdas e configurações em `localStorage`; esses dados não foram migrados automaticamente para evitar perda ou inconsistência.
