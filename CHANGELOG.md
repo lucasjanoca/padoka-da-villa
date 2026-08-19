@@ -3,10 +3,11 @@
 ## 2026-08-19 17:28 — Detalhes reais no acompanhamento do cliente
 - `acompanhamento.html` ganhou detalhes expansíveis por pedido, mantendo a página mobile-first e sem campo de pesquisa.
 - Os itens agora são lidos de `padoka_order_items` e agrupados pelo `order_id`; a proteção continua dependendo do RLS já existente, que permite ao cliente ler somente itens ligados aos próprios pedidos.
+- A linha do tempo deixou de depender de colunas específicas por etapa e passou a usar o histórico real de `padoka_order_events`, reduzindo risco de quebra por divergência de schema e preservando os horários reais de cada mudança de status.
 - O estado `ready` ganhou destaque principal **“Pode vir buscar!”**, sem alterar a sequência Recebido → Visto → Confirmado → Preparo → Pronto → Retirado.
 - Os detalhes exibem itens, valores calculados a partir dos itens persistidos, modalidade de retirada, data/horário e código do pedido.
 - Foi adicionada sanitização de texto antes de inserir nomes/códigos vindos do banco no HTML.
-- A atualização em tempo real de status foi preservada; uma falha secundária ao carregar itens não impede o cliente de acompanhar o andamento.
+- A atualização em tempo real foi preservada para `padoka_orders` e também passou a observar `padoka_order_events`; uma falha secundária ao carregar itens/histórico não impede o cliente de acompanhar o pedido.
 - Nenhuma mudança de banco/RLS foi aplicada nesta etapa. O conector Supabase disponível nesta execução expôs somente o projeto **InfoTech.io**, portanto ele não foi alterado; o backend correto da PADOKA continua sendo `yncspxfsvlqdnodlsosb`.
 
 ## 2026-08-19 16:29 — Gestão operacional protegida por staff
