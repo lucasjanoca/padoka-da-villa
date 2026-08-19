@@ -69,6 +69,8 @@ A migration `supabase/003_operational_inventory_production_losses.sql` prepara, 
 
 A migration inclui RLS, permissões por perfil interno, histórico de movimentação e proteção contra estoque negativo. Ela **não deve ser aplicada no InfoTech.io**. O `gestao.html` continua com a implementação atual até a migration poder ser aplicada e revisada no projeto `yncspxfsvlqdnodlsosb`, evitando quebrar a versão publicada.
 
+A migration seguinte, `supabase/004_pdv_sales_transaction.sql`, prepara a venda de balcão real do PDV sem ativá-la antes da camada de estoque existir. Ela cria `padoka_sales`, `padoka_sale_items` e a RPC `padoka_create_sale`, que valida função interna, aceita somente produtos ativos, recalcula preços no servidor, bloqueia venda sem estoque suficiente e registra a baixa de estoque e o histórico de movimentações na mesma transação. A venda continua marcada como teste quando qualquer item do catálogo ainda tiver `is_demo = true`. O frontend `pdv.html` permanece sem finalizar vendas até as migrations 003 e 004 serem aplicadas e revisadas no backend correto.
+
 ## Banco Supabase
 
 Todos os objetos exclusivos do projeto usam prefixo `padoka_` para não colidir com outros clientes existentes no mesmo Supabase.
