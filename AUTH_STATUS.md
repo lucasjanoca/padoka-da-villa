@@ -10,17 +10,16 @@ Atualizado em 19/08/2026.
 - Contas de outros sistemas do mesmo Supabase **não viram clientes PADOKA automaticamente**. Um usuário só entra em `padoka_profiles` quando acessa a PADOKA e completa o onboarding.
 - Cliente autenticado só lê/edita o próprio perfil e só lê os próprios pedidos.
 - Funcionários PADOKA são separados em `padoka_staff_users` e não recebem acesso por serem usuários de outro sistema.
-- O site público `conta.html` foi conectado ao Supabase real e removeu os botões/contas de demonstração.
+- O site público `conta.html` foi conectado ao Supabase real e não usa contas de demonstração.
 - Login por e-mail/senha e link por e-mail usam Supabase Auth real.
-- O botão **Continuar com Google** usa o fluxo real `signInWithOAuth` do Supabase.
+- O botão **Continuar com Google** usa o fluxo real `signInWithOAuth` e solicita `prompt=select_account` quando o provider estiver habilitado.
 - No primeiro acesso, o cliente confirma/edita nome e informa WhatsApp; aniversário e marketing são opcionais.
 - Depois do onboarding, o perfil é salvo em `padoka_profiles` com o UUID real do usuário autenticado.
 - Foi criada a Edge Function pública `padoka-public-config` para entregar ao site somente a configuração pública necessária do cliente Supabase, sem gravar chave administrativa no GitHub.
-- `pagamento.html` agora cria pedidos reais no banco por meio de `padoka_create_order`, sempre vinculados ao usuário autenticado.
+- `pagamento.html` cria pedidos reais no banco por meio de `padoka_create_order`, sempre vinculados ao usuário autenticado.
 - Os pedidos atuais são marcados como `is_test = true` enquanto cardápio/preços/Pix oficiais ainda não foram aprovados.
-- `acompanhamento.html` consulta o pedido real do cliente e recebe atualizações de status pelo Supabase Realtime.
+- `acompanhamento.html` lista automaticamente apenas os pedidos do cliente autenticado, mais recentes primeiro, e recebe atualizações pelo Supabase Realtime.
 - `pedidos.html` consulta a fila real e só funciona para usuários existentes em `padoka_staff_users`.
-- Ao abrir um pedido novo na área interna, o estado pode mudar de `received` para `seen`, permitindo ao cliente ver quando a padaria visualizou.
 - `internal.html` usa login real e recusa usuários que não tenham permissão específica da equipe PADOKA.
 
 ## Isolamento das contas
@@ -35,21 +34,41 @@ O projeto Supabase é compartilhado por mais de um sistema, portanto `auth.users
 
 Isso evita mistura operacional com `rass_*`, `emp_*`, `plexo_*` e outras tabelas existentes.
 
-## Google — último requisito externo
+## Google — estado verificado em 19/08/2026
 
-A interface e o código já estão prontos para Google real. Para a autenticação Google efetivamente abrir a seleção de conta, o provider Google do projeto Supabase precisa ter um **Google OAuth Client ID e Client Secret** cadastrados e o endereço do GitHub Pages precisa estar autorizado como redirect. Esses dados são emitidos no Google Cloud/Google Auth Platform e não podem ser inventados pelo projeto.
+Os logs do Auth do projeto registraram a tentativa de login Google com o erro **`provider is not enabled`**. Portanto o bloqueio atual não está no botão do site: o provider Google ainda não possui configuração ativa no Auth do projeto.
+
+O código do site já está preparado para, assim que o provider estiver ativo, abrir o Google com `prompt=select_account`, forçando a tela de escolha de conta em vez de reutilizar silenciosamente uma sessão anterior.
+
+Para habilitar o provider são obrigatórios dados emitidos pelo Google Auth Platform/Google Cloud:
+
+- Google OAuth **Client ID** (aplicação Web)
+- Google OAuth **Client Secret**
+
+Essas credenciais devem ser criadas na conta Google responsável pela aplicação e então cadastradas no provider Google do projeto Supabase. Elas não podem ser inventadas pelo código nem pelo banco de dados.
+
+### Endereços já definidos
 
 Callback do projeto Supabase a cadastrar no Google:
 
 `https://yncspxfsvlqdnodlsosb.supabase.co/auth/v1/callback`
 
-Origem do site:
+Origem autorizada do site:
 
 `https://lucasjanoca.github.io`
 
 Retorno da conta PADOKA:
 
 `https://lucasjanoca.github.io/padoka-da-villa/conta.html`
+
+Depois de cadastrar o Client ID e Client Secret no provider Google do Supabase, confirmar também que o retorno da conta PADOKA está na lista de Redirect URLs permitidas do Auth.
+
+## Experiência do cliente enquanto o Google estiver desativado
+
+- A tela pública não exibe mais mensagem técnica citando Supabase ao cliente.
+- O botão Google continua no local correto.
+- Se o provider ainda estiver indisponível, a página mostra somente uma mensagem simples informando indisponibilidade temporária e mantém login por e-mail funcionando.
+- Assim que o provider for ativado no servidor, a mesma página detecta automaticamente a disponibilidade e usa o fluxo Google real sem nova alteração no frontend.
 
 ## Segurança revisada
 
