@@ -50,6 +50,8 @@ O cliente vê somente:
 - mudança de status por etapas
 - cliente comum não recebe permissão interna
 
+A migration `supabase/005_order_status_transition_rpc.sql` prepara a próxima proteção do fluxo interno: a RPC `padoka_update_order_status` valida a sessão de staff, bloqueia saltos de etapa e impede reabertura de pedidos concluídos/cancelados. Depois que essa migration for aplicada no backend correto, o `UPDATE` direto em `padoka_orders` é revogado para `authenticated` e as mudanças passam exclusivamente pela RPC. O frontend `pedidos.html` já tenta essa RPC primeiro e usa o `UPDATE` direto somente como fallback temporário quando a função ainda não existe no schema publicado. Esse fallback deve ser removido depois da aplicação e revisão da migration 005.
+
 Módulos ainda em evolução:
 - Caixa / PDV
 - leitor de código de barras
