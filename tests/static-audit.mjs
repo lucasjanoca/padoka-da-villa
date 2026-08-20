@@ -26,9 +26,13 @@ for (const status of ['received','seen','confirmed','preparing','ready','complet
 ok(html['acompanhamento.html'].includes('Pode vir buscar!'), 'acompanhamento.html: destaque ready ausente');
 ok(html['acompanhamento.html'].includes('postgres_changes'), 'acompanhamento.html: atualização Realtime ausente');
 
-// Checkout must remain server-authoritative.
+// Checkout and public catalog must remain server-authoritative.
 ok(html['pagamento.html'].includes("rpc('padoka_create_order'"), 'pagamento.html: pedido não usa padoka_create_order');
 ok(!/insert\s*\([^)]*padoka_orders/i.test(html['pagamento.html']), 'pagamento.html: não deve inserir pedido diretamente');
+ok(catalog.includes('/rest/v1/padoka_products'), 'assets/catalog.js: catálogo público não consulta padoka_products');
+ok(catalog.includes('active=eq.true'), 'assets/catalog.js: catálogo público não filtra somente produtos ativos');
+ok(!/\bprice\s*:\s*\d/i.test(catalog), 'assets/catalog.js: preço estático encontrado no catálogo visual');
+ok(catalog.includes('Catálogo e valores provisórios'), 'assets/catalog.js: dados demonstrativos não estão identificados ao cliente');
 
 // Google OAuth must keep account selection and friendly disabled-provider handling.
 ok(html['conta.html'].includes('select_account'), 'conta.html: Google OAuth sem prompt select_account');
