@@ -1,5 +1,18 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 22:28 — Gestão preparada para sincronização real sem quebrar o publicado
+- Relidos `README.md`, `CHANGELOG.md` e `AUTH_STATUS.md` antes da alteração, preservando o backend correto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) e o isolamento `padoka_*`.
+- O conector Supabase disponível continua expondo somente **InfoTech.io**; nenhuma query, migration, advisor ou alteração foi executada nesse projeto.
+- Criado `assets/operational-sync.js`, carregado somente em `gestao.html`, para detectar de forma segura a existência da camada operacional preparada pela migration 003.
+- Quando `padoka_inventory`, `padoka_production_plans` e `padoka_losses` existirem no backend correto, a Gestão passa a carregar os dados reais do Supabase em vez de depender dos estados locais.
+- Ajustes de saldo usam a RPC `padoka_adjust_inventory`, registrando delta e histórico no servidor; alterações de código/EAN e estoque mínimo respeitam as permissões/RLS da migration 003.
+- Registro de perdas usa `padoka_register_loss`, garantindo baixa de estoque e histórico na mesma operação; mensagens de erro tratam falta de permissão e estoque insuficiente sem simular sucesso.
+- Planejamento do dia usa `padoka_production_plans` com `upsert` pela chave `plan_date, product_id`, preservando os campos de auditoria controlados pelo trigger do banco.
+- Adicionada atualização Realtime para estoque, produção e perdas quando a camada operacional estiver ativa.
+- Se as tabelas da migration 003 ainda não existirem, a sincronização simplesmente não assume controle e o comportamento local anterior permanece funcionando; isso evita quebrar a versão publicada antes da aplicação segura da migration.
+- Nenhum acesso de Caixa, Estoque, Produção ou Administração foi exposto ao cliente; a sincronização só inicia depois da validação de sessão e `padoka_staff_users` já feita pela Gestão.
+- `README.md` atualizado para documentar a ativação condicional e a futura remoção do fallback local após aplicação, revisão e migração explícita dos dados necessários.
+
 ## 2026-08-19 21:26 — Auditoria operacional endurecida antes da aplicação
 - Relidos `README.md`, `CHANGELOG.md` e `AUTH_STATUS.md` e revisadas as migrations 003/004 antes de qualquer nova integração.
 - Confirmado novamente pelo conector Supabase que a sessão disponível expõe somente **InfoTech.io**; nenhuma migration, query, advisor ou alteração foi executada nesse projeto.
@@ -30,7 +43,7 @@
 - A migration prepara `padoka_sales`, `padoka_sale_items` e a RPC `padoka_create_sale`, todos isolados por prefixo `padoka_` e sem trigger global em `auth.users`.
 - A RPC restringe criação de venda a `owner`, `manager`, `cashier` e `attendant`, valida itens e forma de pagamento, resolve produtos/preços ativos no servidor e não confia em total enviado pelo navegador.
 - A baixa de estoque é preparada dentro da mesma transação da venda, com lock das linhas de `padoka_inventory`, rejeição por estoque insuficiente e registro correspondente em `padoka_inventory_movements` com origem `sale`.
-- Vendas permanecem com `is_test = true` quando qualquer produto usado ainda estiver marcado como demonstrativo no catálogo, evitando transformar dados provisórios em operação oficial silenciosamente.
+- Vendas permanecem com `is_test = true` quando qualquer produto do catálogo ainda estiver marcado como demonstrativo no catálogo, evitando transformar dados provisórios em operação oficial silenciosamente.
 - RLS de leitura foi preparada somente para staff autenticado; `anon` não recebe acesso às tabelas nem à RPC.
 - `pdv.html` **não foi conectado ainda** à RPC para não quebrar a versão publicada antes da aplicação/revisão das migrations 003 e 004 no Supabase correto.
 - Como nenhuma alteração de banco foi aplicada no backend PADOKA nesta execução, os advisors de segurança do projeto correto não puderam ser executados nesta rodada.
