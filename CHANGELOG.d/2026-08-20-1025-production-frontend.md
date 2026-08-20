@@ -7,7 +7,9 @@
 - O frontend não altera estoque diretamente e não cria produção local/demonstrativa nesse novo fluxo; estoque, lote, plano e movimentação continuam sob responsabilidade da transação do servidor.
 - Cada tentativa usa `crypto.randomUUID()` como `request_id` e mantém o mesmo identificador em tentativas repetidas após erro, preservando a estratégia de idempotência preparada na migration 006.
 - Planos inexistentes, concluídos ou cancelados não recebem uma ação de produção ativa; erros de permissão recebem mensagem amigável.
+- O módulo também acompanha alterações em `padoka_production_plans` e novos `padoka_production_batches` por Realtime, mantendo os controles da aba Produção sincronizados quando outra estação registra uma fornada.
 - Enquanto a migration 006 não estiver aplicada, o módulo não adiciona nenhum botão e o comportamento publicado atual permanece intacto.
 - Criado `tests/production-frontend-audit.mjs` para impedir regressão para escrita direta em estoque, `localStorage` ou simulação de sucesso.
 - O workflow `.github/workflows/padoka-audit.yml` passou a verificar sintaxe e executar também essa nova auditoria.
+- A tentativa de executar a suíte localmente foi bloqueada porque o ambiente desta execução não conseguiu resolver `github.com` ao clonar o repositório. O novo arquivo foi revisado novamente pelo conector após o commit; o workflow remoto ainda não expôs status associado ao commit mais recente.
 - Nenhuma alteração de banco/RLS foi aplicada nesta execução; portanto não havia advisor do backend PADOKA a executar.
