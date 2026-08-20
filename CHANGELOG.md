@@ -1,5 +1,17 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 21:26 — Auditoria operacional endurecida antes da aplicação
+- Relidos `README.md`, `CHANGELOG.md` e `AUTH_STATUS.md` e revisadas as migrations 003/004 antes de qualquer nova integração.
+- Confirmado novamente pelo conector Supabase que a sessão disponível expõe somente **InfoTech.io**; nenhuma migration, query, advisor ou alteração foi executada nesse projeto.
+- `supabase/003_operational_inventory_production_losses.sql` foi endurecida antes da futura aplicação no backend correto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`).
+- A RPC `padoka_adjust_inventory` agora aceita apenas origens manuais (`manual`/`adjustment`) e rejeita `reference_id` fornecido pelo navegador, impedindo que um ajuste manual seja falsamente registrado como venda, perda ou produção.
+- Ajustes de estoque agora exigem produto ativo e motivo entre 2 e 120 caracteres; o registro de perda também limita observação e exige produto ativo.
+- Planos de produção ganharam trigger próprio para carimbar `created_by`, `updated_by`, `created_at` e `updated_at` pelo banco, preservando os campos originais de auditoria em atualizações.
+- As permissões da tabela `padoka_production_plans` foram reduzidas para colunas operacionais específicas; usuários autenticados não recebem permissão direta para adulterar campos de auditoria.
+- Foram removidas concessões amplas anteriores antes de reaplicar privilégios mínimos em estoque, movimentações, produção e perdas.
+- Nenhum trigger global em `auth.users` foi criado; todos os objetos continuam isolados por prefixo `padoka_`.
+- Como a migration 003 continua apenas preparada no repositório e não aplicada, os advisors do backend PADOKA não puderam ser executados nesta rodada.
+
 ## 2026-08-19 20:26 — Fila interna de pedidos reforçada
 - Relidos `README.md`, `CHANGELOG.md` e `AUTH_STATUS.md` antes de continuar, preservando o backend correto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) e sem qualquer alteração no projeto InfoTech.io.
 - `pedidos.html` continua exigindo sessão real e registro ativo em `padoka_staff_users`; nenhum link ou acesso interno foi exposto ao cliente público.
