@@ -35,6 +35,14 @@ ok(catalog.includes('active=eq.true'), 'assets/catalog.js: catálogo público n�
 ok(!/\bprice\s*:\s*\d/i.test(catalog), 'assets/catalog.js: preço estático encontrado no catálogo visual');
 ok(catalog.includes('Catálogo e valores provisórios'), 'assets/catalog.js: dados demonstrativos não estão identificados ao cliente');
 
+// Server catalog data rendered by multiple surfaces must be normalized before it reaches innerHTML templates.
+ok(catalog.includes('const safeId='), 'assets/catalog.js: validação de product_id ausente');
+ok(/\^\[a-z0-9\]\[a-z0-9_-\]/i.test(catalog), 'assets/catalog.js: product_id não está limitado a caracteres seguros');
+ok(catalog.includes('const esc='), 'assets/catalog.js: escape de texto do servidor ausente');
+ok(/name:esc\(/.test(catalog), 'assets/catalog.js: nome vindo do servidor não é escapado');
+ok(/category:esc\(/.test(catalog), 'assets/catalog.js: categoria vinda do servidor não é escapada');
+ok(/p\.price>=0/.test(catalog), 'assets/catalog.js: preço negativo não é rejeitado no cliente');
+
 // Internal order status changes must be ready for server-controlled transitions.
 ok(html['pedidos.html'].includes("rpc('padoka_update_order_status'"), 'pedidos.html: atualização de status não tenta RPC autoritativa');
 ok(html['pedidos.html'].includes('rpcMissing'), 'pedidos.html: fallback temporário da RPC não está limitado a função ausente');
