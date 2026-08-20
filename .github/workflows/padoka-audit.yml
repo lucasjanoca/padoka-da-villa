@@ -22,8 +22,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Check audit script syntax
-        run: node --check tests/static-audit.mjs
+      - name: Check audit scripts syntax
+        run: |
+          node --check tests/static-audit.mjs
+          node --check tests/operational-inventory-audit.mjs
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
+
+      - name: Run inventory metadata audit
+        run: node tests/operational-inventory-audit.mjs
