@@ -59,6 +59,16 @@ begin
   for update;
 
   if v_plan.id is null then raise exception 'production plan not found'; end if;
+
+  -- Revalida após adquirir o lock do plano. Duas requisições simultâneas com
+  -- o mesmo request_id não conseguem duplicar estoque nem quantidade produzida.
+  select * into v_batch
+  from public.padoka_production_batches
+  where request_id = p_request_id;
+  if v_batch.id is not null then
+    return v_batch;
+  end if;
+
   if v_plan.status = 'cancelled' then raise exception 'production plan is cancelled'; end if;
   if v_plan.status = 'completed' then raise exception 'production plan is already completed'; end if;
   if not exists(select 1 from public.padoka_products p where p.id = v_plan.product_id and p.active = true) then
