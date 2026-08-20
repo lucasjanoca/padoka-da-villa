@@ -1,0 +1,26 @@
+(()=>{
+  const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
+  if(!isGestao)return;
+  const $=id=>document.getElementById(id),today=()=>new Date().toLocaleDateString('en-CA');
+  let sb=null,plans=[],observer=null,enabled=false;
+  function toast(t){const el=$('toast');if(!el)return;el.textContent=t;el.classList.remove('hidden');clearTimeout(window.__padokaProdToast);window.__padokaProdToast=setTimeout(()=>el.classList.add('hidden'),1900)}
+  function missing(error){return ['42P01','PGRST205','PGRST204'].includes(error?.code)||/does not exist|schema cache/i.test(error?.message||'')}
+  function friendly(error){const m=String(error?.message||'').toLowerCase();if(m.includes('permission'))return 'Seu perfil não tem permissão para registrar produção.';if(m.includes('completed'))return 'Este plano já foi concluído.';if(m.includes('cancelled'))return 'Este plano foi cancelado.';if(m.includes('not found'))return 'Plano de produção não encontrado.';return 'Não foi possível registrar a produção agora.'}
+  async function loadPlans(){const {data,error}=await sb.from('padoka_production_plans').select('id,product_id,planned_quantity,produced_quantity,status').eq('plan_date',today()).order('product_id');if(error)throw error;plans=data||[]}
+  function planMap(){return Object.fromEntries(plans.map(p=>[p.product_id,p]))}
+  function enhance(){
+    if(!enabled)return;const table=$('productionTable')?.querySelector('table');if(!table)return;
+    const head=table.querySelector('thead tr');if(head&&!head.querySelector('[data-prod-head]')){const th=document.createElement('th');th.dataset.prodHead='1';th.textContent='Registrar produção';head.appendChild(th)}
+    const map=planMap();table.querySelectorAll('tbody tr').forEach(row=>{if(row.querySelector('[data-prod-cell]'))return;const planInput=row.querySelector('[data-plan]');if(!planInput)return;const id=planInput.dataset.plan,plan=map[id];const td=document.createElement('td');td.dataset.prodCell='1';
+      if(!plan?.id){td.innerHTML='<small>Defina o plano primeiro</small>';row.appendChild(td);return}
+      const remaining=Math.max(0,Number(plan.planned_quantity||0)-Number(plan.produced_quantity||0));
+      const disabled=plan.status==='completed'||plan.status==='cancelled';
+      td.innerHTML=`<div style="display:flex;gap:6px;min-width:190px"><input data-prod-qty="${id}" type="number" min="0.001" step="0.001" value="${remaining>0?remaining:1}" style="min-width:88px"><button class="btn" data-prod-save="${id}" type="button" ${disabled?'disabled':''}>${plan.status==='completed'?'Concluído':plan.status==='cancelled'?'Cancelado':'Registrar'}</button></div>`;row.appendChild(td);
+      const btn=td.querySelector('[data-prod-save]');if(btn&&!disabled)btn.onclick=()=>record(plan,td.querySelector('[data-prod-qty]'),btn);
+    })
+  }
+  async function record(plan,input,btn){const quantity=Number(input?.value||0);if(!Number.isFinite(quantity)||quantity<=0)return toast('Informe uma quantidade válida.');btn.disabled=true;input.disabled=true;btn.textContent='Registrando…';if(!btn.dataset.requestId)btn.dataset.requestId=crypto.randomUUID();const requestId=btn.dataset.requestId;const {error}=await sb.rpc('padoka_record_production',{p_plan_id:plan.id,p_quantity:quantity,p_request_id:requestId});if(error){btn.disabled=false;input.disabled=false;btn.textContent='Tentar novamente';toast(friendly(error));return}delete btn.dataset.requestId;toast('Produção registrada e estoque atualizado.');await loadPlans();setTimeout(enhance,120)}
+  function observe(){const host=$('productionTable');if(!host||observer)return;observer=new MutationObserver(()=>setTimeout(enhance,40));observer.observe(host,{childList:true,subtree:true});enhance()}
+  async function start(){for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return;for(let n=0;n<100&&$('app')?.classList.contains('hidden');n++)await new Promise(r=>setTimeout(r,100));if($('app')?.classList.contains('hidden'))return;const probe=await sb.from('padoka_production_batches').select('id').limit(1);if(probe.error){if(!missing(probe.error))console.error('PADOKA production capability:',probe.error);return}enabled=true;try{await loadPlans();observe()}catch(e){console.error('PADOKA production completion:',e)}}
+  start();
+})();
