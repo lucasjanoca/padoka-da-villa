@@ -1,6 +1,6 @@
 # PADOKA — Estado das contas e autenticação
 
-Atualizado em 19/08/2026.
+Atualizado em 20/08/2026.
 
 ## O que já está ativo
 
@@ -65,10 +65,12 @@ Depois de cadastrar o Client ID e Client Secret no provider Google do Supabase, 
 
 ## Experiência do cliente enquanto o Google estiver desativado
 
-- A tela pública não exibe mais mensagem técnica citando Supabase ao cliente.
+- A tela pública não exibe mensagem técnica citando Supabase ao cliente.
 - O botão Google continua no local correto.
-- Se o provider ainda estiver indisponível, a página mostra somente uma mensagem simples informando indisponibilidade temporária e mantém login por e-mail funcionando.
-- Assim que o provider for ativado no servidor, a mesma página detecta automaticamente a disponibilidade e usa o fluxo Google real sem nova alteração no frontend.
+- `conta.html` consulta a configuração pública do Auth antes do clique; quando o servidor informa explicitamente que Google está desativado, o clique **não redireciona** para a página técnica `Unsupported provider`.
+- Nessa situação, a página mostra somente uma mensagem simples de indisponibilidade temporária e mantém login por e-mail funcionando.
+- Se a pré-verificação falhar por problema de rede, o site não assume que Google está desativado: ainda tenta o OAuth para evitar falso bloqueio.
+- Assim que o provider for ativado no servidor, a mesma página detecta automaticamente a disponibilidade e usa o fluxo Google real com `prompt=select_account`, sem nova alteração no frontend.
 
 ## Segurança revisada
 
