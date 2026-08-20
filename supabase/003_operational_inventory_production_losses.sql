@@ -68,6 +68,43 @@ as $$
   );
 $$;
 
+create or replace function public.padoka_update_inventory_metadata(
+  p_product_id text,
+  p_barcode text default null,
+  p_min_quantity numeric default 0
+) returns public.padoka_inventory
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_row public.padoka_inventory;
+  v_barcode text;
+begin
+  if not public.padoka_staff_has_role(array['owner','manager','stock']) then
+    raise exception 'padoka inventory permission required';
+  end if;
+  if not exists(select 1 from public.padoka_products p where p.id = p_product_id and p.active = true) then
+    raise exception 'unknown or inactive product';
+  end if;
+  if p_min_quantity is null or p_min_quantity < 0 then raise exception 'invalid minimum inventory'; end if;
+
+  v_barcode := nullif(trim(coalesce(p_barcode,'')),'');
+  if v_barcode is not null and char_length(v_barcode) > 128 then raise exception 'barcode too long'; end if;
+
+  insert into public.padoka_inventory(product_id,barcode,min_quantity,updated_by,updated_at)
+  values(p_product_id,v_barcode,p_min_quantity,auth.uid(),now())
+  on conflict (product_id) do update
+  set barcode = excluded.barcode,
+      min_quantity = excluded.min_quantity,
+      updated_by = auth.uid(),
+      updated_at = now()
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
 create or replace function public.padoka_adjust_inventory(
   p_product_id text,
   p_delta numeric,
@@ -210,12 +247,6 @@ drop policy if exists "padoka staff read inventory" on public.padoka_inventory;
 create policy "padoka staff read inventory" on public.padoka_inventory
 for select to authenticated using (public.padoka_is_staff());
 
-drop policy if exists "padoka stock manage inventory metadata" on public.padoka_inventory;
-create policy "padoka stock manage inventory metadata" on public.padoka_inventory
-for update to authenticated
-using (public.padoka_staff_has_role(array['owner','manager','stock']))
-with check (public.padoka_staff_has_role(array['owner','manager','stock']));
-
 drop policy if exists "padoka staff read inventory movements" on public.padoka_inventory_movements;
 create policy "padoka staff read inventory movements" on public.padoka_inventory_movements
 for select to authenticated using (public.padoka_is_staff());
@@ -244,14 +275,13 @@ revoke all on public.padoka_inventory_movements from anon;
 revoke all on public.padoka_production_plans from anon;
 revoke all on public.padoka_losses from anon;
 
--- Remove concessões amplas antes de reaplicar somente as colunas operacionais necessárias.
+-- Remove concessões amplas antes de reaplicar somente as operações necessárias.
 revoke all on public.padoka_inventory from authenticated;
 revoke all on public.padoka_inventory_movements from authenticated;
 revoke all on public.padoka_production_plans from authenticated;
 revoke all on public.padoka_losses from authenticated;
 
 grant select on public.padoka_inventory to authenticated;
-grant update (barcode,min_quantity) on public.padoka_inventory to authenticated;
 grant select on public.padoka_inventory_movements to authenticated;
 grant select on public.padoka_production_plans to authenticated;
 grant insert (plan_date,product_id,planned_quantity,produced_quantity,status,note) on public.padoka_production_plans to authenticated;
@@ -260,6 +290,8 @@ grant select on public.padoka_losses to authenticated;
 
 revoke all on function public.padoka_staff_has_role(text[]) from public, anon;
 grant execute on function public.padoka_staff_has_role(text[]) to authenticated;
+revoke all on function public.padoka_update_inventory_metadata(text,text,numeric) from public, anon;
+grant execute on function public.padoka_update_inventory_metadata(text,text,numeric) to authenticated;
 revoke all on function public.padoka_adjust_inventory(text,numeric,text,text,uuid) from public, anon;
 grant execute on function public.padoka_adjust_inventory(text,numeric,text,text,uuid) to authenticated;
 revoke all on function public.padoka_register_loss(text,numeric,text,text) from public, anon;
