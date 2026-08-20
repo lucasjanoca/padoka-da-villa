@@ -1,0 +1,18 @@
+(()=>{
+  if(!(location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html')))return;
+  const $=id=>document.getElementById(id);
+  let sb=null,active=false,channel=null;
+  const paymentToUi={pix:'Pix',cash:'Dinheiro',card:'Cartão'};
+  const paymentToDb={'Pix':'pix','Dinheiro':'cash','Cartão':'card'};
+  function toast(t){const el=$('toast');if(!el)return;el.textContent=t;el.classList.remove('hidden');clearTimeout(window.__padokaSettingsToast);window.__padokaSettingsToast=setTimeout(()=>el.classList.add('hidden'),1800)}
+  function functionMissing(error){return ['PGRST202','42883'].includes(error?.code)||/function .* does not exist|schema cache/i.test(error?.message||'')}
+  function timeValue(v){return v?String(v).slice(0,5):''}
+  function ensureState(){let el=$('cfgServerState');if(el)return el;const panel=document.querySelector('[data-panel="configuracoes"] .card');if(!panel)return null;el=document.createElement('div');el.id='cfgServerState';el.className='notice';el.style.marginTop='10px';panel.appendChild(el);return el}
+  function showState(t,ok=false){const el=ensureState();if(!el)return;el.textContent=t;if(ok){el.style.background='#e7f3eb';el.style.borderColor='#cde5d5';el.style.color='#27593c'}}
+  function fill(row){if(!row)return;if($('cfgOpen')&&row.open_time)$('cfgOpen').value=timeValue(row.open_time);if($('cfgClose')&&row.close_time)$('cfgClose').value=timeValue(row.close_time);if($('cfgNight')&&row.night_time)$('cfgNight').value=timeValue(row.night_time);if($('cfgPayment')&&row.payment_method&&paymentToUi[row.payment_method])$('cfgPayment').value=paymentToUi[row.payment_method];if($('cfgNote'))$('cfgNote').value=row.note||''}
+  async function load(){const {data,error}=await sb.rpc('padoka_get_settings');if(error){if(functionMissing(error))return false;console.error('PADOKA settings load:',error);showState('Não foi possível carregar as configurações do servidor.');return false}active=true;fill(Array.isArray(data)?data[0]:data);const btn=$('cfgSave');if(btn)btn.onclick=save;showState('Configurações sincronizadas com o servidor.',true);return true}
+  async function save(){if(!active)return;const btn=$('cfgSave');const open=$('cfgOpen')?.value,close=$('cfgClose')?.value,night=$('cfgNight')?.value||null,payment=paymentToDb[$('cfgPayment')?.value]||null,note=$('cfgNote')?.value?.trim()||null;if(!open||!close)return toast('Informe abertura e fechamento.');if(open>=close)return toast('O fechamento precisa ser depois da abertura.');btn.disabled=true;const {data,error}=await sb.rpc('padoka_update_settings',{p_open_time:open,p_close_time:close,p_night_time:night,p_payment_method:payment,p_note:note});btn.disabled=false;if(error){const msg=error.message||'';if(/permission/i.test(msg))return toast('Somente responsáveis autorizados podem alterar configurações.');if(/opening hours/i.test(msg))return toast('Revise os horários informados.');return toast('Não foi possível salvar as configurações.')}fill(Array.isArray(data)?data[0]:data);toast('Configurações salvas no servidor');showState('Configurações sincronizadas com o servidor.',true)}
+  function subscribe(){if(channel||!active)return;channel=sb.channel('padoka-settings-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_settings'},()=>load()).subscribe()}
+  async function start(){for(let n=0;n<80&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return;for(let n=0;n<80&&$('app')?.classList.contains('hidden');n++)await new Promise(r=>setTimeout(r,100));if($('app')?.classList.contains('hidden'))return;try{if(await load())subscribe()}catch(e){console.error('PADOKA settings sync:',e)}}
+  start();
+})();
