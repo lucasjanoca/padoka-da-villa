@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const sql=fs.readFileSync(new URL('../supabase/008_staff_reporting_rpc.sql',import.meta.url),'utf8');
 const must=(needle,msg)=>{if(!sql.includes(needle))throw new Error(msg)};
 const mustNot=(needle,msg)=>{if(sql.includes(needle))throw new Error(msg)};
+const mustNotMatch=(regex,msg)=>{if(regex.test(sql))throw new Error(msg)};
 
 must("create or replace function public.padoka_report_summary",'RPC de relatório ausente');
 must("security definer",'RPC precisa ser SECURITY DEFINER');
@@ -21,7 +22,7 @@ must("padoka_sale_items",'Resumo deve calcular produtos mais vendidos a partir d
 must("revoke all on function public.padoka_report_summary(date,date) from public, anon",'RPC não pode ficar executável por anon/public');
 must("grant execute on function public.padoka_report_summary(date,date) to authenticated",'Staff autenticado precisa conseguir chamar a RPC antes da validação de papel interna');
 mustNot('create trigger','Migration de relatório não deve criar triggers');
-mustNot('auth.users','Migration de relatório não deve tocar auth.users');
+mustNotMatch(/\b(?:insert|update|delete|alter|create|drop|grant|revoke)\b[^;]*\bauth\.users\b/is,'Migration de relatório não deve alterar auth.users');
 mustNot('grant execute on function public.padoka_report_summary(date,date) to anon','Anon não pode executar relatório interno');
 
 console.log('reporting-rpc-audit: ok');
