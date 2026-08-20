@@ -46,7 +46,24 @@
     const btn=$('lossSave');if(btn)btn.onclick=registerLoss;
   }
   async function registerLoss(){const btn=$('lossSave'),product_id=$('lossProduct')?.value,quantity=Number($('lossQty')?.value||0),reason=$('lossReason')?.value,note=$('lossNote')?.value?.trim()||null;if(!product_id||quantity<=0)return toast('Informe produto e quantidade válida.');btn.disabled=true;const {error}=await sb.rpc('padoka_register_loss',{p_product_id:product_id,p_quantity:quantity,p_reason:reason,p_note:note});btn.disabled=false;if(error){toast(error.message?.includes('insufficient')?'Estoque insuficiente para registrar a perda.':error.message?.includes('permission')?'Sem permissão para registrar perdas.':'Não foi possível registrar a perda.');return}if($('lossNote'))$('lossNote').value='';toast('Perda registrada e estoque atualizado');await loadAll()}
-  function renderReports(){if($('rProducts'))$('rProducts').textContent=catalog.length;if($('rWeight'))$('rWeight').textContent=catalog.filter(p=>String(p.unit).includes('100')).length;if($('rLoss'))$('rLoss').textContent=losses.length;if($('rCodes'))$('rCodes').textContent=inventory.filter(x=>x.barcode).length}
+  function setReportLabel(id,label){const el=$(id);const small=el?.parentElement?.querySelector('small');if(small)small.textContent=label}
+  function renderReports(){
+    const low=inventory.filter(x=>Number(x.min_quantity)>0&&Number(x.quantity)<=Number(x.min_quantity));
+    const lossQty=losses.reduce((sum,x)=>sum+Number(x.quantity||0),0);
+    const planned=plans.reduce((sum,x)=>sum+Number(x.planned_quantity||0),0);
+    const produced=plans.reduce((sum,x)=>sum+Number(x.produced_quantity||0),0);
+    if($('rProducts'))$('rProducts').textContent=catalog.length;
+    if($('rWeight'))$('rWeight').textContent=low.length;
+    if($('rLoss'))$('rLoss').textContent=Number(lossQty.toFixed(3));
+    if($('rCodes'))$('rCodes').textContent=inventory.filter(x=>x.barcode).length;
+    setReportLabel('rProducts','CATÁLOGO');setReportLabel('rWeight','ESTOQUE BAIXO');setReportLabel('rLoss','QTD. PERDIDA');setReportLabel('rCodes','COM CÓDIGO');
+    const panel=document.querySelector('[data-panel="relatorios"]');if(!panel)return;
+    let host=$('opsReportDetails');if(!host){host=document.createElement('div');host.id='opsReportDetails';host.className='card';panel.appendChild(host)}
+    const invMap=Object.fromEntries(inventory.map(x=>[x.product_id,x]));
+    const lowRows=low.map(x=>`<tr><td>${esc(byId[x.product_id]?.name||x.product_id)}</td><td>${Number(x.quantity||0)}</td><td>${Number(x.min_quantity||0)}</td></tr>`).join('');
+    const recentLoss=losses.slice(0,8).map(x=>`<tr><td>${esc(byId[x.product_id]?.name||x.product_id)}</td><td>${Number(x.quantity||0)}</td><td>${esc(x.reason)}</td><td>${new Date(x.created_at).toLocaleDateString('pt-BR')}</td></tr>`).join('');
+    host.innerHTML=`<h3 style="margin-top:0">Resumo operacional de hoje</h3><div class="stats" style="margin-bottom:12px"><div class="stat"><small>PRODUÇÃO PLANEJADA</small><strong>${Number(planned.toFixed(3))}</strong></div><div class="stat"><small>PRODUZIDO</small><strong>${Number(produced.toFixed(3))}</strong></div><div class="stat"><small>ITENS COM SALDO</small><strong>${inventory.filter(x=>Number(x.quantity)>0).length}</strong></div><div class="stat"><small>SEM CÓDIGO</small><strong>${catalog.filter(p=>!invMap[p.id]?.barcode).length}</strong></div></div><h3>Estoque que pede atenção</h3><div class="tablewrap"><table class="table"><thead><tr><th>Produto</th><th>Saldo</th><th>Mínimo</th></tr></thead><tbody>${lowRows||'<tr><td colspan="3">Nenhum item abaixo do mínimo.</td></tr>'}</tbody></table></div><h3 style="margin-top:18px">Perdas recentes</h3><div class="tablewrap"><table class="table"><thead><tr><th>Produto</th><th>Quantidade</th><th>Motivo</th><th>Data</th></tr></thead><tbody>${recentLoss||'<tr><td colspan="4">Nenhuma perda registrada.</td></tr>'}</tbody></table></div>`;
+  }
   function subscribe(){if(channel)return;channel=sb.channel('padoka-operational-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_inventory'},()=>loadAll()).on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},()=>loadAll()).on('postgres_changes',{event:'*',schema:'public',table:'padoka_losses'},()=>loadAll()).subscribe()}
   async function start(){for(let n=0;n<80&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return;for(let n=0;n<80&&$('app')?.classList.contains('hidden');n++)await new Promise(r=>setTimeout(r,100));if($('app')?.classList.contains('hidden'))return;try{if(await loadAll())subscribe()}catch(e){console.error('PADOKA operational sync:',e)}}
   start();
