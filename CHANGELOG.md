@@ -1,5 +1,15 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-20 02:26 — Login Google volta a tratar provider desativado sem erro técnico
+- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md` e `conta.html` antes da alteração.
+- Confirmado que o frontend já consulta `/auth/v1/settings` para saber se o Google está habilitado, mas o clique ainda ignorava o resultado `false` e tentava o OAuth mesmo assim.
+- `conta.html` agora interrompe a tentativa antes do redirecionamento quando o Auth informa explicitamente que o provider Google está desativado, evitando levar o cliente para a página técnica `Unsupported provider` do Supabase.
+- Enquanto o provider estiver desativado, o cliente recebe mensagem simples de indisponibilidade temporária e continua podendo entrar por e-mail/senha ou link por e-mail.
+- Se a pré-verificação do provider falhar por rede (`googleEnabled = null`), o botão continua tentando o OAuth normalmente para não bloquear Google por um falso negativo.
+- Quando o provider estiver habilitado, o fluxo mantém `prompt=select_account` e o retorno para `conta.html`.
+- Nenhuma credencial Google foi inventada e nenhuma configuração de banco/RLS foi alterada.
+- O projeto InfoTech.io não foi acessado nem alterado nesta execução; não houve migration/advisor a executar.
+
 ## 2026-08-20 00:29 — Painel administrativo deixou de ter visualização pública
 - Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md` e o estado atual do painel antes da alteração.
 - Removido o botão público **Visualizar painel** e todo o caminho de amostra que abria a interface administrativa sem autenticação.
