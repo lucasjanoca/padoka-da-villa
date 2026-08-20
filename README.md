@@ -32,11 +32,14 @@ O cliente vê somente:
 - nome editável, WhatsApp obrigatório, aniversário e marketing opcionais
 - nenhum trigger global transforma usuários de outros sistemas em clientes PADOKA
 
-### Checkout e pedidos
+### Checkout, catálogo e pedidos
 - `pagamento.html` cria pedidos reais via RPC `padoka_create_order`
 - pedidos ficam vinculados ao `auth.uid()` do cliente
 - pedidos de teste permanecem marcados como `is_test = true`
 - `padoka_products` mantém o catálogo demonstrativo autoritativo no servidor
+- o cardápio público também consulta `padoka_products`: produtos ativos, nomes, categorias e preços vêm do servidor; `assets/catalog.js` mantém somente metadados visuais como foto, descrição, unidade e tag
+- se o catálogo do servidor estiver indisponível, o site não reaproveita preço estático como se fosse atual; o cardápio informa indisponibilidade temporária
+- enquanto houver `is_demo = true`, o cardápio identifica de forma discreta que catálogo e valores ainda são provisórios
 - nome e preço enviados pelo navegador não são confiados para calcular o pedido
 - `acompanhamento.html` lê o pedido real e recebe atualizações pelo Supabase Realtime
 
