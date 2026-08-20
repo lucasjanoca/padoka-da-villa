@@ -5,6 +5,7 @@ const files = ['index.html','conta.html','pagamento.html','acompanhamento.html',
 const html = Object.fromEntries(files.map(f => [f, read(f)]));
 const catalog = read('assets/catalog.js');
 const auth = read('AUTH_STATUS.md');
+const statusMigration = read('supabase/005_order_status_transition_rpc.sql');
 const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
 
@@ -33,6 +34,14 @@ ok(catalog.includes('/rest/v1/padoka_products'), 'assets/catalog.js: catálogo p
 ok(catalog.includes('active=eq.true'), 'assets/catalog.js: catálogo público não filtra somente produtos ativos');
 ok(!/\bprice\s*:\s*\d/i.test(catalog), 'assets/catalog.js: preço estático encontrado no catálogo visual');
 ok(catalog.includes('Catálogo e valores provisórios'), 'assets/catalog.js: dados demonstrativos não estão identificados ao cliente');
+
+// Internal order status changes must be ready for server-controlled transitions.
+ok(html['pedidos.html'].includes("rpc('padoka_update_order_status'"), 'pedidos.html: atualização de status não tenta RPC autoritativa');
+ok(html['pedidos.html'].includes('rpcMissing'), 'pedidos.html: fallback temporário da RPC não está limitado a função ausente');
+ok(statusMigration.includes('public.padoka_is_staff()'), 'migration 005: RPC de status não valida staff');
+ok(statusMigration.includes("when 'received' then p_status in ('seen','cancelled')"), 'migration 005: transição inicial não está limitada');
+ok(statusMigration.includes("when 'ready' then p_status in ('completed','cancelled')"), 'migration 005: conclusão não está limitada');
+ok(/revoke\s+update\s+on\s+table\s+public\.padoka_orders\s+from\s+authenticated/i.test(statusMigration), 'migration 005: UPDATE direto de pedidos continua concedido após ativação');
 
 // Google OAuth must keep account selection and friendly disabled-provider handling.
 ok(html['conta.html'].includes('select_account'), 'conta.html: Google OAuth sem prompt select_account');
