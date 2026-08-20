@@ -86,9 +86,12 @@ begin
     raise exception 'padoka inventory permission required';
   end if;
   if p_delta is null or p_delta = 0 then raise exception 'inventory delta required'; end if;
-  if p_source not in ('manual','sale','loss','production','adjustment') then raise exception 'invalid inventory source'; end if;
-  if nullif(trim(p_reason),'') is null then raise exception 'inventory reason required'; end if;
-  if not exists(select 1 from public.padoka_products p where p.id = p_product_id) then raise exception 'unknown product'; end if;
+  -- Ajustes feitos por esta RPC são somente manuais. Venda, perda e produção
+  -- registram seus movimentos pelas próprias operações transacionais.
+  if p_source not in ('manual','adjustment') then raise exception 'invalid manual inventory source'; end if;
+  if p_reference_id is not null then raise exception 'manual inventory reference is not allowed'; end if;
+  if char_length(trim(coalesce(p_reason,''))) not between 2 and 120 then raise exception 'invalid inventory reason'; end if;
+  if not exists(select 1 from public.padoka_products p where p.id = p_product_id and p.active = true) then raise exception 'unknown or inactive product'; end if;
 
   insert into public.padoka_inventory(product_id,quantity,updated_by)
   values(p_product_id,0,auth.uid())
@@ -105,7 +108,7 @@ begin
   if v_row.product_id is null then raise exception 'insufficient inventory'; end if;
 
   insert into public.padoka_inventory_movements(product_id,delta,reason,source,reference_id,created_by)
-  values(p_product_id,p_delta,trim(p_reason),p_source,p_reference_id,auth.uid());
+  values(p_product_id,p_delta,trim(p_reason),p_source,null,auth.uid());
 
   return v_row;
 end;
@@ -130,7 +133,8 @@ begin
   end if;
   if p_quantity is null or p_quantity <= 0 then raise exception 'loss quantity must be positive'; end if;
   if p_reason not in ('Vencimento','Quebra / avaria','Sobra de produção','Erro de preparo','Outro') then raise exception 'invalid loss reason'; end if;
-  if not exists(select 1 from public.padoka_products p where p.id = p_product_id) then raise exception 'unknown product'; end if;
+  if char_length(coalesce(p_note,'')) > 500 then raise exception 'loss note too long'; end if;
+  if not exists(select 1 from public.padoka_products p where p.id = p_product_id and p.active = true) then raise exception 'unknown or inactive product'; end if;
 
   update public.padoka_inventory
   set quantity = quantity - p_quantity,
@@ -165,6 +169,28 @@ begin
 end;
 $$;
 
+create or replace function public.padoka_stamp_production_plan()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    new.created_by = auth.uid();
+    new.updated_by = auth.uid();
+    new.created_at = now();
+    new.updated_at = now();
+  else
+    -- Campos de auditoria não são controlados pelo navegador.
+    new.created_by = old.created_by;
+    new.created_at = old.created_at;
+    new.updated_by = auth.uid();
+    new.updated_at = now();
+  end if;
+  return new;
+end;
+$$;
+
 drop trigger if exists padoka_inventory_touch on public.padoka_inventory;
 create trigger padoka_inventory_touch
 before update on public.padoka_inventory
@@ -172,8 +198,8 @@ for each row execute function public.padoka_touch_operational_updated_at();
 
 drop trigger if exists padoka_production_plans_touch on public.padoka_production_plans;
 create trigger padoka_production_plans_touch
-before update on public.padoka_production_plans
-for each row execute function public.padoka_touch_operational_updated_at();
+before insert or update on public.padoka_production_plans
+for each row execute function public.padoka_stamp_production_plan();
 
 alter table public.padoka_inventory enable row level security;
 alter table public.padoka_inventory_movements enable row level security;
@@ -218,10 +244,18 @@ revoke all on public.padoka_inventory_movements from anon;
 revoke all on public.padoka_production_plans from anon;
 revoke all on public.padoka_losses from anon;
 
+-- Remove concessões amplas antes de reaplicar somente as colunas operacionais necessárias.
+revoke all on public.padoka_inventory from authenticated;
+revoke all on public.padoka_inventory_movements from authenticated;
+revoke all on public.padoka_production_plans from authenticated;
+revoke all on public.padoka_losses from authenticated;
+
 grant select on public.padoka_inventory to authenticated;
 grant update (barcode,min_quantity) on public.padoka_inventory to authenticated;
 grant select on public.padoka_inventory_movements to authenticated;
-grant select,insert,update on public.padoka_production_plans to authenticated;
+grant select on public.padoka_production_plans to authenticated;
+grant insert (plan_date,product_id,planned_quantity,produced_quantity,status,note) on public.padoka_production_plans to authenticated;
+grant update (planned_quantity,produced_quantity,status,note) on public.padoka_production_plans to authenticated;
 grant select on public.padoka_losses to authenticated;
 
 revoke all on function public.padoka_staff_has_role(text[]) from public, anon;
