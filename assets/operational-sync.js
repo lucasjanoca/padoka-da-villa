@@ -31,7 +31,14 @@
     if($('stockLow'))$('stockLow').textContent=inventory.filter(x=>Number(x.min_quantity)>0&&Number(x.quantity)<=Number(x.min_quantity)).length;
     if($('stockPending'))$('stockPending').textContent=catalog.filter(p=>!inv[p.id]?.barcode).length;
   }
-  async function saveMeta(id,patch){const {error}=await sb.from('padoka_inventory').update(patch).eq('product_id',id);if(error){toast('Sem permissão ou não foi possível salvar.');await loadAll();return}toast('Estoque atualizado');await loadAll()}
+  async function saveMeta(id,patch){
+    const current=inventory.find(x=>x.product_id===id)||{};
+    const barcode=Object.prototype.hasOwnProperty.call(patch,'barcode')?patch.barcode:(current.barcode||null);
+    const minQuantity=Object.prototype.hasOwnProperty.call(patch,'min_quantity')?Math.max(0,Number(patch.min_quantity||0)):Math.max(0,Number(current.min_quantity||0));
+    const {error}=await sb.rpc('padoka_update_inventory_metadata',{p_product_id:id,p_barcode:barcode,p_min_quantity:minQuantity});
+    if(error){toast(error.message?.includes('permission')?'Sem permissão para alterar o estoque.':'Não foi possível salvar os dados do estoque.');await loadAll();return}
+    toast('Estoque atualizado');await loadAll()
+  }
   async function adjustQty(input){const id=input.dataset.srvQty,current=Number(inventory.find(x=>x.product_id===id)?.quantity||0),next=Math.max(0,Number(input.value||0)),delta=Number((next-current).toFixed(3));if(!delta)return;input.disabled=true;const {error}=await sb.rpc('padoka_adjust_inventory',{p_product_id:id,p_delta:delta,p_reason:'Ajuste pela gestão',p_source:'adjustment',p_reference_id:null});input.disabled=false;if(error){toast(error.message?.includes('permission')?'Sem permissão para ajustar estoque.':'Não foi possível ajustar o estoque.');await loadAll();return}toast('Saldo atualizado');await loadAll()}
   function renderProduction(){
     const host=$('productionTable');if(!host)return;const map=Object.fromEntries(plans.map(x=>[x.product_id,x]));
