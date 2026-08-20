@@ -1,5 +1,19 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-20 04:29 — Cardápio público passa a obedecer o catálogo do servidor
+- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `index.html`, `assets/catalog.js` e a auditoria estática antes da alteração.
+- Identificado que o checkout já era autoritativo no servidor, porém o cardápio público ainda renderizava nomes/preços estáticos de `assets/catalog.js`.
+- `assets/catalog.js` deixou de armazenar preços locais e agora mantém somente metadados visuais (foto, descrição, unidade e tag) por `product_id`.
+- Produtos ativos, nomes, categorias, preços, `is_demo` e ordenação agora são carregados diretamente de `padoka_products` pelo endpoint REST público do projeto PADOKA, respeitando a RLS já existente.
+- Se o backend do catálogo estiver indisponível, o site não reutiliza preço estático como se fosse atual; informa indisponibilidade temporária.
+- Enquanto qualquer item retornar `is_demo = true`, o cardápio exibe um aviso discreto de que catálogo e valores continuam provisórios até confirmação dos dados oficiais.
+- As imagens distintas de expresso, cappuccino, suco e água foram preservadas.
+- `tests/static-audit.mjs` ganhou verificações para impedir regressão para preço estático, exigir consulta a `padoka_products`, filtrar `active = true` e manter a identificação de dados provisórios.
+- Foi executado `node --check` no novo `assets/catalog.js` e um smoke test com respostas simuladas do config/catalog; o catálogo carregou o preço do servidor, normalizou categoria e preservou `is_demo` corretamente.
+- O ambiente desta execução não conseguiu clonar o GitHub por DNS, então a auditoria estática completa não pôde ser executada localmente; a alteração foi revisada diretamente no repositório e os testes específicos do arquivo modificado passaram.
+- Confirmado pelo conector Supabase que a única conexão disponível continua sendo **InfoTech.io**. Nenhuma query, migration, advisor ou alteração foi executada nele; o backend correto permanece `Sites De Clientes!` (`yncspxfsvlqdnodlsosb`).
+- Nenhuma mudança de banco/RLS foi aplicada nesta execução, portanto não havia advisor da PADOKA a executar.
+
 ## 2026-08-20 02:26 — Login Google volta a tratar provider desativado sem erro técnico
 - Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md` e `conta.html` antes da alteração.
 - Confirmado que o frontend já consulta `/auth/v1/settings` para saber se o Google está habilitado, mas o clique ainda ignorava o resultado `false` e tentava o OAuth mesmo assim.
