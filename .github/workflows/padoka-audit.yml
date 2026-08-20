@@ -28,6 +28,7 @@ jobs:
           node --check tests/operational-inventory-audit.mjs
           node --check tests/production-transaction-audit.mjs
           node --check tests/production-frontend-audit.mjs
+          node --check tests/loss-transaction-audit.mjs
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
@@ -40,3 +41,6 @@ jobs:
 
       - name: Run production frontend audit
         run: node tests/production-frontend-audit.mjs
+
+      - name: Run loss transaction audit
+        run: node tests/loss-transaction-audit.mjs
