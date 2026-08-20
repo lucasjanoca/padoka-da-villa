@@ -30,6 +30,7 @@ jobs:
           node --check tests/production-frontend-audit.mjs
           node --check tests/loss-transaction-audit.mjs
           node --check tests/reporting-rpc-audit.mjs
+          node --check tests/reporting-frontend-audit.mjs
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
@@ -48,3 +49,6 @@ jobs:
 
       - name: Run reporting RPC audit
         run: node tests/reporting-rpc-audit.mjs
+
+      - name: Run reporting frontend audit
+        run: node tests/reporting-frontend-audit.mjs
