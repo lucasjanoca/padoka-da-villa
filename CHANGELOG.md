@@ -1,5 +1,18 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-19 23:26 — PDV preparado para ativação transacional segura
+- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `pdv.html` e `supabase/004_pdv_sales_transaction.sql` antes da alteração.
+- Confirmado novamente que o conector Supabase disponível expõe somente **InfoTech.io**; nenhuma query, migration, advisor ou alteração foi executada nesse projeto.
+- `pdv.html` continua exigindo sessão real e registro ativo em `padoka_staff_users`; nenhum acesso de Caixa foi exposto ao cliente público.
+- Adicionada detecção segura da camada de vendas por `padoka_sales`: enquanto a migration 004 não estiver disponível no backend correto, **Finalizar venda** permanece desativado e nenhuma venda local é simulada.
+- Depois que 003/004 forem aplicadas e revisadas em **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`), o PDV passa a finalizar pela RPC `padoka_create_sale`, enviando somente `product_id`, quantidade e forma de pagamento.
+- A baixa de estoque, validação de disponibilidade, preço autoritativo e código da venda continuam sob responsabilidade da RPC no servidor.
+- Incluída seleção de forma de pagamento para dinheiro, Pix, débito, crédito e outro, sem afirmar integração de adquirente ou Pix automático.
+- Erros de estoque insuficiente, estoque não inicializado e falta de permissão recebem feedback amigável sem simular sucesso.
+- Vendas retornadas com `is_test = true` continuam claramente identificadas como teste enquanto o catálogo tiver itens demonstrativos.
+- `README.md` atualizado para documentar a ativação condicional do PDV.
+- Não houve alteração de banco/RLS nesta execução; por isso não havia advisor da PADOKA a executar nesta rodada.
+
 ## 2026-08-19 22:28 — Gestão preparada para sincronização real sem quebrar o publicado
 - Relidos `README.md`, `CHANGELOG.md` e `AUTH_STATUS.md` antes da alteração, preservando o backend correto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) e o isolamento `padoka_*`.
 - O conector Supabase disponível continua expondo somente **InfoTech.io**; nenhuma query, migration, advisor ou alteração foi executada nesse projeto.
