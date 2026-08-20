@@ -1,5 +1,15 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-20 00:29 — Painel administrativo deixou de ter visualização pública
+- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md` e o estado atual do painel antes da alteração.
+- Removido o botão público **Visualizar painel** e todo o caminho de amostra que abria a interface administrativa sem autenticação.
+- `internal.html` agora só revela a visão geral, atalhos internos e pedidos recentes depois de validar sessão real e registro ativo em `padoka_staff_users`.
+- Tentativa de login com conta autenticada sem perfil interno ativo encerra a sessão antes de permanecer na área administrativa.
+- Erros de login passaram a usar mensagens amigáveis, sem devolver a mensagem técnica do Auth diretamente ao usuário.
+- Pedidos recentes no painel agora sanitizam código, nome e status antes de inserir conteúdo no HTML e exibem rótulos de status em português.
+- Nenhum link de Caixa, Estoque, Produção ou Gestão foi adicionado ao site público; esses atalhos continuam existindo somente dentro da área já autorizada.
+- Nenhuma migration, RLS ou objeto de banco foi alterado nesta execução; portanto não houve advisor da PADOKA a executar nesta rodada.
+
 ## 2026-08-19 23:26 — PDV preparado para ativação transacional segura
 - Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `pdv.html` e `supabase/004_pdv_sales_transaction.sql` antes da alteração.
 - Confirmado novamente que o conector Supabase disponível expõe somente **InfoTech.io**; nenhuma query, migration, advisor ou alteração foi executada nesse projeto.
