@@ -13,6 +13,9 @@ const checks=[
   ['não escreve estoque diretamente',!/(from\('padoka_inventory'\).*?(insert|update|upsert)|\.from\('padoka_inventory'\)\.update)/s.test(src)],
   ['não simula sucesso sem RPC',!/localStorage|padoka_demo_production/.test(src)],
   ['trata permissão sem expor detalhe técnico',/não tem permissão|Sem permissão/i.test(src)],
+  ['re-renderiza controle quando plano muda',/prodSignature/.test(src)&&/replaceChildren\(\)/.test(src)&&/function signature\(plan\)/.test(src)],
+  ['refresh recarrega planos antes de redesenhar',/async function refresh\(\)\{try\{await loadPlans\(\);enhance\(\)/.test(src)],
+  ['realtime atualiza plano e lote',/padoka_production_plans/.test(src)&&/padoka_production_batches/.test(src)&&/scheduleRefresh/.test(src)],
   ['carregamento interno inclui módulo',/production-completion\.js/.test(fs.readFileSync('assets/internal-nav.js','utf8'))]
 ];
 let failed=0;
