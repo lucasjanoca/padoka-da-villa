@@ -32,6 +32,7 @@ jobs:
           node --check tests/reporting-rpc-audit.mjs
           node --check tests/reporting-frontend-audit.mjs
           node --check tests/settings-sync-audit.mjs
+          node --check tests/pdv-idempotency-audit.mjs
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
@@ -56,3 +57,6 @@ jobs:
 
       - name: Run settings sync audit
         run: node tests/settings-sync-audit.mjs
+
+      - name: Run PDV idempotency audit
+        run: node tests/pdv-idempotency-audit.mjs
