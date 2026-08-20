@@ -20,6 +20,8 @@ const visual=[
 const visualById=Object.fromEntries(visual.map(p=>[p.id,p]));
 const labels={paes:'Pães',pães:'Pães',salgados:'Salgados',lanches:'Lanches',doces:'Doces',bebidas:'Bebidas'};
 const CONFIG_URL='https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config';
+const safeId=v=>{const s=String(v??'').trim();return /^[a-z0-9][a-z0-9_-]{0,79}$/i.test(s)?s:null};
+const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 window.PADOKA_CATALOG=[];
 window.PADOKA_CATALOG_BY_ID=visualById;
 window.PADOKA_CATALOG_READY=false;
@@ -55,10 +57,13 @@ async function load(){
     if(!response.ok)throw new Error('catalog unavailable');
     const rows=await response.json();
     const merged=(Array.isArray(rows)?rows:[]).map(row=>{
-      const meta=visualById[row.id]||{};
-      const raw=String(row.category||'').toLowerCase();
-      return {id:row.id,name:row.name,category:labels[raw]||row.category,price:Number(row.price||0),is_demo:!!row.is_demo,sort_order:Number(row.sort_order||0),unit:meta.unit||'un.',desc:meta.desc||'',img:meta.img||'assets/logo-padoka.svg',tag:meta.tag||'PADOKA'};
-    }).filter(p=>p.id&&p.name&&Number.isFinite(p.price));
+      const id=safeId(row.id);if(!id)return null;
+      const meta=visualById[id]||{};
+      const rawCategory=String(row.category||'').trim();
+      const label=labels[rawCategory.toLowerCase()]||rawCategory;
+      const price=Number(row.price);
+      return {id,name:esc(String(row.name||'').trim()),category:esc(label),price,is_demo:!!row.is_demo,sort_order:Number(row.sort_order||0),unit:meta.unit||'un.',desc:meta.desc||'',img:meta.img||'assets/logo-padoka.svg',tag:meta.tag||'PADOKA'};
+    }).filter(p=>p&&p.id&&p.name&&Number.isFinite(p.price)&&p.price>=0);
     window.PADOKA_CATALOG.splice(0,window.PADOKA_CATALOG.length,...merged);
     window.PADOKA_CATALOG_HAS_DEMO=merged.some(p=>p.is_demo);
     window.PADOKA_CATALOG_READY=true;
