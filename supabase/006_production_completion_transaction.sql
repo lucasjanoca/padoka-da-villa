@@ -45,11 +45,16 @@ begin
   if p_quantity is null or p_quantity <= 0 then raise exception 'production quantity must be positive'; end if;
   if p_request_id is null then raise exception 'production request id required'; end if;
 
-  -- Idempotência: repetir a mesma requisição não duplica estoque nem produção.
+  -- Idempotência: repetir exatamente a mesma requisição devolve o lote já criado.
+  -- Reutilizar o mesmo request_id com plano ou quantidade diferentes é conflito,
+  -- nunca uma confirmação silenciosa de uma operação diferente.
   select * into v_batch
   from public.padoka_production_batches
   where request_id = p_request_id;
   if v_batch.id is not null then
+    if v_batch.plan_id is distinct from p_plan_id or v_batch.quantity is distinct from p_quantity then
+      raise exception 'production request id conflict';
+    end if;
     return v_batch;
   end if;
 
@@ -66,6 +71,9 @@ begin
   from public.padoka_production_batches
   where request_id = p_request_id;
   if v_batch.id is not null then
+    if v_batch.plan_id is distinct from p_plan_id or v_batch.quantity is distinct from p_quantity then
+      raise exception 'production request id conflict';
+    end if;
     return v_batch;
   end if;
 
