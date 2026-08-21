@@ -30,6 +30,16 @@ if (argsMatch) {
   ok(!/auth_provider/.test(argsMatch[1]), 'conta.html: provider não deve ser confiado como argumento da RPC');
 }
 
+ok(/function\s+esc\(v\)/.test(account), 'conta.html: helper de escape de HTML ausente');
+ok(/function\s+safeAvatarUrl\(v\)/.test(account), 'conta.html: validação de URL do avatar ausente');
+ok(/u\.protocol==='https:'/.test(account), 'conta.html: avatar deve aceitar somente HTTPS');
+ok(/\$\('profileName'\)\.textContent=displayName/.test(account), 'conta.html: nome do perfil deve ser renderizado com textContent');
+ok(/\$\('profileContact'\)\.textContent=/.test(account), 'conta.html: contato do perfil deve ser renderizado com textContent');
+ok(/\$\{esc\(code\)\}/.test(account), 'conta.html: código do pedido não está escapado antes do HTML');
+ok(/\$\{esc\(status\)\}/.test(account), 'conta.html: status do pedido não está escapado antes do HTML');
+ok(/\$\{esc\(date\)\}/.test(account) && /\$\{esc\(total\)\}/.test(account), 'conta.html: metadados do pedido não estão escapados');
+ok(/src=\\?"\$\{esc\(pic\)\}/.test(account), 'conta.html: URL do avatar não está escapada no atributo src');
+
 if (failures.length) {
   console.error(`PADOKA profile onboarding audit: ${failures.length} falha(s)`);
   failures.forEach(x => console.error(`- ${x}`));
