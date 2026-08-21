@@ -27,6 +27,8 @@ forbid(sql,/trigger[^;]*auth\.users/is,'migration não pode criar trigger global
 forbid(sql,/grant update.*padoka_sales.*authenticated/i,'frontend não deve receber UPDATE direto em vendas');
 
 need(js,/\['owner','manager'\]\.includes/i,'frontend de estorno precisa ficar restrito a owner/manager');
+need(js,/typeof staffRole==='undefined'\?'':staffRole/i,'frontend deve ler o binding staffRole compartilhado pelo PDV');
+forbid(js,/globalThis\.staffRole/i,'staffRole declarado com let não deve ser lido como propriedade de globalThis');
 need(js,/from\('padoka_sales'\)\.select\('id,void_reason'\)/i,'frontend só deve ativar quando a migration 012 estiver disponível');
 need(js,/rpc\('padoka_void_sale'/i,'frontend deve usar a RPC transacional de estorno');
 need(js,/from\('padoka_sale_items'\)\.select/i,'detalhes da venda devem vir da tabela protegida de itens');
