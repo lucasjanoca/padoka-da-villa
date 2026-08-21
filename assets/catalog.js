@@ -47,6 +47,14 @@ function showProvisionalNotice(){
   note.style.cssText='margin:7px 0 2px;padding:8px 10px;border:1px solid #e7dbcf;border-radius:12px;background:#fffdf9;color:#776e65;font-size:9px;line-height:1.4';
   (cats||section.querySelector('.search'))?.insertAdjacentElement('afterend',note);
 }
+function loadPickupValidation(){
+  if(!document.getElementById('pickup')||document.querySelector('script[data-padoka-pickup-validation]'))return;
+  const script=document.createElement('script');
+  script.src='assets/pickup-validation.js';
+  script.defer=true;
+  script.dataset.padokaPickupValidation='1';
+  document.head.appendChild(script);
+}
 async function load(){
   try{
     const configResponse=await fetch(CONFIG_URL,{cache:'no-store'});
@@ -76,5 +84,6 @@ async function load(){
     refreshConsumers();
   }
 }
+loadPickupValidation();
 load();
 })();
