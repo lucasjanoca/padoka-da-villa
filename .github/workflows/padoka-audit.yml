@@ -35,6 +35,7 @@ jobs:
           node --check tests/pdv-idempotency-audit.mjs
           node --check tests/admin-dashboard-audit.mjs
           node --check tests/order-idempotency-audit.mjs
+          node --check tests/pickup-validation-audit.mjs
           node --check tests/pdv-sale-void-audit.mjs
           node --check tests/migration-chain-audit.mjs
           node --check tests/profile-onboarding-audit.mjs
@@ -77,6 +78,9 @@ jobs:
 
       - name: Run checkout idempotency audit
         run: node tests/order-idempotency-audit.mjs
+
+      - name: Run pickup validation audit
+        run: node tests/pickup-validation-audit.mjs
 
       - name: Run PDV sale void audit
         run: node tests/pdv-sale-void-audit.mjs
