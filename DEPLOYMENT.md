@@ -49,6 +49,7 @@ Aplicar **uma migration por vez**, nesta ordem:
 9. `011_checkout_order_idempotency.sql`
 10. `012_pdv_sale_void_transaction.sql`
 11. `013_customer_profile_rpc.sql`
+12. `014_staff_management_rpc.sql`
 
 Não pular números. As migrations posteriores dependem do estado consolidado pelas anteriores, mesmo quando um módulo específico não usa todas as tabelas criadas antes.
 
@@ -139,6 +140,21 @@ Validar `conta.html` com uma conta cliente separada:
 
 Depois de validar a 013, remover em uma mudança separada o fallback temporário de escrita direta existente em `conta.html`.
 
+### Depois da 014
+
+Validar gestão de permissões internas com pelo menos dois usuários staff separados:
+
+- funcionário comum consegue consultar apenas o próprio registro em `padoka_staff_users`;
+- somente `owner` consegue executar `padoka_list_staff` e `padoka_update_staff` com sucesso;
+- alteração aceita somente funções PADOKA conhecidas;
+- a RPC não cria funcionário novo silenciosamente: o alvo precisa já existir em `padoka_staff_users`;
+- owner não consegue remover o próprio acesso por engano;
+- o último `owner` ativo não pode ser desativado nem rebaixado;
+- `anon` e cliente PADOKA não ganham leitura/listagem da equipe;
+- escrita direta `INSERT/UPDATE/DELETE` em `padoka_staff_users` por `authenticated` permanece revogada.
+
+Não criar tela pública ou fluxo de convite automático como parte desta migration. Cadastro inicial de funcionários continua sendo uma operação administrativa separada, com identidade real confirmada.
+
 ## Critérios para chamar a camada operacional de pronta
 
 - migrations aplicadas no projeto correto e sem warnings de segurança PADOKA pendentes;
@@ -149,5 +165,6 @@ Depois de validar a 013, remover em uma mudança separada o fallback temporário
 - produção/perdas transacionais;
 - relatórios financeiros restritos;
 - onboarding de cliente controlado por RPC após a migration 013;
+- gestão de permissões internas restrita a owner após a migration 014;
 - dados provisórios continuam marcados como provisórios até confirmação oficial;
 - Google OAuth só é marcado como pronto depois das credenciais reais e teste de `prompt=select_account`.
