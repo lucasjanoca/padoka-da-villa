@@ -7,6 +7,8 @@
 create or replace function public.padoka_list_staff()
 returns table (
   user_id uuid,
+  display_name text,
+  email text,
   role text,
   active boolean,
   created_at timestamptz
@@ -21,8 +23,23 @@ begin
   end if;
 
   return query
-  select s.user_id, s.role, s.active, s.created_at
+  select
+    s.user_id,
+    left(
+      coalesce(
+        nullif(trim(u.raw_user_meta_data ->> 'full_name'), ''),
+        nullif(trim(u.raw_user_meta_data ->> 'name'), ''),
+        nullif(split_part(coalesce(u.email, ''), '@', 1), ''),
+        'Funcionário'
+      ),
+      80
+    ) as display_name,
+    left(coalesce(u.email, ''), 254) as email,
+    s.role,
+    s.active,
+    s.created_at
   from public.padoka_staff_users s
+  join auth.users u on u.id = s.user_id
   order by s.active desc, s.role, s.created_at;
 end;
 $$;
