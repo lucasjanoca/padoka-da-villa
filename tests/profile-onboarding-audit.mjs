@@ -23,8 +23,12 @@ ok(account.includes('profileRpcMissing'), 'conta.html: fallback temporário não
 ok(/PGRST202/.test(account) && /42883/.test(account), 'conta.html: códigos de função ausente não estão tratados');
 ok(/p_privacy_accepted:\$\('privacy'\)\.checked/.test(account), 'conta.html: consentimento não é enviado à RPC');
 ok(/p_marketing_opt_in:\$\('marketing'\)\.checked/.test(account), 'conta.html: marketing opcional não é enviado à RPC');
-ok(!/rpc\('padoka_save_profile'[\s\S]{0,700}?avatar_url/.test(account), 'conta.html: avatar não deve ser confiado como argumento da RPC');
-ok(!/rpc\('padoka_save_profile'[\s\S]{0,700}?auth_provider/.test(account), 'conta.html: provider não deve ser confiado como argumento da RPC');
+const argsMatch = account.match(/const args=\{([^}]*)\};const rpc=await sb\.rpc\('padoka_save_profile',args\)/);
+ok(!!argsMatch, 'conta.html: argumentos da RPC não foram localizados de forma auditável');
+if (argsMatch) {
+  ok(!/avatar_url/.test(argsMatch[1]), 'conta.html: avatar não deve ser confiado como argumento da RPC');
+  ok(!/auth_provider/.test(argsMatch[1]), 'conta.html: provider não deve ser confiado como argumento da RPC');
+}
 
 if (failures.length) {
   console.error(`PADOKA profile onboarding audit: ${failures.length} falha(s)`);
