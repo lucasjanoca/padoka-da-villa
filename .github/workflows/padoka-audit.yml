@@ -45,9 +45,12 @@ jobs:
           node --check tests/staff-management-frontend-audit.mjs
           node --check tests/staff-enrollment-audit.mjs
           node --check tests/staff-audit-trail-audit.mjs
+          node --check tests/product-management-audit.mjs
 
-      - name: Check staff audit frontend syntax
-        run: node --check assets/staff-audit.js
+      - name: Check internal extension syntax
+        run: |
+          node --check assets/staff-audit.js
+          node --check assets/product-management.js
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
@@ -75,6 +78,9 @@ jobs:
 
       - name: Run staff audit trail audit
         run: node tests/staff-audit-trail-audit.mjs
+
+      - name: Run product management audit
+        run: node tests/product-management-audit.mjs
 
       - name: Run inventory metadata audit
         run: node tests/operational-inventory-audit.mjs
