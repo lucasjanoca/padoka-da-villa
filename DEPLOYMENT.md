@@ -50,6 +50,7 @@ Aplicar **uma migration por vez**, nesta ordem:
 10. `012_pdv_sale_void_transaction.sql`
 11. `013_customer_profile_rpc.sql`
 12. `014_staff_management_rpc.sql`
+13. `015_staff_enrollment_rpc.sql`
 
 Não pular números. As migrations posteriores dependem do estado consolidado pelas anteriores, mesmo quando um módulo específico não usa todas as tabelas criadas antes.
 
@@ -153,7 +154,19 @@ Validar gestão de permissões internas com pelo menos dois usuários staff sepa
 - `anon` e cliente PADOKA não ganham leitura/listagem da equipe;
 - escrita direta `INSERT/UPDATE/DELETE` em `padoka_staff_users` por `authenticated` permanece revogada.
 
-Não criar tela pública ou fluxo de convite automático como parte desta migration. Cadastro inicial de funcionários continua sendo uma operação administrativa separada, com identidade real confirmada.
+### Depois da 015
+
+Validar a inclusão administrativa de um funcionário já autenticado:
+
+- somente `owner` consegue executar `padoka_add_staff_by_email`;
+- o e-mail precisa corresponder exatamente a uma identidade já existente em `auth.users`;
+- a RPC não cria usuário Auth, não cria `padoka_profiles` e não altera contas de outros sistemas automaticamente;
+- função inválida é rejeitada;
+- usuário já cadastrado em `padoka_staff_users` é rejeitado como duplicado;
+- cliente/anon não consegue executar a inclusão;
+- a pessoa incluída só passa a ter acesso interno por causa do registro explícito em `padoka_staff_users`.
+
+A migration 015 é apenas o mecanismo administrativo seguro de associação de uma identidade existente. Ela não envia convite, não cria senha e não deve ser confundida com um fluxo público de cadastro de funcionário.
 
 ## Critérios para chamar a camada operacional de pronta
 
@@ -166,5 +179,6 @@ Não criar tela pública ou fluxo de convite automático como parte desta migrat
 - relatórios financeiros restritos;
 - onboarding de cliente controlado por RPC após a migration 013;
 - gestão de permissões internas restrita a owner após a migration 014;
+- inclusão de staff existente explicitamente autorizada por owner após a migration 015;
 - dados provisórios continuam marcados como provisórios até confirmação oficial;
 - Google OAuth só é marcado como pronto depois das credenciais reais e teste de `prompt=select_account`.
