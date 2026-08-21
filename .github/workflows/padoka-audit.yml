@@ -37,12 +37,16 @@ jobs:
           node --check tests/order-idempotency-audit.mjs
           node --check tests/pdv-sale-void-audit.mjs
           node --check tests/migration-chain-audit.mjs
+          node --check tests/profile-onboarding-audit.mjs
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
 
       - name: Run migration chain audit
         run: node tests/migration-chain-audit.mjs
+
+      - name: Run profile onboarding audit
+        run: node tests/profile-onboarding-audit.mjs
 
       - name: Run inventory metadata audit
         run: node tests/operational-inventory-audit.mjs
