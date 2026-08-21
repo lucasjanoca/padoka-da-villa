@@ -191,5 +191,12 @@
       s.dataset.padokaStaffManagement='1';
       document.head.appendChild(s);
     }
+    if(!document.querySelector('script[data-padoka-staff-audit]')){
+      const s=document.createElement('script');
+      s.src='assets/staff-audit.js';
+      s.defer=true;
+      s.dataset.padokaStaffAudit='1';
+      document.head.appendChild(s);
+    }
   }
 })();
