@@ -14,6 +14,8 @@ assert.match(sql,/request id conflict/i,'reused request_id with different payloa
 assert.match(sql,/char_length\(trim\(p_pickup_name\)\)\s*>\s*80/i,'pickup name must be bounded server-side');
 assert.match(sql,/America\/Sao_Paulo/i,'pickup date validation must use the padaria timezone');
 assert.match(sql,/pickup date is in the past/i,'past pickup dates must be rejected');
+assert.match(sql,/\(p_pickup_date \+ p_pickup_time\)\s*<\s*\(now\(\) at time zone 'America\/Sao_Paulo'\)/i,'same-day pickup time must be validated against the padaria clock');
+assert.match(sql,/pickup time is in the past/i,'past pickup times on the current date must be rejected');
 assert.match(sql,/product_id\s*~\s*'\^\[a-z0-9\]/i,'product ids must be validated server-side');
 assert.match(sql,/select 1 from grouped where quantity > 50/i,'duplicate lines must not bypass the per-product quantity limit');
 assert.match(sql,/insert into public\.padoka_order_items/i,'order items must remain transactional with order creation');
