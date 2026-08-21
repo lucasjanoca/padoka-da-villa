@@ -48,8 +48,9 @@ Aplicar **uma migration por vez**, nesta ordem:
 8. `010_pdv_sale_idempotency.sql`
 9. `011_checkout_order_idempotency.sql`
 10. `012_pdv_sale_void_transaction.sql`
+11. `013_customer_profile_rpc.sql`
 
-Não pular números. As migrations posteriores dependem de objetos criados pelas anteriores.
+Não pular números. As migrations posteriores dependem do estado consolidado pelas anteriores, mesmo quando um módulo específico não usa todas as tabelas criadas antes.
 
 ## Validação após cada migration
 
@@ -124,6 +125,20 @@ Validar checkout idempotente: falha/retry não pode criar dois pedidos e o carri
 
 Validar estorno apenas por `owner/manager`, com motivo obrigatório, devolução de estoque e auditoria. Repetir o mesmo estorno não pode devolver estoque duas vezes.
 
+### Depois da 013
+
+Validar `conta.html` com uma conta cliente separada:
+
+- primeiro acesso só cria `padoka_profiles` depois de nome, WhatsApp e consentimento de privacidade;
+- aniversário e marketing continuam opcionais;
+- `app_scope` permanece fixo em `padoka`;
+- avatar e provedor de autenticação são derivados da sessão pelo servidor, não confiados ao navegador;
+- edição do perfil usa `padoka_save_profile` e continua restrita ao próprio `auth.uid()`;
+- escrita direta `INSERT/UPDATE` em `padoka_profiles` por `authenticated` deve estar revogada;
+- conta de outro sistema do mesmo Supabase não ganha perfil PADOKA automaticamente.
+
+Depois de validar a 013, remover em uma mudança separada o fallback temporário de escrita direta existente em `conta.html`.
+
 ## Critérios para chamar a camada operacional de pronta
 
 - migrations aplicadas no projeto correto e sem warnings de segurança PADOKA pendentes;
@@ -133,5 +148,6 @@ Validar estorno apenas por `owner/manager`, com motivo obrigatório, devolução
 - estoque sem escrita direta insegura pelo navegador;
 - produção/perdas transacionais;
 - relatórios financeiros restritos;
+- onboarding de cliente controlado por RPC após a migration 013;
 - dados provisórios continuam marcados como provisórios até confirmação oficial;
 - Google OAuth só é marcado como pronto depois das credenciais reais e teste de `prompt=select_account`.
