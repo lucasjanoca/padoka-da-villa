@@ -74,7 +74,17 @@ begin
     nullif(auth.jwt()->'user_metadata'->>'avatar_url', ''),
     nullif(auth.jwt()->'user_metadata'->>'picture', '')
   );
-  v_provider := coalesce(nullif(auth.jwt()->'app_metadata'->>'provider', ''), 'email');
+
+  -- Metadados de identidade vêm da sessão autenticada, mas ainda são tratados como dados externos.
+  -- O banco só persiste avatar HTTPS com tamanho razoável; qualquer outro valor é descartado.
+  if v_avatar is not null and (length(v_avatar) > 500 or v_avatar !~* '^https://') then
+    v_avatar := null;
+  end if;
+
+  v_provider := lower(coalesce(nullif(auth.jwt()->'app_metadata'->>'provider', ''), 'email'));
+  if v_provider not in ('google', 'email') then
+    v_provider := 'other';
+  end if;
 
   insert into public.padoka_profiles as existing_profile(
     id,
