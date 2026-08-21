@@ -198,5 +198,12 @@
       s.dataset.padokaStaffAudit='1';
       document.head.appendChild(s);
     }
+    if(!document.querySelector('script[data-padoka-product-management]')){
+      const s=document.createElement('script');
+      s.src='assets/product-management.js';
+      s.defer=true;
+      s.dataset.padokaProductManagement='1';
+      document.head.appendChild(s);
+    }
   }
 })();
