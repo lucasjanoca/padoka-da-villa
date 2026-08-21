@@ -13,6 +13,7 @@
   const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   const missingRpc=error=>['PGRST202','42883'].includes(String(error?.code||''))||/padoka_list_staff|function .* does not exist|schema cache/i.test(String(error?.message||''));
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  const currentTab=()=>new URLSearchParams(location.search).get('tab')||'produtos';
   let client=null,currentUserId='',channel=null,staff=[];
 
   async function waitForContext(){
@@ -49,17 +50,26 @@
       tab.textContent='Equipe';
       document.getElementById('tabs')?.appendChild(tab);
     }
+    let drawerLink=document.querySelector('.padoka-nav-list [data-padoka-module="equipe"]');
+    if(!drawerLink){
+      drawerLink=document.createElement('a');
+      drawerLink.href='gestao.html?tab=equipe';
+      drawerLink.dataset.padokaModule='equipe';
+      drawerLink.innerHTML='<span class="nav-ico">♙</span>Equipe';
+      document.querySelector('.padoka-nav-list')?.appendChild(drawerLink);
+    }
     let panel=document.querySelector('[data-panel="equipe"]');
     if(!panel){
       panel=document.createElement('section');
       panel.className='panel';
       panel.dataset.panel='equipe';
-      panel.innerHTML='<div class="card"><div class="staff-summary" id="staffSummary"></div><div class="staff-list" id="staffList"></div><p class="staff-note">Alterações de função e acesso são auditadas pelo usuário autenticado e validadas novamente no servidor. Novos funcionários não são criados por esta tela.</p></div>';
+      panel.innerHTML='<div class="card"><div class="staff-summary" id="staffSummary"></div><div class="staff-list" id="staffList"></div><p class="staff-note">Alterações de função e acesso são validadas novamente no servidor. Novos funcionários não são criados por esta tela.</p></div>';
       document.querySelector('main.wrap.page')?.appendChild(panel);
     }
-    if(new URLSearchParams(location.search).get('tab')==='equipe'){
+    if(currentTab()==='equipe'){
       document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p===panel));
       document.querySelectorAll('.tabs .tab').forEach(a=>a.classList.toggle('active',a===tab));
+      document.querySelectorAll('.padoka-nav-list a').forEach(a=>a.classList.toggle('active',a===drawerLink));
       const title=document.getElementById('title'),subtitle=document.getElementById('subtitle');
       if(title)title.textContent='Equipe';
       if(subtitle)subtitle.textContent='Funções e acessos internos da PADOKA.';
@@ -72,7 +82,7 @@
     const summary=document.getElementById('staffSummary'),list=document.getElementById('staffList');
     if(!summary||!list)return;
     const active=staff.filter(x=>x.active).length,owners=staff.filter(x=>x.active&&x.role==='owner').length;
-    summary.innerHTML=`<div><small>EQUIPE</small><strong>${staff.length}</strong></div><div><small>ATIVOS</small><strong>${active}</strong></div><div><small>OWNERS ATIVOS</small><strong>${owners}</strong></div>`;
+    summary.innerHTML=`<div><small>EQUIPE</small><strong>${staff.length}</strong></div><div><small>ATIVOS</small><strong>${active}</strong></div><div><small>PROPRIETÁRIOS ATIVOS</small><strong>${owners}</strong></div>`;
     if(!staff.length){list.innerHTML='<div class="notice">Nenhum funcionário cadastrado.</div>';return}
     list.innerHTML=staff.map(row=>{
       const self=row.user_id===currentUserId;
@@ -93,23 +103,22 @@
   async function saveRow(row){
     if(!row)return;
     const id=row.dataset.staffRow,role=row.querySelector('[data-role]')?.value,active=!!row.querySelector('[data-active]')?.checked,button=row.querySelector('[data-save]');
-    if(!id||!roles.some(([value])=>value===role))return;
+    if(!id||!button||!roles.some(([value])=>value===role))return;
     button.disabled=true;button.textContent='Salvando…';
     const {error}=await client.rpc('padoka_update_staff',{p_user_id:id,p_role:role,p_active:active});
     if(error){
       console.warn('PADOKA staff update:',error);
       alert(/last active owner|último owner/i.test(String(error.message||''))?'A PADOKA precisa manter pelo menos um proprietário ativo.':'Não foi possível atualizar esse acesso.');
       await load().catch(()=>{});
-    }else{
-      await load();
+      return;
     }
-    button.disabled=false;button.textContent='Salvar';
+    await load();
   }
 
   async function init(){
     const context=await waitForContext();
     if(!context||context.role!=='owner'){
-      if(new URLSearchParams(location.search).get('tab')==='equipe')location.replace('internal.html');
+      if(currentTab()==='equipe')location.replace('internal.html');
       return;
     }
     client=context.client;
@@ -117,7 +126,13 @@
     currentUserId=session?.user?.id||'';
     try{
       const {data,error}=await client.rpc('padoka_list_staff');
-      if(error){if(missingRpc(error))return;throw error}
+      if(error){
+        if(missingRpc(error)){
+          if(currentTab()==='equipe')location.replace('gestao.html?tab=configuracoes');
+          return;
+        }
+        throw error;
+      }
       staff=(data||[]).map(x=>({user_id:String(x.user_id||''),display_name:String(x.display_name||''),email:String(x.email||''),role:String(x.role||''),active:!!x.active,created_at:x.created_at}));
       ensureUI();render();
       channel=client.channel('padoka-staff-management-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_staff_users'},()=>load().catch(()=>{})).subscribe();
