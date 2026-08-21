@@ -51,6 +51,12 @@ begin
   if p_pickup_date is null or p_pickup_time is null or nullif(trim(p_pickup_name),'') is null then
     raise exception 'pickup data required';
   end if;
+  if char_length(trim(p_pickup_name)) > 80 then
+    raise exception 'pickup name too long';
+  end if;
+  if p_pickup_date < (now() at time zone 'America/Sao_Paulo')::date then
+    raise exception 'pickup date is in the past';
+  end if;
   if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
     raise exception 'order requires items';
   end if;
@@ -64,12 +70,29 @@ begin
     from jsonb_array_elements(p_items) x
   )
   select count(*),
-         count(*) filter(where product_id is not null and product_id <> '' and quantity between 1 and 50)
+         count(*) filter(
+           where product_id ~ '^[a-z0-9][a-z0-9-]{0,63}$'
+             and quantity between 1 and 50
+         )
     into v_requested_count, v_valid_count
   from requested;
 
   if v_requested_count <> v_valid_count then
     raise exception 'invalid order item';
+  end if;
+
+  if exists (
+    with requested as (
+      select x->>'product_id' as product_id, (x->>'quantity')::integer as quantity
+      from jsonb_array_elements(p_items) x
+    ), grouped as (
+      select product_id, sum(quantity)::integer as quantity
+      from requested
+      group by product_id
+    )
+    select 1 from grouped where quantity > 50
+  ) then
+    raise exception 'invalid order item quantity';
   end if;
 
   with requested as (
