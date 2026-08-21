@@ -69,6 +69,25 @@
     location.href='internal.html';
   };
 
+  const moduleForHref=href=>{
+    if(!href||href.startsWith('#'))return null;
+    try{
+      const url=new URL(href,location.href);
+      if(url.pathname.endsWith('/internal.html'))return 'inicio';
+      if(url.pathname.endsWith('/pedidos.html'))return 'pedidos';
+      if(url.pathname.endsWith('/pdv.html'))return 'pdv';
+      if(url.pathname.endsWith('/gestao.html'))return url.searchParams.get('tab')||'produtos';
+    }catch{}
+    return null;
+  };
+  function filterPageShortcuts(role){
+    document.querySelectorAll('a[href]').forEach(link=>{
+      if(link.closest('#padokaInternalNav'))return;
+      const module=moduleForHref(link.getAttribute('href'));
+      if(module&&Object.prototype.hasOwnProperty.call(roleAccess,module))link.hidden=!allowed(module,role);
+    });
+  }
+
   async function waitForClient(){
     for(let i=0;i<80;i++){
       if(window.padokaSupabase)return window.padokaSupabase;
@@ -86,6 +105,7 @@
       if(error||!staff?.active)throw new Error('staff permission unavailable');
       const role=String(staff.role||'').toLowerCase();
       window.padokaStaffRole=role;
+      window.padokaCanAccess=id=>allowed(id,role);
       root.dataset.staffRole=role;
       root.querySelectorAll('[data-padoka-module]').forEach(link=>{
         link.hidden=!allowed(link.dataset.padokaModule,role);
@@ -94,6 +114,8 @@
         location.replace('internal.html');
         return;
       }
+      filterPageShortcuts(role);
+      [250,750,1500].forEach(delay=>setTimeout(()=>filterPageShortcuts(role),delay));
       document.documentElement.classList.remove('padoka-role-pending');
     }catch(error){
       console.warn('PADOKA internal permissions:',error);
