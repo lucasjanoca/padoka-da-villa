@@ -46,6 +46,7 @@ jobs:
           node --check tests/staff-enrollment-audit.mjs
           node --check tests/staff-audit-trail-audit.mjs
           node --check tests/product-management-audit.mjs
+          node --check tests/product-audit-trail-audit.mjs
 
       - name: Check internal extension syntax
         run: |
@@ -81,6 +82,9 @@ jobs:
 
       - name: Run product management audit
         run: node tests/product-management-audit.mjs
+
+      - name: Run product audit trail audit
+        run: node tests/product-audit-trail-audit.mjs
 
       - name: Run inventory metadata audit
         run: node tests/operational-inventory-audit.mjs
