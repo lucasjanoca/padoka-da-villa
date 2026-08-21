@@ -13,6 +13,9 @@ ok(/p_privacy_accepted/i.test(migration) && /privacy consent required/i.test(mig
 ok(/app_scope\s*=\s*'padoka'/i.test(migration), 'migration 013: app_scope não está fixado em padoka');
 ok(/auth\.jwt\(\)->'user_metadata'/i.test(migration), 'migration 013: avatar não é derivado da sessão autenticada');
 ok(/auth\.jwt\(\)->'app_metadata'/i.test(migration), 'migration 013: provider não é derivado da sessão autenticada');
+ok(/v_avatar\s+is\s+not\s+null[\s\S]*?length\(v_avatar\)\s*>\s*500[\s\S]*?v_avatar\s*!~\*\s*'\^https:\/\/'/i.test(migration), 'migration 013: avatar da sessão não é limitado a HTTPS/tamanho no servidor');
+ok(/v_provider\s*:=\s*lower\(/i.test(migration), 'migration 013: provider não é normalizado no servidor');
+ok(/v_provider\s+not\s+in\s*\(\s*'google'\s*,\s*'email'\s*\)[\s\S]*?v_provider\s*:=\s*'other'/i.test(migration), 'migration 013: provider inesperado não é reduzido a valor seguro');
 ok(/revoke\s+all\s+on\s+function\s+public\.padoka_save_profile[\s\S]*?from\s+public\s*,\s*anon/i.test(migration), 'migration 013: RPC não revoga acesso público/anon');
 ok(/grant\s+execute\s+on\s+function\s+public\.padoka_save_profile[\s\S]*?to\s+authenticated/i.test(migration), 'migration 013: RPC não concede execução apenas a authenticated');
 ok(/revoke\s+insert\s*,\s*update\s+on\s+table\s+public\.padoka_profiles\s+from\s+authenticated/i.test(migration), 'migration 013: escrita direta no perfil não é revogada após ativação');
