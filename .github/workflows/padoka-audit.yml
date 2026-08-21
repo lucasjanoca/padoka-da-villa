@@ -43,6 +43,7 @@ jobs:
           node --check tests/staff-navigation-audit.mjs
           node --check tests/staff-management-audit.mjs
           node --check tests/staff-management-frontend-audit.mjs
+          node --check tests/staff-enrollment-audit.mjs
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
@@ -64,6 +65,9 @@ jobs:
 
       - name: Run staff management frontend audit
         run: node tests/staff-management-frontend-audit.mjs
+
+      - name: Run staff enrollment audit
+        run: node tests/staff-enrollment-audit.mjs
 
       - name: Run inventory metadata audit
         run: node tests/operational-inventory-audit.mjs
