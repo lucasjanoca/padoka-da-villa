@@ -76,7 +76,7 @@ begin
   );
   v_provider := coalesce(nullif(auth.jwt()->'app_metadata'->>'provider', ''), 'email');
 
-  insert into public.padoka_profiles(
+  insert into public.padoka_profiles as existing_profile(
     id,
     app_scope,
     full_name,
@@ -106,10 +106,10 @@ begin
     full_name = excluded.full_name,
     phone = excluded.phone,
     birthday = excluded.birthday,
-    avatar_url = coalesce(excluded.avatar_url, public.padoka_profiles.avatar_url),
+    avatar_url = coalesce(excluded.avatar_url, existing_profile.avatar_url),
     auth_provider = excluded.auth_provider,
     marketing_opt_in = excluded.marketing_opt_in,
-    privacy_accepted_at = coalesce(public.padoka_profiles.privacy_accepted_at, now()),
+    privacy_accepted_at = coalesce(existing_profile.privacy_accepted_at, now()),
     onboarding_completed = true,
     updated_at = now()
   returning * into v_profile;
