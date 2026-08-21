@@ -14,12 +14,12 @@ const fail = message => {
 const ok = message => console.log(`✓ ${message}`);
 const read = name => fs.readFileSync(path.join(dir, name), 'utf8');
 
-const expectedNumbers = Array.from({ length: 18 }, (_, i) => String(i + 1).padStart(3, '0'));
+const expectedNumbers = Array.from({ length: 19 }, (_, i) => String(i + 1).padStart(3, '0'));
 const actualNumbers = files.map(name => name.slice(0, 3));
 if (JSON.stringify(actualNumbers) !== JSON.stringify(expectedNumbers)) {
-  fail(`cadeia de migrations deve ser contínua 001→018; encontrada: ${actualNumbers.join(', ')}`);
+  fail(`cadeia de migrations deve ser contínua 001→019; encontrada: ${actualNumbers.join(', ')}`);
 } else {
-  ok('cadeia de migrations contínua 001→018');
+  ok('cadeia de migrations contínua 001→019');
 }
 
 for (const file of files) {
@@ -73,6 +73,7 @@ const requirements = {
   '016_staff_audit_trail.sql': ['padoka_staff_audit', 'padoka_list_staff_audit', 'padoka_update_staff', 'padoka_add_staff_by_email', 'padoka_staff_owner_guard'],
   '017_product_catalog_management.sql': ['padoka_products', 'padoka_list_products_admin', 'padoka_save_product', 'product management permission required'],
   '018_product_catalog_audit.sql': ['padoka_product_audit', 'padoka_list_product_audit', 'padoka_save_product', 'before_state', 'after_state'],
+  '019_operational_realtime_indexes.sql': ['supabase_realtime', 'padoka_inventory', 'padoka_inventory_movements', 'padoka_production_plans', 'padoka_losses'],
 };
 
 for (const [file, tokens] of Object.entries(requirements)) {
