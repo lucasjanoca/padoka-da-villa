@@ -51,6 +51,7 @@ Aplicar **uma migration por vez**, nesta ordem:
 11. `013_customer_profile_rpc.sql`
 12. `014_staff_management_rpc.sql`
 13. `015_staff_enrollment_rpc.sql`
+14. `016_staff_audit_trail.sql`
 
 Não pular números. As migrations posteriores dependem do estado consolidado pelas anteriores, mesmo quando um módulo específico não usa todas as tabelas criadas antes.
 
@@ -168,6 +169,19 @@ Validar a inclusão administrativa de um funcionário já autenticado:
 
 A migration 015 é apenas o mecanismo administrativo seguro de associação de uma identidade existente. Ela não envia convite, não cria senha e não deve ser confundida com um fluxo público de cadastro de funcionário.
 
+### Depois da 016
+
+Validar a trilha de auditoria de permissões internas:
+
+- inclusão por `padoka_add_staff_by_email` gera exatamente um evento `added` em `padoka_staff_audit`;
+- alteração efetiva por `padoka_update_staff` gera exatamente um evento `updated` com estado anterior e novo;
+- repetir uma atualização sem mudança não cria evento vazio;
+- somente `owner` consegue executar `padoka_list_staff_audit` e ler o histórico;
+- `authenticated` não consegue inserir/alterar/excluir diretamente `padoka_staff_audit`;
+- duas alterações concorrentes não podem remover todos os owners ativos; a proteção usa lock transacional administrativo;
+- cliente, anon e funcionário sem papel `owner` não recebem o histórico de e-mails/funções;
+- a aba **Equipe** mostra o histórico somente quando a RPC 016 existe; antes disso, o frontend continua funcionando sem bloco quebrado.
+
 ## Critérios para chamar a camada operacional de pronta
 
 - migrations aplicadas no projeto correto e sem warnings de segurança PADOKA pendentes;
@@ -180,5 +194,6 @@ A migration 015 é apenas o mecanismo administrativo seguro de associação de u
 - onboarding de cliente controlado por RPC após a migration 013;
 - gestão de permissões internas restrita a owner após a migration 014;
 - inclusão de staff existente explicitamente autorizada por owner após a migration 015;
+- alterações de acesso de staff auditadas e legíveis somente por owner após a migration 016;
 - dados provisórios continuam marcados como provisórios até confirmação oficial;
 - Google OAuth só é marcado como pronto depois das credenciais reais e teste de `prompt=select_account`.
