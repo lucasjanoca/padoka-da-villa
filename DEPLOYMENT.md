@@ -52,6 +52,7 @@ Aplicar **uma migration por vez**, nesta ordem:
 12. `014_staff_management_rpc.sql`
 13. `015_staff_enrollment_rpc.sql`
 14. `016_staff_audit_trail.sql`
+15. `017_product_catalog_management.sql`
 
 Não pular números. As migrations posteriores dependem do estado consolidado pelas anteriores, mesmo quando um módulo específico não usa todas as tabelas criadas antes.
 
@@ -182,6 +183,21 @@ Validar a trilha de auditoria de permissões internas:
 - cliente, anon e funcionário sem papel `owner` não recebem o histórico de e-mails/funções;
 - a aba **Equipe** mostra o histórico somente quando a RPC 016 existe; antes disso, o frontend continua funcionando sem bloco quebrado.
 
+### Depois da 017
+
+Validar a gestão autoritativa do catálogo em **Produtos**:
+
+- somente `owner/manager` consegue executar `padoka_list_products_admin` e `padoka_save_product`;
+- `anon`, cliente e staff sem função administrativa não conseguem alterar produtos;
+- escrita direta `INSERT/UPDATE/DELETE` em `padoka_products` permanece revogada para `authenticated`;
+- leitura pública dos produtos ativos continua funcionando pela RLS já existente;
+- criar/editar produto valida ID, nome, categoria, preço, flags e ordem no servidor;
+- desativar produto remove do cardápio público sem apagar histórico;
+- produto provisório continua com `is_demo = true` até confirmação explícita dos dados oficiais;
+- retirar a marca provisória na interface exige confirmação humana;
+- produto novo sem metadados visuais próprios pode usar a logo temporária, mas não deve receber foto/unidade inventadas;
+- alterações refletem no cardápio após recarga/sincronização e continuam server-authoritative.
+
 ## Critérios para chamar a camada operacional de pronta
 
 - migrations aplicadas no projeto correto e sem warnings de segurança PADOKA pendentes;
@@ -195,5 +211,6 @@ Validar a trilha de auditoria de permissões internas:
 - gestão de permissões internas restrita a owner após a migration 014;
 - inclusão de staff existente explicitamente autorizada por owner após a migration 015;
 - alterações de acesso de staff auditadas e legíveis somente por owner após a migration 016;
+- gestão do catálogo restrita a owner/manager e sem escrita direta após a migration 017;
 - dados provisórios continuam marcados como provisórios até confirmação oficial;
 - Google OAuth só é marcado como pronto depois das credenciais reais e teste de `prompt=select_account`.
