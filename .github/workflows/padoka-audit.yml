@@ -40,6 +40,7 @@ jobs:
           node --check tests/migration-chain-audit.mjs
           node --check tests/profile-onboarding-audit.mjs
           node --check tests/checkout-rendering-audit.mjs
+          node --check tests/staff-navigation-audit.mjs
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
@@ -52,6 +53,9 @@ jobs:
 
       - name: Run checkout rendering audit
         run: node tests/checkout-rendering-audit.mjs
+
+      - name: Run staff navigation audit
+        run: node tests/staff-navigation-audit.mjs
 
       - name: Run inventory metadata audit
         run: node tests/operational-inventory-audit.mjs
