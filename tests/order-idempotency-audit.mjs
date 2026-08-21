@@ -11,6 +11,11 @@ assert.match(sql,/create or replace function public\.padoka_create_order_once/i,
 assert.match(sql,/auth\.uid\(\)/i,'RPC must bind the order to authenticated user');
 assert.match(sql,/on conflict \(customer_id, request_id\)[\s\S]*do nothing/i,'RPC must reconcile concurrent duplicate attempts');
 assert.match(sql,/request id conflict/i,'reused request_id with different payload must be rejected');
+assert.match(sql,/char_length\(trim\(p_pickup_name\)\)\s*>\s*80/i,'pickup name must be bounded server-side');
+assert.match(sql,/America\/Sao_Paulo/i,'pickup date validation must use the padaria timezone');
+assert.match(sql,/pickup date is in the past/i,'past pickup dates must be rejected');
+assert.match(sql,/product_id\s*~\s*'\^\[a-z0-9\]/i,'product ids must be validated server-side');
+assert.match(sql,/select 1 from grouped where quantity > 50/i,'duplicate lines must not bypass the per-product quantity limit');
 assert.match(sql,/insert into public\.padoka_order_items/i,'order items must remain transactional with order creation');
 assert.match(sql,/revoke all on function public\.padoka_create_order_once[\s\S]*from public, anon/i,'public/anon execution must be revoked');
 assert.match(sql,/grant execute on function public\.padoka_create_order_once[\s\S]*to authenticated/i,'only authenticated users should execute checkout RPC');
