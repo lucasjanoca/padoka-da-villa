@@ -57,6 +57,9 @@ begin
   if p_pickup_date < (now() at time zone 'America/Sao_Paulo')::date then
     raise exception 'pickup date is in the past';
   end if;
+  if (p_pickup_date + p_pickup_time) < (now() at time zone 'America/Sao_Paulo') then
+    raise exception 'pickup time is in the past';
+  end if;
   if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
     raise exception 'order requires items';
   end if;
