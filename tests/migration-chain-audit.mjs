@@ -1,0 +1,97 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = process.cwd();
+const dir = path.join(root, 'supabase');
+const files = fs.readdirSync(dir)
+  .filter(name => /^\d{3}_.+\.sql$/.test(name))
+  .sort();
+
+const fail = message => {
+  console.error(`❌ ${message}`);
+  process.exitCode = 1;
+};
+const ok = message => console.log(`✓ ${message}`);
+const read = name => fs.readFileSync(path.join(dir, name), 'utf8');
+
+const expectedNumbers = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(3, '0'));
+const actualNumbers = files.map(name => name.slice(0, 3));
+if (JSON.stringify(actualNumbers) !== JSON.stringify(expectedNumbers)) {
+  fail(`cadeia de migrations deve ser contínua 001→012; encontrada: ${actualNumbers.join(', ')}`);
+} else {
+  ok('cadeia de migrations contínua 001→012');
+}
+
+for (const file of files) {
+  const sql = read(file);
+  const codeOnly = sql.replace(/^\s*--.*$/gm, '');
+
+  const createdTables = [...codeOnly.matchAll(/create\s+table(?:\s+if\s+not\s+exists)?\s+public\.([a-zA-Z0-9_]+)/gi)].map(m => m[1]);
+  for (const name of createdTables) {
+    if (!name.startsWith('padoka_')) fail(`${file}: tabela fora do namespace padoka_: ${name}`);
+  }
+
+  const createdFunctions = [...codeOnly.matchAll(/create\s+or\s+replace\s+function\s+public\.([a-zA-Z0-9_]+)/gi)].map(m => m[1]);
+  for (const name of createdFunctions) {
+    if (!name.startsWith('padoka_')) fail(`${file}: função fora do namespace padoka_: ${name}`);
+  }
+
+  if (/create\s+trigger[\s\S]{0,600}?\bon\s+auth\.users\b/i.test(codeOnly)) {
+    fail(`${file}: trigger global em auth.users é proibido`);
+  }
+  if (/\b(drop\s+table|truncate\s+table)\s+/i.test(codeOnly)) {
+    fail(`${file}: operação destrutiva DROP/TRUNCATE não permitida na cadeia operacional`);
+  }
+  if (/\b(delete|update|insert)\s+(?:into\s+)?auth\./i.test(codeOnly)) {
+    fail(`${file}: escrita direta no schema auth é proibida`);
+  }
+
+  const functionBlocks = [...codeOnly.matchAll(/create\s+or\s+replace\s+function\s+public\.([a-zA-Z0-9_]+)[\s\S]*?\$\$;/gi)];
+  for (const match of functionBlocks) {
+    const block = match[0];
+    const name = match[1];
+    if (/security\s+definer/i.test(block) && !/set\s+search_path\s*=\s*public/i.test(block)) {
+      fail(`${file}: SECURITY DEFINER ${name} sem search_path=public explícito`);
+    }
+  }
+}
+
+const requirements = {
+  '003_operational_inventory_production_losses.sql': ['padoka_inventory', 'padoka_inventory_movements', 'padoka_production_plans', 'padoka_losses'],
+  '004_pdv_sales_transaction.sql': ['padoka_sales', 'padoka_sale_items', 'padoka_inventory', 'padoka_create_sale'],
+  '005_order_status_transition_rpc.sql': ['padoka_orders', 'padoka_update_order_status'],
+  '006_production_completion_transaction.sql': ['padoka_production_plans', 'padoka_inventory', 'padoka_record_production'],
+  '007_loss_idempotency.sql': ['padoka_losses', 'padoka_inventory', 'padoka_register_loss_once'],
+  '008_staff_reporting_rpc.sql': ['padoka_sales', 'padoka_orders', 'padoka_losses', 'padoka_inventory', 'padoka_report_summary'],
+  '009_internal_settings.sql': ['padoka_settings'],
+  '010_pdv_sale_idempotency.sql': ['padoka_sales', 'padoka_create_sale_once'],
+  '011_checkout_order_idempotency.sql': ['padoka_orders', 'padoka_create_order_once'],
+  '012_pdv_sale_void_transaction.sql': ['padoka_sales', 'padoka_inventory', 'padoka_void_sale'],
+};
+
+for (const [file, tokens] of Object.entries(requirements)) {
+  if (!files.includes(file)) {
+    fail(`migration obrigatória ausente: ${file}`);
+    continue;
+  }
+  const sql = read(file);
+  for (const token of tokens) {
+    if (!sql.includes(token)) fail(`${file}: dependência/objeto esperado ausente: ${token}`);
+  }
+}
+
+const m002 = read('002_server_authoritative_test_catalog.sql');
+if (!/grant\s+select\s+on\s+public\.padoka_products\s+to\s+anon\s*,\s*authenticated/i.test(m002)) {
+  fail('002: catálogo público deve manter apenas leitura pública explícita de padoka_products');
+}
+
+for (const file of files.filter(name => name !== '002_server_authoritative_test_catalog.sql')) {
+  const sql = read(file).replace(/^\s*--.*$/gm, '');
+  if (/\bgrant\b[\s\S]{0,250}?\bto\s+anon\b/i.test(sql)) {
+    fail(`${file}: grant para anon fora da migration pública do catálogo`);
+  }
+}
+
+if (!process.exitCode) {
+  console.log(`\nPADOKA migration audit OK (${files.length} migrations).`);
+}
