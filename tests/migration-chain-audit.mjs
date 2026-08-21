@@ -14,12 +14,12 @@ const fail = message => {
 const ok = message => console.log(`✓ ${message}`);
 const read = name => fs.readFileSync(path.join(dir, name), 'utf8');
 
-const expectedNumbers = Array.from({ length: 15 }, (_, i) => String(i + 1).padStart(3, '0'));
+const expectedNumbers = Array.from({ length: 16 }, (_, i) => String(i + 1).padStart(3, '0'));
 const actualNumbers = files.map(name => name.slice(0, 3));
 if (JSON.stringify(actualNumbers) !== JSON.stringify(expectedNumbers)) {
-  fail(`cadeia de migrations deve ser contínua 001→015; encontrada: ${actualNumbers.join(', ')}`);
+  fail(`cadeia de migrations deve ser contínua 001→016; encontrada: ${actualNumbers.join(', ')}`);
 } else {
-  ok('cadeia de migrations contínua 001→015');
+  ok('cadeia de migrations contínua 001→016');
 }
 
 for (const file of files) {
@@ -70,6 +70,7 @@ const requirements = {
   '013_customer_profile_rpc.sql': ['padoka_profiles', 'padoka_save_profile', 'privacy_accepted_at', 'app_scope'],
   '014_staff_management_rpc.sql': ['padoka_staff_users', 'padoka_list_staff', 'padoka_update_staff', 'cannot remove the last active owner'],
   '015_staff_enrollment_rpc.sql': ['padoka_staff_users', 'padoka_add_staff_by_email', 'auth user not found', 'padoka staff already exists'],
+  '016_staff_audit_trail.sql': ['padoka_staff_audit', 'padoka_list_staff_audit', 'padoka_update_staff', 'padoka_add_staff_by_email', 'padoka_staff_owner_guard'],
 };
 
 for (const [file, tokens] of Object.entries(requirements)) {
