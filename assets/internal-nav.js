@@ -19,7 +19,8 @@
     producao:['owner','manager','production'],
     perdas:['owner','manager','stock','production'],
     relatorios:['owner','manager'],
-    configuracoes:['owner','manager']
+    configuracoes:['owner','manager'],
+    equipe:['owner']
   };
   const items=[
     ['internal.html','inicio','⌂','Visão geral'],
@@ -181,6 +182,13 @@
       s.src='assets/settings-sync.js';
       s.defer=true;
       s.dataset.padokaSettings='1';
+      document.head.appendChild(s);
+    }
+    if(!document.querySelector('script[data-padoka-staff-management]')){
+      const s=document.createElement('script');
+      s.src='assets/staff-management.js';
+      s.defer=true;
+      s.dataset.padokaStaffManagement='1';
       document.head.appendChild(s);
     }
   }
