@@ -1,0 +1,137 @@
+# PADOKA DA VILLA — implantação segura do backend
+
+Este guia existe para evitar que as migrations preparadas no repositório sejam aplicadas no projeto Supabase errado ou fora de ordem.
+
+## Regra de ambiente
+
+**Backend correto da PADOKA:** `Sites De Clientes!` — project ref `yncspxfsvlqdnodlsosb`.
+
+**Nunca aplicar estas migrations no projeto `InfoTech.io`.**
+
+Antes de qualquer SQL, confirme no dashboard/CLI que o project ref exibido é exatamente `yncspxfsvlqdnodlsosb`. Se não for, pare.
+
+## Estado esperado antes da camada operacional
+
+As migrations 001/002 representam a base já usada pelo site publicado:
+
+- `padoka_profiles`
+- `padoka_staff_users`
+- `padoka_orders`
+- `padoka_order_items`
+- `padoka_order_events`
+- `padoka_products`
+- RPC de criação de pedido existente
+
+Contas de outros sistemas do Supabase compartilhado não devem receber perfil PADOKA automaticamente. Não criar trigger global em `auth.users`.
+
+## Pré-voo obrigatório
+
+1. Confirmar project ref `yncspxfsvlqdnodlsosb`.
+2. Confirmar que o ambiente contém os objetos `padoka_*` da base 001/002.
+3. Fazer backup/snapshot adequado do banco antes do rollout operacional.
+4. Rodar o workflow **PADOKA Static Audit** ou, localmente, todos os scripts de `tests/`.
+5. Rodar especialmente `node tests/migration-chain-audit.mjs`.
+6. Não substituir cardápio/preços provisórios por dados “reais” sem confirmação da padaria.
+7. Não configurar Google OAuth sem Client ID/Secret emitidos pelo Google Cloud.
+
+## Ordem de aplicação
+
+Aplicar **uma migration por vez**, nesta ordem:
+
+1. `003_operational_inventory_production_losses.sql`
+2. `004_pdv_sales_transaction.sql`
+3. `005_order_status_transition_rpc.sql`
+4. `006_production_completion_transaction.sql`
+5. `007_loss_idempotency.sql`
+6. `008_staff_reporting_rpc.sql`
+7. `009_internal_settings.sql`
+8. `010_pdv_sale_idempotency.sql`
+9. `011_checkout_order_idempotency.sql`
+10. `012_pdv_sale_void_transaction.sql`
+
+Não pular números. As migrations posteriores dependem de objetos criados pelas anteriores.
+
+## Validação após cada migration
+
+Após **cada** aplicação:
+
+- confirmar que somente objetos `padoka_*` esperados foram criados/alterados;
+- confirmar RLS habilitado nas novas tabelas;
+- confirmar que `anon` não ganhou acesso a módulos internos;
+- confirmar que não foi criado trigger em `auth.users`;
+- executar advisors de **Security** e **Performance** do Supabase;
+- revisar qualquer aviso novo relacionado a objetos `padoka_*` antes de seguir para a próxima migration;
+- fazer um smoke test com uma conta staff autorizada e uma conta cliente separada quando a migration afetar seus fluxos.
+
+Avisos antigos pertencentes a outros sistemas do Supabase compartilhado não devem ser “corrigidos” como parte da PADOKA sem escopo e autorização próprios.
+
+## Gates de ativação do frontend
+
+Os frontends foram preparados para detectar as camadas novas e não devem simular sucesso quando elas ainda não existirem.
+
+### Depois da 003
+
+Validar em `gestao.html`:
+
+- estoque real;
+- EAN/estoque mínimo;
+- planejamento de produção;
+- perdas;
+- Realtime operacional.
+
+Só depois de validar os dados reais necessários, planejar a remoção do fallback temporário em `localStorage`.
+
+### Depois da 004 + 010
+
+Validar no `pdv.html`:
+
+- venda com preço calculado pelo servidor;
+- bloqueio por estoque insuficiente;
+- baixa de estoque na mesma transação;
+- retry com o mesmo `request_id` sem duplicar venda.
+
+Enquanto o catálogo tiver `is_demo = true`, vendas devem continuar identificadas como teste/provisórias.
+
+### Depois da 005
+
+Validar em `pedidos.html` todas as transições:
+
+`Recebido → Visto → Confirmado → Preparo → Pronto → Retirado`
+
+Confirmar cancelamento autorizado e bloqueio de saltos/retrocessos. Depois dessa validação, remover em uma mudança separada o fallback de `UPDATE` direto do frontend.
+
+### Depois da 006
+
+Validar produção concluída, incremento de estoque, lote e movimentação em uma única operação, inclusive retry idempotente.
+
+### Depois da 007
+
+Validar perda com baixa de estoque e retry idempotente, sem desconto duplicado.
+
+### Depois da 008
+
+Validar relatórios apenas com `owner/manager`, período máximo e totais server-authoritative.
+
+### Depois da 009
+
+Validar leitura de configurações por staff e escrita somente por `owner/manager`.
+
+### Depois da 011
+
+Validar checkout idempotente: falha/retry não pode criar dois pedidos e o carrinho só deve ser apagado após confirmação real.
+
+### Depois da 012
+
+Validar estorno apenas por `owner/manager`, com motivo obrigatório, devolução de estoque e auditoria. Repetir o mesmo estorno não pode devolver estoque duas vezes.
+
+## Critérios para chamar a camada operacional de pronta
+
+- migrations aplicadas no projeto correto e sem warnings de segurança PADOKA pendentes;
+- RLS testado com cliente, staff e usuário de outro sistema do mesmo Supabase;
+- nenhuma área interna acessível pelo site público;
+- checkout e PDV idempotentes;
+- estoque sem escrita direta insegura pelo navegador;
+- produção/perdas transacionais;
+- relatórios financeiros restritos;
+- dados provisórios continuam marcados como provisórios até confirmação oficial;
+- Google OAuth só é marcado como pronto depois das credenciais reais e teste de `prompt=select_account`.
