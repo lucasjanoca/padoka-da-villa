@@ -47,25 +47,50 @@
     return productId?products.find(product=>product.id===productId)||null:null;
   };
 
+  // Beep reforçado para celular: mais alto, mais encorpado e parecido com leitor físico.
   playScanBeep=function(){
     try{
       const AC=window.AudioContext||window.webkitAudioContext;
       if(!AC)return;
       if(!audioCtx)audioCtx=new AC();
       if(audioCtx.state==='suspended')audioCtx.resume();
-      const osc=audioCtx.createOscillator();
-      const gain=audioCtx.createGain();
+
       const now=audioCtx.currentTime;
-      osc.type='sine';
-      osc.frequency.setValueAtTime(1350,now);
-      gain.gain.setValueAtTime(.0001,now);
-      gain.gain.exponentialRampToValueAtTime(.32,now+.008);
-      gain.gain.exponentialRampToValueAtTime(.0001,now+.15);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now+.16);
-      if(navigator.vibrate)navigator.vibrate(60);
+      const master=audioCtx.createGain();
+      const compressor=audioCtx.createDynamicsCompressor();
+
+      compressor.threshold.setValueAtTime(-12,now);
+      compressor.knee.setValueAtTime(8,now);
+      compressor.ratio.setValueAtTime(10,now);
+      compressor.attack.setValueAtTime(0.002,now);
+      compressor.release.setValueAtTime(0.12,now);
+
+      master.gain.setValueAtTime(0.0001,now);
+      master.gain.exponentialRampToValueAtTime(0.95,now+0.008);
+      master.gain.setValueAtTime(0.95,now+0.16);
+      master.gain.exponentialRampToValueAtTime(0.0001,now+0.24);
+      master.connect(compressor);
+      compressor.connect(audioCtx.destination);
+
+      const tones=[
+        {freq:1450,type:'square',gain:0.42},
+        {freq:1850,type:'square',gain:0.34},
+        {freq:2250,type:'sine',gain:0.28}
+      ];
+
+      tones.forEach(({freq,type,gain})=>{
+        const osc=audioCtx.createOscillator();
+        const level=audioCtx.createGain();
+        osc.type=type;
+        osc.frequency.setValueAtTime(freq,now);
+        level.gain.setValueAtTime(gain,now);
+        osc.connect(level);
+        level.connect(master);
+        osc.start(now);
+        osc.stop(now+0.25);
+      });
+
+      if(navigator.vibrate)navigator.vibrate([90,35,55]);
     }catch(error){
       console.warn('PADOKA scan beep:',error);
     }
