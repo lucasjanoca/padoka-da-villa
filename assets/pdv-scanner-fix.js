@@ -47,7 +47,7 @@
     return productId?products.find(product=>product.id===productId)||null:null;
   };
 
-  // Beep reforçado para celular: mais alto, mais encorpado e parecido com leitor físico.
+  // Beep no limite digital do navegador. O volume físico final ainda depende do volume de mídia do aparelho.
   playScanBeep=function(){
     try{
       const AC=window.AudioContext||window.webkitAudioContext;
@@ -57,40 +57,47 @@
 
       const now=audioCtx.currentTime;
       const master=audioCtx.createGain();
-      const compressor=audioCtx.createDynamicsCompressor();
+      const limiter=audioCtx.createDynamicsCompressor();
 
-      compressor.threshold.setValueAtTime(-12,now);
-      compressor.knee.setValueAtTime(8,now);
-      compressor.ratio.setValueAtTime(10,now);
-      compressor.attack.setValueAtTime(0.002,now);
-      compressor.release.setValueAtTime(0.12,now);
+      limiter.threshold.setValueAtTime(-3,now);
+      limiter.knee.setValueAtTime(0,now);
+      limiter.ratio.setValueAtTime(20,now);
+      limiter.attack.setValueAtTime(0.001,now);
+      limiter.release.setValueAtTime(0.08,now);
 
-      master.gain.setValueAtTime(0.0001,now);
-      master.gain.exponentialRampToValueAtTime(0.95,now+0.008);
-      master.gain.setValueAtTime(0.95,now+0.16);
-      master.gain.exponentialRampToValueAtTime(0.0001,now+0.24);
-      master.connect(compressor);
-      compressor.connect(audioCtx.destination);
+      master.gain.setValueAtTime(1.0,now);
+      master.connect(limiter);
+      limiter.connect(audioCtx.destination);
 
+      const bursts=[
+        {start:0.000,end:0.155},
+        {start:0.185,end:0.335}
+      ];
       const tones=[
-        {freq:1450,type:'square',gain:0.42},
-        {freq:1850,type:'square',gain:0.34},
-        {freq:2250,type:'sine',gain:0.28}
+        {freq:1500,type:'square',gain:0.90},
+        {freq:2050,type:'square',gain:0.75},
+        {freq:2600,type:'sawtooth',gain:0.55}
       ];
 
-      tones.forEach(({freq,type,gain})=>{
-        const osc=audioCtx.createOscillator();
-        const level=audioCtx.createGain();
-        osc.type=type;
-        osc.frequency.setValueAtTime(freq,now);
-        level.gain.setValueAtTime(gain,now);
-        osc.connect(level);
-        level.connect(master);
-        osc.start(now);
-        osc.stop(now+0.25);
+      bursts.forEach(({start,end})=>{
+        tones.forEach(({freq,type,gain})=>{
+          const osc=audioCtx.createOscillator();
+          const level=audioCtx.createGain();
+          const s=now+start,e=now+end;
+          osc.type=type;
+          osc.frequency.setValueAtTime(freq,s);
+          level.gain.setValueAtTime(0.0001,s);
+          level.gain.exponentialRampToValueAtTime(gain,s+0.004);
+          level.gain.setValueAtTime(gain,e-0.018);
+          level.gain.exponentialRampToValueAtTime(0.0001,e);
+          osc.connect(level);
+          level.connect(master);
+          osc.start(s);
+          osc.stop(e+0.01);
+        });
       });
 
-      if(navigator.vibrate)navigator.vibrate([90,35,55]);
+      if(navigator.vibrate)navigator.vibrate([120,40,90]);
     }catch(error){
       console.warn('PADOKA scan beep:',error);
     }
