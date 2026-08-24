@@ -13,5 +13,16 @@ function restore(){if(!pending)return;try{cart={};for(const i of pending.items){
 function messageFor(error){const m=String(error?.message||'').toLowerCase();if(m.includes('insufficient inventory'))return'Estoque insuficiente para um dos itens.';if(m.includes('inventory not initialized'))return'O estoque ainda não foi inicializado para todos os itens.';if(m.includes('permission'))return'Seu perfil não possui permissão para finalizar vendas.';if(m.includes('sale request id conflict'))return'A tentativa anterior não combina com esta venda. Revise os itens e tente novamente.';if(m.includes('invalid')||m.includes('unknown or inactive'))return'Um item ou forma de pagamento não é mais válido. Revise a venda.';return'Não foi possível confirmar a venda agora.'}
 async function finishOnce(){if(!enabled||saleBusy)return;let op=pending;if(!op){const items=cartItems().map(({p,q})=>({product_id:p.id,quantity:q}));if(!items.length)return;op={request_id:uuid(),items,payment_method:get('paymentMethod').value,created_at:new Date().toISOString()};savePending(op)}saleBusy=true;update();let data,error;try{({data,error}=await sb.rpc('padoka_create_sale_once',{p_items:op.items,p_payment_method:op.payment_method,p_request_id:op.request_id}))}catch(e){error=e}if(error){console.error(error);saleBusy=false;if(deterministic(error)){savePending(null);toast(messageFor(error));update();return}savePending(op);toast('Conexão instável. A venda não será repetida com outro identificador.');update();return}const sale=Array.isArray(data)?data[0]:data;savePending(null);cart={};renderCart();const code=sale?.code||'registrada',isTest=sale?.is_test===true;const s=get('pdvState');s.className='pdv-state '+(isTest?'':'ok');s.textContent=isTest?`Venda ${code} registrada como teste porque o catálogo ainda possui dados demonstrativos.`:`Venda ${code} concluída e estoque atualizado.`;toast(isTest?`Venda ${code} registrada para teste`:`Venda ${code} concluída`);saleBusy=false;update();get('scanner')?.focus()}
 async function init(){try{if(typeof sb==='undefined'||!sb||typeof cartItems!=='function'||typeof updateFinish!=='function'||!get('finishSale'))return setTimeout(init,120);const {error}=await sb.from('padoka_sales').select('request_id').limit(1);if(error)return;enabled=true;baseUpdate=updateFinish;updateFinish=update;pending=loadPending();get('finishSale').onclick=finishOnce;if(pending)restore();else update()}catch(e){console.error('PDV idempotente indisponível',e)}}
+function loadScannerFix(){
+  try{
+    if(typeof openCamera!=='function'||typeof findByCode!=='function')return setTimeout(loadScannerFix,120);
+    if(document.querySelector('script[data-padoka-scanner-fix]'))return;
+    const s=document.createElement('script');
+    s.src='assets/pdv-scanner-fix.js?v=202608240014';
+    s.dataset.padokaScannerFix='1';
+    document.head.appendChild(s);
+  }catch(e){console.warn('PDV scanner fix loader:',e);setTimeout(loadScannerFix,200)}
+}
 setTimeout(init,0);
+setTimeout(loadScannerFix,0);
 })();
