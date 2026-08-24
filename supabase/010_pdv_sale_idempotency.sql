@@ -29,7 +29,7 @@ declare
   v_demo boolean;
   v_request_items jsonb;
   v_existing_items jsonb;
-  r record;
+  v_stock record;
 begin
   if not public.padoka_staff_has_role(array['owner','manager','cashier','attendant']) then
     raise exception 'padoka pdv permission required';
@@ -84,7 +84,6 @@ begin
   into v_request_items
   from grouped;
 
-  -- Serializa retries concorrentes do mesmo request_id antes de consultar/criar a venda.
   perform pg_advisory_xact_lock(hashtextextended(p_request_id::text,0));
 
   select * into v_sale
@@ -115,9 +114,9 @@ begin
   with requested as (
     select * from jsonb_to_recordset(v_request_items) as x(product_id text, quantity numeric)
   ), priced as (
-    select r.product_id, r.quantity::numeric(12,3) as quantity, p.price, p.is_demo
-    from requested r
-    join public.padoka_products p on p.id = r.product_id and p.active = true
+    select req.product_id, req.quantity::numeric(12,3) as quantity, p.price, p.is_demo
+    from requested req
+    join public.padoka_products p on p.id = req.product_id and p.active = true
   )
   select
     count(*),
@@ -133,19 +132,18 @@ begin
     raise exception 'invalid sale total';
   end if;
 
-  -- Trava todas as linhas de estoque em ordem estável antes da baixa.
-  for r in
+  for v_stock in
     with requested as (
       select * from jsonb_to_recordset(v_request_items) as x(product_id text, quantity numeric)
     )
-    select i.product_id, i.quantity as available, requested.quantity::numeric(12,3) as requested
-    from requested
-    join public.padoka_inventory i on i.product_id = requested.product_id
+    select i.product_id, i.quantity as available, req.quantity::numeric(12,3) as requested
+    from requested req
+    join public.padoka_inventory i on i.product_id = req.product_id
     order by i.product_id
     for update of i
   loop
-    if r.available < r.requested then
-      raise exception 'insufficient inventory for product %', r.product_id;
+    if v_stock.available < v_stock.requested then
+      raise exception 'insufficient inventory for product %', v_stock.product_id;
     end if;
   end loop;
 
@@ -173,19 +171,19 @@ begin
   insert into public.padoka_sale_items(
     sale_id,product_id,product_name,quantity,unit_price,line_total
   )
-  select v_sale.id,p.id,p.name,r.quantity::numeric(12,3),p.price,round(r.quantity * p.price,2)
-  from requested r
-  join public.padoka_products p on p.id = r.product_id and p.active = true;
+  select v_sale.id,p.id,p.name,req.quantity::numeric(12,3),p.price,round(req.quantity * p.price,2)
+  from requested req
+  join public.padoka_products p on p.id = req.product_id and p.active = true;
 
   with requested as (
     select * from jsonb_to_recordset(v_request_items) as x(product_id text, quantity numeric)
   )
   update public.padoka_inventory i
-  set quantity = i.quantity - r.quantity,
+  set quantity = i.quantity - req.quantity,
       updated_by = auth.uid(),
       updated_at = now()
-  from requested r
-  where i.product_id = r.product_id;
+  from requested req
+  where i.product_id = req.product_id;
 
   insert into public.padoka_inventory_movements(
     product_id,delta,reason,source,reference_id,created_by
