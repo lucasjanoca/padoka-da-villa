@@ -1,6 +1,6 @@
 (()=>{
 const KEY='padoka_pending_order_v1';
-let active=false;
+let active=false,detectAttempts=0;
 const el=id=>document.getElementById(id);
 const parse=()=>{try{return JSON.parse(sessionStorage.getItem(KEY)||'null')}catch{return null}};
 const store=v=>sessionStorage.setItem(KEY,JSON.stringify(v));
@@ -37,7 +37,7 @@ function payloadFromPage(){
 function ambiguous(error){
   const code=String(error?.code||'');
   const msg=String(error?.message||'');
-  return !code||/fetch|network|timeout|load failed|connection/i.test(msg)||code==='PGRST202';
+  return !code||/fetch|network|timeout|load failed|connection/i.test(msg);
 }
 async function sendOnce(){
   if(!sb||!user||!profile?.onboarding_completed||!pickup)return;
@@ -70,7 +70,7 @@ async function sendOnce(){
     }
     clear();
     unlock();
-    notice('Não foi possível enviar o pedido. Revise os dados e tente novamente.');
+    notice('Não foi possível enviar o pedido. Atualize a página e tente novamente.');
     return;
   }
   const order=Array.isArray(data)?data[0]:data;
@@ -84,15 +84,12 @@ async function sendOnce(){
   localStorage.removeItem(PICKUP_KEY);
   location.href='acompanhamento.html?code='+encodeURIComponent(order.code);
 }
-async function detect(){
+function detect(){
   if(active)return;
-  if(typeof sb==='undefined'||!sb)return setTimeout(detect,180);
-  if(!user||!profile?.onboarding_completed)return;
-  const {error}=await sb.from('padoka_orders').select('request_id').limit(1);
-  if(error){
-    const message=String(error.message||'');
-    if(/request_id|column/i.test(message))return;
-    console.warn('Não foi possível verificar a camada idempotente do checkout',error);
+  detectAttempts+=1;
+  const ready=typeof sb!=='undefined'&&sb&&user&&profile?.onboarding_completed;
+  if(!ready){
+    if(detectAttempts<100)setTimeout(detect,120);
     return;
   }
   active=true;
