@@ -14,7 +14,7 @@ A fundação de segurança já está instalada, porém o pagamento permanece **d
    - webhook/notificação de pagamento;
    - API de devolução/estorno, se disponível.
 4. Informar qual é o **ambiente de testes/sandbox** oferecido pelo provedor, se houver.
-5. Definir a regra para Pix recebido depois dos 3 minutos. Padrão já preparado: **revisão manual**; o pedido não é liberado automaticamente.
+5. Definir a regra para Pix recebido depois dos 5 minutos. Padrão já preparado: **revisão manual**; o pedido não é liberado automaticamente.
 6. Definir quais perfis internos poderão revisar pagamento tardio/devolução. Padrão: **owner/manager**.
 7. Confirmar o **domínio definitivo** usado pela PADOKA para configurar URLs de retorno/webhook, quando o provedor exigir.
 
@@ -28,14 +28,15 @@ Nunca precisamos de senha do internet banking, senha do cartão, PIN ou código 
 
 ## Regras de segurança já preparadas
 
-- Expiração padrão do Pix: **180 segundos (3 minutos)**.
+- Expiração padrão do Pix: **300 segundos (5 minutos)**.
 - Cliente não possui permissão de banco para marcar pedido como pago.
 - O fluxo antigo de criação direta de pedido foi bloqueado; checkout usa RPC idempotente e preços do servidor.
 - Valor da cobrança será comparado com o total calculado no servidor.
 - Cada cobrança terá identificadores exclusivos do provedor/txid.
 - Eventos repetidos serão deduplicados para evitar confirmação dupla.
 - Pagamento após expiração fica como `paid_late` e exige revisão; não libera produção automaticamente.
-- Pedido com Pix obrigatório não pode avançar para confirmação/preparo enquanto o status não for `paid`.
+- Quando o Pix automático estiver ativo, pedido com pagamento pendente/expirado **não aparece na fila operacional da equipe e não entra nas contagens do painel**.
+- Pedido com Pix obrigatório não pode avançar em nenhuma etapa operacional enquanto o status de pagamento não for `paid`.
 - Funções que alteram pagamento para `paid` aceitam somente `service_role`, nunca o navegador do cliente.
 - Registro de eventos de pagamento preparado para auditoria.
 - Endpoint `padoka-pix-checkout` já existe e falha fechado enquanto o provedor não estiver configurado.
