@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
   if (orderError || !order || order.customer_id !== user.id) return json(404, { error: "order_not_found" });
   if (settingsError || !settings) return json(503, { error: "payment_settings_unavailable" });
   if (!settings.enabled || !settings.provider_configured || settings.provider === "unconfigured") {
-    return json(409, { error: "payment_provider_not_configured", expiration_seconds: settings.expiration_seconds || 180 });
+    return json(409, { error: "payment_provider_not_configured", expiration_seconds: settings.expiration_seconds || 300 });
   }
 
   // Fail closed until the selected bank/provider adapter is implemented.
