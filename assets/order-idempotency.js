@@ -5,6 +5,8 @@ const el=id=>document.getElementById(id);
 const parse=()=>{try{return JSON.parse(sessionStorage.getItem(KEY)||'null')}catch{return null}};
 const store=v=>sessionStorage.setItem(KEY,JSON.stringify(v));
 const clear=()=>sessionStorage.removeItem(KEY);
+const initialButton=el('sendOrder');
+if(initialButton)initialButton.onclick=null;
 function notice(text,type='warn'){
   let box=el('orderRetryNotice');
   if(!box){
