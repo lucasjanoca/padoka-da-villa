@@ -21,6 +21,7 @@
   const HARDWARE_KEY_GAP_MS=80;
   const HARDWARE_COMMIT_DELAY_MS=130;
   const MIN_AUTO_CODE_LENGTH=6;
+  const MAX_SCANNER_CODE_LENGTH=64;
   const normalize=value=>String(value??'').trim();
   const scannerInput=document.getElementById('scanner');
   const readerStatus=document.getElementById('readerStatus');
@@ -46,6 +47,14 @@
     hardwareCommitTimer=null;
   }
 
+  function rejectOversizedRead(){
+    resetInputBurst();
+    resetHardwareBuffer();
+    if(scannerInput)scannerInput.value='';
+    setReaderStatus('Leitura ignorada — código acima do limite permitido.');
+    return false;
+  }
+
   function cameraIsOpen(){
     const modal=document.getElementById('cameraModal');
     return Boolean(modal&&!modal.classList.contains('hidden'));
@@ -53,6 +62,7 @@
 
   function submitHardwareCode(code){
     const raw=normalize(code);
+    if(raw.length>MAX_SCANNER_CODE_LENGTH)return rejectOversizedRead();
     if(!raw||!scannerInput||scannerInput.disabled)return false;
     const product=typeof findByCode==='function'?findByCode(raw):null;
     scannerInput.value=raw;
@@ -91,6 +101,10 @@
   function installHardwareKeyboardSupport(){
     if(!scannerInput||scannerInput.dataset.hardwareScanner==='1')return;
     scannerInput.dataset.hardwareScanner='1';
+
+    scannerInput.addEventListener('input',()=>{
+      if(scannerInput.value.length>MAX_SCANNER_CODE_LENGTH)rejectOversizedRead();
+    });
 
     scannerInput.addEventListener('keydown',event=>{
       if(event.key==='Tab'&&normalize(scannerInput.value)){
@@ -132,6 +146,11 @@
         return;
       }
       if(event.key.length!==1)return;
+      if(hardwareBuffer.length>=MAX_SCANNER_CODE_LENGTH){
+        if(tag==='SELECT'||tag==='BUTTON')event.preventDefault();
+        rejectOversizedRead();
+        return;
+      }
 
       const now=performance.now();
       if(!hardwareLastKeyAt||now-hardwareLastKeyAt>HARDWARE_KEY_GAP_MS){
