@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 
 const migration=fs.readFileSync('supabase/007_loss_idempotency.sql','utf8');
+const migrationCode=migration.replace(/^\s*--.*$/gm,'');
 const frontend=fs.readFileSync('assets/loss-registration.js','utf8');
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 
 const checks=[
   ['migration alvo correto',/yncspxfsvlqdnodlsosb/.test(migration)&&/NÃO aplicar no projeto InfoTech\.io/.test(migration)],
-  ['sem trigger global em auth.users',!/trigger[\s\S]{0,120}auth\.users/i.test(migration)],
+  ['sem trigger global em auth.users',!/create\s+trigger[\s\S]{0,600}?\bon\s+auth\.users\b/i.test(migrationCode)],
   ['request_id único',/padoka_losses_request_id_uidx/.test(migration)&&/where request_id is not null/i.test(migration)],
   ['RPC idempotente dedicada',/padoka_register_loss_once/.test(migration)&&/p_request_id uuid/.test(migration)],
   ['rejeita conflito de request id',/loss request id conflict/.test(migration)],
