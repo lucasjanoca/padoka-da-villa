@@ -25,6 +25,7 @@ jobs:
       - name: Check audit scripts syntax
         run: |
           node --check tests/static-audit.mjs
+          node --check tests/backend-isolation-audit.mjs
           node --check tests/operational-inventory-audit.mjs
           node --check tests/production-transaction-audit.mjs
           node --check tests/production-frontend-audit.mjs
@@ -58,6 +59,9 @@ jobs:
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
+
+      - name: Run backend isolation audit
+        run: node tests/backend-isolation-audit.mjs
 
       - name: Run migration chain audit
         run: node tests/migration-chain-audit.mjs
