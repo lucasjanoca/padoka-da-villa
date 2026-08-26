@@ -43,9 +43,10 @@ ok(/name:esc\(/.test(catalog), 'assets/catalog.js: nome vindo do servidor não �
 ok(/category:esc\(/.test(catalog), 'assets/catalog.js: categoria vinda do servidor não é escapada');
 ok(/p\.price>=0/.test(catalog), 'assets/catalog.js: preço negativo não é rejeitado no cliente');
 
-// Internal order status changes must be ready for server-controlled transitions.
-ok(html['pedidos.html'].includes("rpc('padoka_update_order_status'"), 'pedidos.html: atualização de status não tenta RPC autoritativa');
-ok(html['pedidos.html'].includes('rpcMissing'), 'pedidos.html: fallback temporário da RPC não está limitado a função ausente');
+// Internal order status changes must use only the server-authoritative RPC after migration 005 activation.
+ok(html['pedidos.html'].includes("rpc('padoka_update_order_status'"), 'pedidos.html: atualização de status não usa RPC autoritativa');
+ok(!/from\(['"]padoka_orders['"]\)\.update\(/.test(html['pedidos.html']), 'pedidos.html: UPDATE direto de status reapareceu no frontend');
+ok(!html['pedidos.html'].includes('rpcMissing'), 'pedidos.html: fallback temporário da RPC reapareceu');
 ok(statusMigration.includes('public.padoka_is_staff()'), 'migration 005: RPC de status não valida staff');
 ok(statusMigration.includes("when 'received' then p_status in ('seen','cancelled')"), 'migration 005: transição inicial não está limitada');
 ok(statusMigration.includes("when 'ready' then p_status in ('completed','cancelled')"), 'migration 005: conclusão não está limitada');
