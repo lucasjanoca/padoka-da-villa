@@ -18,7 +18,7 @@ function loadScannerFix(){
     if(typeof openCamera!=='function'||typeof findByCode!=='function')return setTimeout(loadScannerFix,120);
     if(document.querySelector('script[data-padoka-scanner-fix]'))return;
     const s=document.createElement('script');
-    s.src='assets/pdv-scanner-fix.js?v=2026082602';
+    s.src='assets/pdv-scanner-fix.js?v=2026082603';
     s.dataset.padokaScannerFix='1';
     document.head.appendChild(s);
   }catch(e){console.warn('PDV scanner fix loader:',e);setTimeout(loadScannerFix,200)}
