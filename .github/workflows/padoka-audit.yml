@@ -28,6 +28,7 @@ jobs:
           node --check tests/backend-isolation-audit.mjs
           node --check tests/customer-orders-audit.mjs
           node --check tests/operational-inventory-audit.mjs
+          node --check tests/operational-fail-closed-audit.mjs
           node --check tests/production-transaction-audit.mjs
           node --check tests/production-frontend-audit.mjs
           node --check tests/loss-transaction-audit.mjs
@@ -99,6 +100,9 @@ jobs:
 
       - name: Run inventory metadata audit
         run: node tests/operational-inventory-audit.mjs
+
+      - name: Run operational fail-closed audit
+        run: node tests/operational-fail-closed-audit.mjs
 
       - name: Run production transaction audit
         run: node tests/production-transaction-audit.mjs
