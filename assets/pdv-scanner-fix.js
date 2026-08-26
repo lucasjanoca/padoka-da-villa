@@ -172,7 +172,7 @@
     const fromDb=new Map(rows.map(row=>[String(row.product_id),normalize(row.barcode)]));
     products=products.map(product=>({
       ...product,
-      barcode:fromDb.get(String(product.id))||normalize(product.barcode)||null
+      barcode:fromDb.get(String(product.id))||null
     }));
     setReaderStatus(describeBarcodeState(rows));
     try{renderProducts()}catch{}
