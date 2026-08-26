@@ -10,7 +10,7 @@ create or replace function public.padoka_upsert_production_plan(
 returns public.padoka_production_plans
 language plpgsql
 security definer
-set search_path = 'public'
+set search_path = public
 as $$
 declare
   v_plan public.padoka_production_plans;
