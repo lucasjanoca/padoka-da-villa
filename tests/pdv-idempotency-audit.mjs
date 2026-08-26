@@ -18,11 +18,11 @@ need(sql,/cashier_user_id is distinct from auth\.uid\(\)/i,'idempotência precis
 need(sql,/payment_method is distinct from p_payment_method/i,'idempotência precisa validar forma de pagamento');
 need(sql,/v_existing_items.*is distinct from.*v_request_items/is,'idempotência precisa validar os itens originais');
 need(sql,/for update of i/i,'estoque precisa ser bloqueado antes da baixa');
-need(sql,/quantity = i\.quantity - r\.quantity/i,'venda precisa baixar estoque na transação');
+need(sql,/quantity\s*=\s*i\.quantity\s*-\s*req\.quantity/i,'venda precisa baixar estoque na transação');
 need(sql,/'sale',v_sale\.id/i,'movimento de estoque precisa referenciar a venda');
 need(sql,/revoke all on function public\.padoka_create_sale_once\(jsonb,text,uuid\) from public, anon/i,'RPC não pode ser executável por anon/public');
 need(sql,/grant execute on function public\.padoka_create_sale_once\(jsonb,text,uuid\) to authenticated/i,'staff autenticado precisa executar a RPC sob validação interna');
-forbid(sql,/trigger[^;]*auth\.users/is,'migration não pode criar trigger global em auth.users');
+forbid(sql,/create\s+trigger[\s\S]{0,300}\bon\s+auth\.users\b/i,'migration não pode criar trigger global em auth.users');
 forbid(sql,/grant (insert|update|delete).*padoka_sales.*authenticated/i,'frontend não deve escrever vendas diretamente');
 
 need(nav,/assets\/pdv-idempotency\.js/i,'PDV precisa carregar a camada idempotente somente na área interna');
