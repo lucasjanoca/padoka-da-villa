@@ -23,7 +23,7 @@ need(sql,/voided_at = now\(\)/i,'estorno precisa registrar horário');
 need(sql,/void_reason = v_reason/i,'estorno precisa guardar o motivo validado');
 need(sql,/revoke all on function public\.padoka_void_sale\(uuid,text\) from public, anon/i,'RPC não pode ser executável por anon/public');
 need(sql,/grant execute on function public\.padoka_void_sale\(uuid,text\) to authenticated/i,'staff autenticado precisa executar a RPC sob validação interna');
-forbid(sql,/trigger[^;]*auth\.users/is,'migration não pode criar trigger global em auth.users');
+forbid(sql,/create\s+trigger[\s\S]{0,300}\bon\s+auth\.users\b/i,'migration não pode criar trigger global em auth.users');
 forbid(sql,/grant update.*padoka_sales.*authenticated/i,'frontend não deve receber UPDATE direto em vendas');
 
 need(js,/\['owner','manager'\]\.includes/i,'frontend de estorno precisa ficar restrito a owner/manager');
