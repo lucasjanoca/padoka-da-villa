@@ -1,12 +1,12 @@
-# PADOKA DA VILLA — Sistema completo v0.2
+# PADOKA DA VILLA — Sistema completo v0.3
 
 Projeto em evolução de site de pedidos para sistema operacional completo de padaria.
 
 ## Estado atual
 
-O repositório já possui uma base pública funcional, responsiva e mobile-first. A autenticação de clientes, pedidos, acompanhamento e fila interna já usam o projeto Supabase **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`). O projeto **InfoTech.io não é usado pela PADOKA**.
+A base pública é funcional, responsiva e mobile-first. Autenticação de clientes, catálogo, checkout, acompanhamento, fila interna e partes da operação usam o projeto Supabase **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`). O projeto **InfoTech.io não é usado pela PADOKA**.
 
-O login Google já está implementado no site, mas depende da configuração externa do Google OAuth Client ID/Secret e redirects no Google Cloud antes de abrir a seleção real de conta.
+O login Google está ativo e já possui identidades reais no Supabase Auth. O frontend mantém `prompt=select_account`, portanto o cliente recebe o seletor de conta Google em vez de reutilizar silenciosamente uma sessão anterior.
 
 ## Separação correta
 
@@ -27,76 +27,79 @@ O cliente vê somente:
 ### Conta do cliente — `conta.html`
 - Supabase Auth real
 - Google como opção principal
-- e-mail/senha e link por e-mail
+- e-mail/senha e link por e-mail como alternativas
 - onboarding exclusivo PADOKA em `padoka_profiles`
-- nome editável, WhatsApp obrigatório, aniversário e marketing opcionais
+- nome editável e pré-preenchido quando disponível
+- WhatsApp e consentimento de privacidade obrigatórios
+- aniversário e marketing opcionais
+- endereço somente quando houver fluxo de entrega
+- CPF não é obrigatório por padrão
 - nenhum trigger global transforma usuários de outros sistemas em clientes PADOKA
+- navegação mobile persistente para Início, Cardápio, Pedidos e Conta
 
 ### Checkout, catálogo e pedidos
 - `pagamento.html` cria pedidos reais via RPC `padoka_create_order`
 - pedidos ficam vinculados ao `auth.uid()` do cliente
-- pedidos de teste permanecem marcados como `is_test = true`
-- `padoka_products` mantém o catálogo demonstrativo autoritativo no servidor
-- o cardápio público também consulta `padoka_products`: produtos ativos, nomes, categorias e preços vêm do servidor; `assets/catalog.js` mantém somente metadados visuais como foto, descrição, unidade e tag
-- se o catálogo do servidor estiver indisponível, o site não reaproveita preço estático como se fosse atual; o cardápio informa indisponibilidade temporária
-- enquanto houver `is_demo = true`, o cardápio identifica de forma discreta que catálogo e valores ainda são provisórios
-- nome e preço enviados pelo navegador não são confiados para calcular o pedido
-- `acompanhamento.html` lê o pedido real e recebe atualizações pelo Supabase Realtime
+- pedidos continuam marcados como `is_test = true` enquanto catálogo/preços/Pix oficiais não forem aprovados
+- `padoka_products` é a fonte autoritativa de produtos ativos, nomes, categorias e preços
+- `assets/catalog.js` mantém somente metadados visuais
+- se o catálogo do servidor estiver indisponível, o site não reutiliza preço estático como se fosse atual
+- nome, preço e total enviados pelo navegador não são tratados como autoritativos
+- `acompanhamento.html` lista automaticamente apenas pedidos do cliente autenticado, mais recentes primeiro, com progresso e Realtime
 
 ### Sistema interno — `internal.html` / `pedidos.html`
 - login real
-- acesso somente para usuários presentes em `padoka_staff_users`
+- acesso somente para usuários ativos em `padoka_staff_users`
 - fila de pedidos real
-- mudança de status por etapas
+- transições de status passam exclusivamente pela RPC `padoka_update_order_status`
+- `authenticated` não possui mais `UPDATE` direto em `padoka_orders`
+- a RPC valida sessão de staff, sequência de etapas e bloqueia reabertura de pedidos concluídos/cancelados
 - cliente comum não recebe permissão interna
 
-A migration `supabase/005_order_status_transition_rpc.sql` prepara a próxima proteção do fluxo interno: a RPC `padoka_update_order_status` valida a sessão de staff, bloqueia saltos de etapa e impede reabertura de pedidos concluídos/cancelados. Depois que essa migration for aplicada no backend correto, o `UPDATE` direto em `padoka_orders` é revogado para `authenticated` e as mudanças passam exclusivamente pela RPC. O frontend `pedidos.html` já tenta essa RPC primeiro e usa o `UPDATE` direto somente como fallback temporário quando a função ainda não existe no schema publicado. Esse fallback deve ser removido depois da aplicação e revisão da migration 005.
+## Camada operacional ativa no backend correto
 
-Módulos ainda em evolução:
-- Caixa / PDV
-- leitor de código de barras
-- estoque automático
-- produção / fornadas
-- perdas
-- relatórios
-- usuários/permissões avançadas
-- auditoria operacional
+As migrations preparadas anteriormente já estão presentes no projeto **Sites De Clientes!** e mantêm todos os objetos sob prefixo `padoka_`.
 
-### Próxima camada operacional preparada
-
-A migration `supabase/003_operational_inventory_production_losses.sql` prepara, **sem ainda alterar o ambiente publicado**, a substituição dos estados locais de Gestão por objetos reais e isolados no Supabase correto:
+### Estoque / produção / perdas
+Objetos ativos incluem:
 - `padoka_inventory`
 - `padoka_inventory_movements`
 - `padoka_production_plans`
 - `padoka_losses`
 - RPC `padoka_adjust_inventory`
 - RPC `padoka_register_loss`
+- RPC `padoka_record_production`
+- RPC `padoka_register_loss_once`
 
-A migration inclui RLS, permissões por perfil interno, histórico de movimentação e proteção contra estoque negativo. Ela **não deve ser aplicada no InfoTech.io**.
+A conclusão de produção e o registro idempotente de perdas usam `request_id` para reduzir risco de duplicação em retry de rede.
 
-O frontend da Gestão já possui uma camada de sincronização condicional em `assets/operational-sync.js`: depois que a migration 003 existir no backend correto, usuários internos autorizados passam a ler estoque, produção e perdas do Supabase, ajustes de saldo usam `padoka_adjust_inventory`, perdas usam `padoka_register_loss` e as telas recebem atualizações por Realtime. Enquanto os objetos ainda não existirem no backend publicado, a página preserva o comportamento local anterior sem quebrar a interface. Essa compatibilidade temporária deve ser removida somente depois da migration 003 ser aplicada, validada e os dados locais necessários serem migrados de forma explícita.
+### PDV
+Objetos ativos incluem:
+- `padoka_sales`
+- `padoka_sale_items`
+- RPC `padoka_create_sale`
 
-A migration seguinte, `supabase/004_pdv_sales_transaction.sql`, prepara a venda de balcão real do PDV sem ativá-la antes da camada de estoque existir. Ela cria `padoka_sales`, `padoka_sale_items` e a RPC `padoka_create_sale`, que valida função interna, aceita somente produtos ativos, recalcula preços no servidor, bloqueia venda sem estoque suficiente e registra a baixa de estoque e o histórico de movimentações na mesma transação. A venda continua marcada como teste quando qualquer item do catálogo ainda tiver `is_demo = true`.
-
-O frontend `pdv.html` detecta de forma segura se a camada 004 existe: enquanto `padoka_sales` ainda não estiver disponível, **Finalizar venda** permanece desativado e nenhuma venda local é simulada. Depois de 003/004 serem aplicadas e revisadas no backend correto, o mesmo PDV habilita a finalização via `padoka_create_sale`, envia apenas `product_id`, quantidade e forma de pagamento, recebe o código da venda do servidor e deixa a própria RPC responsável pela baixa transacional do estoque. Erros de estoque insuficiente, estoque não inicializado e permissão são tratados sem simular sucesso. Enquanto houver itens `is_demo = true`, a interface deixa claro que a venda registrada continua sendo de teste.
-
-A migration `supabase/006_production_completion_transaction.sql` prepara o registro real de produção. A RPC `padoka_record_production` atualiza o plano, adiciona a quantidade produzida ao estoque, registra o lote e cria o movimento de estoque na mesma transação. Cada tentativa usa `request_id` idempotente: um retry com o mesmo plano e quantidade devolve o lote já criado, enquanto reutilizar o mesmo identificador com dados diferentes é rejeitado. O frontend `assets/production-completion.js` só assume o controle quando essa camada existe e preserva a mesma tentativa em respostas ambíguas para evitar dupla entrada de estoque.
-
-A migration `supabase/007_loss_idempotency.sql` aplica a mesma proteção ao registro de perdas. Ela adiciona `request_id` opcional/único em `padoka_losses` e a RPC `padoka_register_loss_once`, que faz lock do estoque, valida saldo, baixa a quantidade e grava perda + movimentação na mesma transação. `assets/loss-registration.js` é ativado somente quando a coluna `request_id` existe; em falha de rede ele guarda a operação pendente em `sessionStorage` e força o retry com os mesmos dados, reduzindo risco de descontar o estoque duas vezes. Enquanto 007 não estiver aplicada, o comportamento anterior da migration 003 permanece como fallback.
+A venda de balcão é server-authoritative: o navegador envia identificadores/quantidades e forma de pagamento; o servidor valida produto ativo, preço, estoque, autorização e registra a baixa de estoque na mesma transação. Enquanto qualquer item continuar demonstrativo, a venda permanece identificada como teste.
 
 ## Banco Supabase
 
-Todos os objetos exclusivos do projeto usam prefixo `padoka_` para não colidir com outros clientes existentes no mesmo Supabase.
+Todos os objetos exclusivos do projeto usam prefixo `padoka_` para não colidir com outros clientes existentes no mesmo projeto compartilhado.
 
-Principais objetos já ativos:
+Principais objetos:
 - `padoka_profiles`
 - `padoka_staff_users`
 - `padoka_products`
 - `padoka_orders`
 - `padoka_order_items`
 - `padoka_order_events`
+- `padoka_inventory`
+- `padoka_inventory_movements`
+- `padoka_production_plans`
+- `padoka_losses`
+- `padoka_sales`
+- `padoka_sale_items`
 
-Todas essas tabelas usam Row Level Security.
+Não criar trigger global em `auth.users`. Cliente PADOKA só ganha `padoka_profiles` ao entrar na aplicação e concluir onboarding; equipe interna continua separada em `padoka_staff_users`.
 
 ## Dados públicos confirmados
 
@@ -109,9 +112,21 @@ Todas essas tabelas usam Row Level Security.
 Não considerar como dados oficiais até confirmação da padaria:
 - cardápio
 - preços
-- códigos de produto
+- fotos de produtos
+- códigos de produto / EAN
 - chave Pix
 - regras definitivas de retirada / Padoca Noturna
+- funcionários e permissões finais
+
+As bebidas devem continuar com imagens distintas e coerentes entre si: expresso, cappuccino, suco e água não devem reutilizar uma única foto de café.
+
+## Próximas prioridades
+
+1. Revisar a ativação real do PDV ponta a ponta com usuário interno autorizado e dados de teste.
+2. Remover compatibilidades locais restantes de Gestão somente quando a camada correspondente estiver validada no Supabase.
+3. Validar produção e perdas idempotentes em cenários de retry.
+4. Evoluir relatórios operacionais sem expor dados internos ao site público.
+5. Manter auditoria contínua de RLS, ACLs e funções `SECURITY DEFINER`.
 
 ## Rodar localmente
 
@@ -137,4 +152,4 @@ Os seguintes dados não devem ser inventados:
 
 ## Fiscal
 
-A emissão fiscal não foi ativada. O futuro PDV poderá ser testado operacionalmente, mas não deve substituir o emissor fiscal atual até a definição da integração NFC-e adequada.
+A emissão fiscal não foi ativada. O PDV pode ser validado operacionalmente em modo de teste, mas não deve substituir o emissor fiscal atual até a definição da integração NFC-e adequada.
