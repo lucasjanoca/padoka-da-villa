@@ -19,6 +19,12 @@ for (const f of ['internal.html','pedidos.html','pdv.html','gestao.html']) {
   ok(html[f].includes('padoka_staff_users'), `${f}: não valida padoka_staff_users`);
 }
 
+// Physical USB scanners act as fast keyboards; PDV must keep a global capture path without hijacking editable fields.
+ok(html['pdv.html'].includes('handleHardwareScannerKey'), 'pdv.html: captura de leitor USB global ausente');
+ok(html['pdv.html'].includes("document.addEventListener('keydown',handleHardwareScannerKey)"), 'pdv.html: listener do leitor USB não está ativo');
+ok(html['pdv.html'].includes('editableTarget(e.target)'), 'pdv.html: leitor USB pode interferir em campos editáveis');
+ok(html['pdv.html'].includes('HARDWARE_KEY_GAP_MS'), 'pdv.html: leitura USB não diferencia scanner rápido de digitação comum');
+
 // Customer order tracking invariants.
 ok(!/placeholder=["'][^"']*(?:pesquis|buscar)[^"']*["']/i.test(html['acompanhamento.html']), 'acompanhamento.html: não deve ter campo de pesquisa');
 for (const status of ['received','seen','confirmed','preparing','ready','completed']) {
