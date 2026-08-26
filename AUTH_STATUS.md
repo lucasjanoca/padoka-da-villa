@@ -1,16 +1,18 @@
 # PADOKA — Estado das contas e autenticação
 
-Atualizado em 25/08/2026.
+Atualizado em 26/08/2026.
 
 ## O que está ativo
 
 - O projeto da PADOKA usa o Supabase **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`).
 - O projeto **InfoTech.io não é usado pela PADOKA**.
 - A conta pública usa Supabase Auth real; não existem contas demo para o cliente.
-- Login por Google, e-mail/senha e link por e-mail usam o Auth real.
-- O login Google está operacional: o backend já possui identidades Google reais.
-- O frontend mantém `prompt=select_account` no `signInWithOAuth`, forçando a escolha da conta quando o fluxo Google é aberto.
-- O retorno autorizado da conta é `https://lucasjanoca.github.io/padoka-da-villa/conta.html`.
+- Login por e-mail/senha e link por e-mail usam o Auth real.
+- O login Google é a opção principal planejada, porém **ainda depende de Client ID/Client Secret reais criados no Google Cloud e do provider Google ser habilitado no Supabase**.
+- Nenhuma credencial Google deve ser inventada, simulada ou armazenada no repositório.
+- Quando o provider Google estiver habilitado, o frontend mantém `prompt=select_account` no `signInWithOAuth`, solicitando a escolha da conta ao abrir o fluxo.
+- Enquanto o provider estiver desativado, o frontend deve manter tratamento amigável e permitir o uso das opções de autenticação já disponíveis.
+- O retorno autorizado previsto para a conta é `https://lucasjanoca.github.io/padoka-da-villa/conta.html`.
 - A callback do projeto é `https://yncspxfsvlqdnodlsosb.supabase.co/auth/v1/callback`.
 
 ## Onboarding do cliente
@@ -51,9 +53,11 @@ Isso evita mistura operacional com objetos `rass_*`, `emp_*`, `plexo_*` e demais
 
 ## Google Auth
 
-O estado antigo `provider is not enabled` não representa mais a situação atual. Depois da configuração manual do Google OAuth no Google Cloud e no Supabase, autenticações Google reais passaram a ocorrer.
+O provider Google **não deve ser considerado ativo até que** o OAuth seja configurado manualmente com credenciais reais no Google Cloud e habilitado no Supabase do projeto `yncspxfsvlqdnodlsosb`.
 
-O frontend continua preservando tratamento amigável caso o provider volte a ficar indisponível ou a pré-verificação falhe por rede; nenhuma credencial secreta é armazenada no repositório.
+O frontend consulta o estado do provider antes do redirecionamento. Se o Supabase informar explicitamente que Google está desativado, o cliente recebe uma mensagem simples de indisponibilidade e pode continuar usando e-mail/senha ou link por e-mail. Se a pré-verificação falhar apenas por rede, o botão pode tentar o OAuth para evitar um falso negativo.
+
+Quando habilitado, o fluxo Google deve continuar usando `prompt=select_account` e retornar para `conta.html`.
 
 Nunca colocar Client Secret, `service_role` ou outra chave administrativa em HTML/JavaScript público.
 
