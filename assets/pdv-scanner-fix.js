@@ -1,27 +1,9 @@
 (()=>{
-  const TEST_BARCODES={
-    'pao-frances':'7899000000010',
-    'pao-queijo':'7899000000027',
-    'croissant':'7899000000034',
-    'croissant-recheado':'7899000000041',
-    'coxinha':'7899000000058',
-    'esfiha':'7899000000065',
-    'misto':'7899000000072',
-    'combo-noturno':'7899000000089',
-    'bolo':'7899000000096',
-    'sonho':'7899000000102',
-    'cookie':'7899000000119',
-    'muffin':'7899000000126',
-    'expresso':'7899000000133',
-    'cappuccino':'7899000000140',
-    'suco':'7899000000157',
-    'agua':'7899000000164'
-  };
-
   const HARDWARE_KEY_GAP_MS=80;
   const HARDWARE_COMMIT_DELAY_MS=130;
   const MIN_AUTO_CODE_LENGTH=6;
   const MAX_SCANNER_CODE_LENGTH=64;
+  const DEMO_BARCODE_PATTERN=/^7899000000\d{3}$/;
   const normalize=value=>String(value??'').trim();
   const scannerInput=document.getElementById('scanner');
   const readerStatus=document.getElementById('readerStatus');
@@ -168,32 +150,34 @@
     setReaderStatus('Modo leitor USB ativo — aguardando código.');
   }
 
+  function describeBarcodeState(rows){
+    const codes=rows.map(row=>normalize(row.barcode)).filter(Boolean);
+    if(!codes.length)return 'Modo leitor USB ativo — nenhum código de barras cadastrado no servidor.';
+    if(codes.every(code=>DEMO_BARCODE_PATTERN.test(code)))return 'Modo leitor USB ativo — códigos cadastrados ainda são demonstrativos.';
+    return 'Modo leitor USB ativo — aguardando código.';
+  }
+
   async function refreshBarcodes(){
     if(!sb||!Array.isArray(products)||!products.length)return false;
     let rows=[];
     try{
       const {data,error}=await sb.rpc('padoka_list_product_barcodes');
-      if(!error&&Array.isArray(data))rows=data;
+      if(error)throw error;
+      if(Array.isArray(data))rows=data;
     }catch(error){
       console.warn('PADOKA barcode catalog RPC:',error);
+      setReaderStatus('Modo leitor USB ativo — não foi possível atualizar os códigos do servidor.');
+      return false;
     }
     const fromDb=new Map(rows.map(row=>[String(row.product_id),normalize(row.barcode)]));
     products=products.map(product=>({
       ...product,
-      barcode:fromDb.get(String(product.id))||normalize(product.barcode)||TEST_BARCODES[product.id]||null
+      barcode:fromDb.get(String(product.id))||normalize(product.barcode)||null
     }));
+    setReaderStatus(describeBarcodeState(rows));
     try{renderProducts()}catch{}
     return true;
   }
-
-  const originalFindByCode=findByCode;
-  findByCode=function(code){
-    const found=originalFindByCode(code);
-    if(found)return found;
-    const raw=normalize(code);
-    const productId=Object.keys(TEST_BARCODES).find(id=>TEST_BARCODES[id]===raw);
-    return productId?products.find(product=>product.id===productId)||null:null;
-  };
 
   // Beep no limite digital do navegador. O volume físico final ainda depende do volume de mídia do aparelho.
   playScanBeep=function(){
