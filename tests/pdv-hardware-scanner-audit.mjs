@@ -18,7 +18,11 @@ const checks = [
   ['leitura física é bloqueada durante venda pendente ou câmera aberta', /scannerInput\.disabled\|\|cameraIsOpen\(\)/.test(scanner)],
   ['leitor limita códigos anormalmente longos', /MAX_SCANNER_CODE_LENGTH=64/.test(scanner)&&/raw\.length>MAX_SCANNER_CODE_LENGTH/.test(scanner)&&/hardwareBuffer\.length>=MAX_SCANNER_CODE_LENGTH/.test(scanner)],
   ['leitura acima do limite é descartada sem truncar código', /rejectOversizedRead\(\).*scannerInput\.value=''/s.test(scanner)],
-  ['o cache-buster do loader aponta para a revisão atual do leitor físico', /pdv-scanner-fix\.js\?v=2026082602/.test(loader)],
+  ['códigos do leitor são atualizados pela RPC do servidor', /sb\.rpc\('padoka_list_product_barcodes'\)/.test(scanner)],
+  ['frontend não mantém tabela fixa de códigos demonstrativos', !/TEST_BARCODES/.test(scanner)],
+  ['falha ao atualizar códigos do servidor não inventa fallback local', /if\(error\)throw error/.test(scanner)&&!/TEST_BARCODES\[product\.id\]/.test(scanner)],
+  ['PDV identifica quando os códigos cadastrados ainda são demonstrativos', /DEMO_BARCODE_PATTERN/.test(scanner)&&/códigos cadastrados ainda são demonstrativos/.test(scanner)],
+  ['o cache-buster do loader aponta para a revisão atual do leitor físico', /pdv-scanner-fix\.js\?v=2026082603/.test(loader)],
 ];
 
 for (const [label, passed] of checks) {
