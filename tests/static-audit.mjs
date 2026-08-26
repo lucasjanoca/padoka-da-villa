@@ -4,6 +4,8 @@ const read = p => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const files = ['index.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html'];
 const html = Object.fromEntries(files.map(f => [f, read(f)]));
 const catalog = read('assets/catalog.js');
+const reportingSync = read('assets/reporting-sync.js');
+const settingsSync = read('assets/settings-sync.js');
 const auth = read('AUTH_STATUS.md');
 const statusMigration = read('supabase/005_order_status_transition_rpc.sql');
 const failures = [];
@@ -17,6 +19,13 @@ for (const f of ['index.html','conta.html','pagamento.html','acompanhamento.html
 // Every internal surface must remain protected by the staff table.
 for (const f of ['internal.html','pedidos.html','pdv.html','gestao.html']) {
   ok(html[f].includes('padoka_staff_users'), `${f}: não valida padoka_staff_users`);
+}
+
+// Sensitive management modules must not even start server sync for unrelated staff roles.
+for (const [name, source] of [['reporting-sync.js', reportingSync], ['settings-sync.js', settingsSync]]) {
+  ok(source.includes("new Set(['owner','manager'])"), `${name}: sincronização sensível sem allowlist owner/manager`);
+  ok(source.includes('window.padokaStaffRole'), `${name}: não espera o papel interno validado`);
+  ok(source.includes('if(!allowedRoles.has(role))return'), `${name}: não interrompe execução para papel sem permissão`);
 }
 
 // Customer order tracking invariants.
