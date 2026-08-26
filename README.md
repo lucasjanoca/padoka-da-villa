@@ -1,155 +1,79 @@
-# PADOKA DA VILLA — Sistema completo v0.3
+# 🥐 PADOKA DA VILLA — Plataforma Web
 
-Projeto em evolução de site de pedidos para sistema operacional completo de padaria.
+> Projeto em evolução para transformar a presença digital da padaria em uma plataforma integrada de pedidos e operação.
 
-## Estado atual
+A **PADOKA DA VILLA** reúne uma experiência mobile-first para clientes e uma base operacional preparada para pedidos, administração, estoque, produção e PDV. O objetivo é manter os módulos conectados, com regras importantes validadas no backend e separação clara entre a área pública e a operação interna.
 
-A base pública é funcional, responsiva e mobile-first. Autenticação de clientes, catálogo, checkout, acompanhamento, fila interna e partes da operação usam o projeto Supabase **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`). O projeto **InfoTech.io não é usado pela PADOKA**.
+## ✨ Escopo do projeto
 
-O login Google está ativo e já possui identidades reais no Supabase Auth. O frontend mantém `prompt=select_account`, portanto o cliente recebe o seletor de conta Google em vez de reutilizar silenciosamente uma sessão anterior.
+### Experiência do cliente
+- cardápio responsivo;
+- pesquisa e categorias;
+- carrinho e checkout;
+- retirada agendada;
+- autenticação e conta do cliente;
+- acompanhamento e histórico de pedidos;
+- experiência otimizada para celular.
 
-## Separação correta
+### Operação interna
+- fila e acompanhamento de pedidos;
+- controle de status;
+- gestão de produtos;
+- estoque e movimentações;
+- produção e perdas;
+- base de PDV integrada ao estoque;
+- perfis e permissões para equipe.
 
-### Site do cliente — `index.html`
-O cliente vê somente:
-- identidade e informações públicas
-- cardápio e categorias
-- pesquisa
-- carrinho
-- retirada agendada
-- checkout
-- acompanhamento do pedido
-- conta do cliente
-- histórico
+## 🛠️ Tecnologias
 
-**Não existe link público de Caixa, Estoque, Produção ou Administração.**
+`HTML5` · `CSS3` · `JavaScript` · `Supabase` · `GitHub Pages`
 
-### Conta do cliente — `conta.html`
-- Supabase Auth real
-- Google como opção principal
-- e-mail/senha e link por e-mail como alternativas
-- onboarding exclusivo PADOKA em `padoka_profiles`
-- nome editável e pré-preenchido quando disponível
-- WhatsApp e consentimento de privacidade obrigatórios
-- aniversário e marketing opcionais
-- endereço somente quando houver fluxo de entrega
-- CPF não é obrigatório por padrão
-- nenhum trigger global transforma usuários de outros sistemas em clientes PADOKA
-- navegação mobile persistente para Início, Cardápio, Pedidos e Conta
+## 🔐 Segurança e arquitetura
 
-### Checkout, catálogo e pedidos
-- `pagamento.html` cria pedidos reais via RPC `padoka_create_order`
-- pedidos ficam vinculados ao `auth.uid()` do cliente
-- pedidos continuam marcados como `is_test = true` enquanto catálogo/preços/Pix oficiais não forem aprovados
-- `padoka_products` é a fonte autoritativa de produtos ativos, nomes, categorias e preços
-- `assets/catalog.js` mantém somente metadados visuais
-- se o catálogo do servidor estiver indisponível, o site não reutiliza preço estático como se fosse atual
-- nome, preço e total enviados pelo navegador não são tratados como autoritativos
-- `acompanhamento.html` lista automaticamente apenas pedidos do cliente autenticado, mais recentes primeiro, com progresso e Realtime
+O projeto segue uma separação entre interface pública e funções administrativas. Autenticação, Row Level Security (RLS), permissões por perfil e validações no banco são usadas para evitar que regras críticas dependam apenas do navegador.
 
-### Sistema interno — `internal.html` / `pedidos.html`
-- login real
-- acesso somente para usuários ativos em `padoka_staff_users`
-- fila de pedidos real
-- transições de status passam exclusivamente pela RPC `padoka_update_order_status`
-- `authenticated` não possui mais `UPDATE` direto em `padoka_orders`
-- a RPC valida sessão de staff, sequência de etapas e bloqueia reabertura de pedidos concluídos/cancelados
-- cliente comum não recebe permissão interna
+Princípios adotados:
+- nenhuma chave administrativa deve ficar no frontend;
+- operações sensíveis devem validar a identidade e a permissão do usuário no backend;
+- preços, estoque e totais não devem confiar apenas em valores enviados pelo navegador;
+- alterações devem ser testadas na branch `dev` antes de chegar ao `main`;
+- auditorias automáticas verificam estrutura e possíveis segredos antes da publicação.
 
-## Camada operacional ativa no backend correto
+## 🚧 Estado atual
 
-As migrations preparadas anteriormente já estão presentes no projeto **Sites De Clientes!** e mantêm todos os objetos sob prefixo `padoka_`.
+O projeto continua em validação e possui dados demonstrativos. Antes do uso comercial definitivo ainda precisam ser confirmados dados como catálogo, preços, códigos de barras, regras operacionais, meios de pagamento, equipamentos e configuração fiscal.
 
-### Estoque / produção / perdas
-Objetos ativos incluem:
-- `padoka_inventory`
-- `padoka_inventory_movements`
-- `padoka_production_plans`
-- `padoka_losses`
-- RPC `padoka_adjust_inventory`
-- RPC `padoka_register_loss`
-- RPC `padoka_record_production`
-- RPC `padoka_register_loss_once`
+O PDV pode ser evoluído e testado operacionalmente, mas não deve substituir um emissor fiscal oficial sem a integração adequada para o cenário real da empresa.
 
-A conclusão de produção e o registro idempotente de perdas usam `request_id` para reduzir risco de duplicação em retry de rede.
+## 📁 Estrutura
 
-### PDV
-Objetos ativos incluem:
-- `padoka_sales`
-- `padoka_sale_items`
-- RPC `padoka_create_sale`
+- `index.html` — experiência pública do cliente;
+- `conta.html` — conta e autenticação;
+- `pagamento.html` — checkout;
+- `acompanhamento.html` — pedidos do cliente;
+- `internal.html` / `pedidos.html` — operação interna;
+- `supabase/` — migrations e configuração de banco;
+- `.github/workflows/` — validações e automações do repositório;
+- `docs/` — documentação complementar.
 
-A venda de balcão é server-authoritative: o navegador envia identificadores/quantidades e forma de pagamento; o servidor valida produto ativo, preço, estoque, autorização e registra a baixa de estoque na mesma transação. Enquanto qualquer item continuar demonstrativo, a venda permanece identificada como teste.
+## 🧪 Desenvolvimento
 
-## Banco Supabase
-
-Todos os objetos exclusivos do projeto usam prefixo `padoka_` para não colidir com outros clientes existentes no mesmo projeto compartilhado.
-
-Principais objetos:
-- `padoka_profiles`
-- `padoka_staff_users`
-- `padoka_products`
-- `padoka_orders`
-- `padoka_order_items`
-- `padoka_order_events`
-- `padoka_inventory`
-- `padoka_inventory_movements`
-- `padoka_production_plans`
-- `padoka_losses`
-- `padoka_sales`
-- `padoka_sale_items`
-
-Não criar trigger global em `auth.users`. Cliente PADOKA só ganha `padoka_profiles` ao entrar na aplicação e concluir onboarding; equipe interna continua separada em `padoka_staff_users`.
-
-## Dados públicos confirmados
-
-- Endereço: Av. 1º de Maio, 959 - Vila Pedroso, Cerquilho - SP, 18528-344.
-- Horário provisório informado: 05:00 às 18:00.
-- Campanha prevista: **Padoca Noturna**, com detalhes finais ainda editáveis.
-
-## Dados que continuam demonstrativos
-
-Não considerar como dados oficiais até confirmação da padaria:
-- cardápio
-- preços
-- fotos de produtos
-- códigos de produto / EAN
-- chave Pix
-- regras definitivas de retirada / Padoca Noturna
-- funcionários e permissões finais
-
-As bebidas devem continuar com imagens distintas e coerentes entre si: expresso, cappuccino, suco e água não devem reutilizar uma única foto de café.
-
-## Próximas prioridades
-
-1. Revisar a ativação real do PDV ponta a ponta com usuário interno autorizado e dados de teste.
-2. Remover compatibilidades locais restantes de Gestão somente quando a camada correspondente estiver validada no Supabase.
-3. Validar produção e perdas idempotentes em cenários de retry.
-4. Evoluir relatórios operacionais sem expor dados internos ao site público.
-5. Manter auditoria contínua de RLS, ACLs e funções `SECURITY DEFINER`.
-
-## Rodar localmente
+Para servir o projeto localmente:
 
 ```bash
 python -m http.server 8000
 ```
 
-Cliente: `http://localhost:8000/index.html`
+Depois acesse `http://localhost:8000/`.
 
-## Ainda depende da padaria
+## 📌 Próximas prioridades
 
-Os seguintes dados não devem ser inventados:
-- cardápio e preços reais
-- códigos reais
-- chave Pix
-- funcionários reais
-- CNPJ / IE e dados fiscais
-- sistema fiscal atual
-- modelo de impressora
-- modelo de balança
-- modelo do leitor
-- regras definitivas de retirada e da Padoca Noturna
+1. Validar o fluxo completo de pedido com dados reais aprovados.
+2. Testar PDV, estoque, produção e perdas de ponta a ponta.
+3. Finalizar regras de pagamento e operação.
+4. Definir integração fiscal e equipamentos antes do uso comercial.
+5. Continuar auditorando segurança, permissões e desempenho do banco.
 
-## Fiscal
+---
 
-A emissão fiscal não foi ativada. O PDV pode ser validado operacionalmente em modo de teste, mas não deve substituir o emissor fiscal atual até a definição da integração NFC-e adequada.
+**Projeto desenvolvido e mantido como solução web da InfoTech.io.**
