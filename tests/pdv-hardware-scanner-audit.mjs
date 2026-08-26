@@ -21,8 +21,9 @@ const checks = [
   ['códigos do leitor são atualizados pela RPC do servidor', /sb\.rpc\('padoka_list_product_barcodes'\)/.test(scanner)],
   ['frontend não mantém tabela fixa de códigos demonstrativos', !/TEST_BARCODES/.test(scanner)],
   ['falha ao atualizar códigos do servidor não inventa fallback local', /if\(error\)throw error/.test(scanner)&&!/TEST_BARCODES\[product\.id\]/.test(scanner)],
+  ['produto sem código retornado pelo servidor fica sem barcode local', /barcode:fromDb\.get\(String\(product\.id\)\)\|\|null/.test(scanner)&&!/barcode:fromDb\.get\(String\(product\.id\)\)\|\|normalize\(product\.barcode\)/.test(scanner)],
   ['PDV identifica quando os códigos cadastrados ainda são demonstrativos', /DEMO_BARCODE_PATTERN/.test(scanner)&&/códigos cadastrados ainda são demonstrativos/.test(scanner)],
-  ['o cache-buster do loader aponta para a revisão atual do leitor físico', /pdv-scanner-fix\.js\?v=2026082603/.test(loader)],
+  ['o cache-buster do loader aponta para a revisão atual do leitor físico', /pdv-scanner-fix\.js\?v=2026082604/.test(loader)],
 ];
 
 for (const [label, passed] of checks) {
