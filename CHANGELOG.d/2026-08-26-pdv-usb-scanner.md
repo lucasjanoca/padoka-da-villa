@@ -1,13 +1,13 @@
-# 2026-08-26 — Leitor físico USB mais robusto no PDV
+# 2026-08-26 — Feedback visual do leitor físico no PDV
 
-- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md` e o estado atual de `pdv.html` antes da alteração.
+- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `pdv.html`, `assets/pdv-idempotency.js`, `assets/pdv-scanner-fix.js` e o teste dedicado do leitor antes de concluir a alteração.
 - Confirmado que o backend correto continua sendo **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`); nenhum objeto do projeto InfoTech.io foi acessado ou alterado.
-- O PDV já aceitava leitores físicos quando o campo de código estava focado. Foi adicionado um caminho global seguro para leitores USB que funcionam como teclado, permitindo bipar mesmo depois de clicar em outra parte não editável da tela.
-- A captura global usa intervalo curto entre teclas para diferenciar o fluxo rápido de um scanner de digitação comum, exige um código mínimo antes de aceitar `Enter` e limita o buffer para evitar acumulação inesperada.
-- Campos editáveis (`input`, `textarea`, `select` e `contenteditable`) são explicitamente ignorados pela captura global, preservando busca, forma de pagamento e digitação manual.
-- A interface agora informa que o modo de leitor USB está ativo sem afirmar que um dispositivo físico específico foi detectado.
-- A câmera móvel, o campo manual, o catálogo server-authoritative e a finalização de venda no Supabase foram preservados.
-- `tests/static-audit.mjs` ganhou verificações para impedir regressão da captura do leitor USB e da proteção de campos editáveis.
+- A revisão identificou que a captura robusta de leitores USB já existia em `assets/pdv-scanner-fix.js`: Enter/Tab, autoenvio sem sufixo, rajadas rápidas fora do campo principal, proteção durante câmera/venda pendente e consulta de códigos no backend.
+- Uma tentativa inicial de repetir parte dessa captura dentro de `pdv.html` foi removida antes da conclusão para evitar dois listeners concorrentes e dupla inclusão de itens.
+- `pdv.html` ganhou somente a camada visual do estado do leitor físico, sem afirmar que um dispositivo específico foi detectado pelo navegador.
+- `assets/pdv-scanner-fix.js` agora atualiza esse estado quando o modo USB fica pronto e depois de cada código recebido, informando se o produto foi reconhecido ou se o código ainda não está cadastrado.
+- A implementação consolidada continua usando a extensão existente como única fonte de verdade para captura física; o teste dedicado `tests/pdv-hardware-scanner-audit.mjs` permanece responsável pelas invariantes de Enter/Tab, autoenvio, rajada rápida e bloqueio durante venda/câmera.
+- A câmera móvel, a digitação manual, o catálogo server-authoritative e a finalização idempotente de venda no Supabase foram preservados.
 - O advisor de segurança do projeto correto foi consultado. Os avisos `RLS Enabled No Policy` nas tabelas privadas `padoka_payment_attempts`, `padoka_payment_events`, `padoka_payment_settings` e `padoka_product_audit` foram mantidos intencionalmente sem policy de navegador; nenhum grant foi ampliado para silenciar advisor.
-- Os avisos sobre funções `SECURITY DEFINER` foram revisados como alertas de superfície exposta, não como indicação automática para remover `SECURITY DEFINER`; nenhuma ACL, RLS ou função foi alterada nesta execução.
+- Os avisos sobre funções `SECURITY DEFINER` foram tratados como alertas de superfície exposta, não como indicação automática para remover proteção; nenhuma ACL, RLS ou função foi alterada nesta execução.
 - Nenhuma migration ou mudança de banco foi aplicada nesta execução.
