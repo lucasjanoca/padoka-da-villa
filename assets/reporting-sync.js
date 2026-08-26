@@ -3,6 +3,7 @@
   if(!isGestao)return;
   const $=id=>document.getElementById(id),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),num=v=>Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:3}),esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   let sb=null,enabled=false,channel=null,refreshTimer=null;
+  const allowedRoles=new Set(['owner','manager']);
   const today=()=>new Date().toLocaleDateString('en-CA');
   function missing(error){return ['42883','PGRST202','PGRST204','PGRST205'].includes(error?.code)||/could not find the function|does not exist|schema cache/i.test(String(error?.message||''))}
   function denied(error){return /permission|required|not allowed/i.test(String(error?.message||''))}
@@ -31,6 +32,7 @@
   }
   function schedule(){if(!enabled)return;clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{const to=$('reportTo')?.value;if(to===today())load()},350)}
   function subscribe(){if(channel)return;channel=sb.channel('padoka-reporting-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_sales'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'padoka_orders'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'padoka_losses'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'padoka_inventory'},schedule).subscribe()}
-  async function start(){for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return;for(let n=0;n<100&&$('app')?.classList.contains('hidden');n++)await new Promise(r=>setTimeout(r,100));if($('app')?.classList.contains('hidden'))return;ensureShell();await load()}
+  async function waitForRole(){for(let n=0;n<100&&!window.padokaStaffRole;n++)await new Promise(r=>setTimeout(r,100));return String(window.padokaStaffRole||'').toLowerCase()}
+  async function start(){for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return;for(let n=0;n<100&&$('app')?.classList.contains('hidden');n++)await new Promise(r=>setTimeout(r,100));if($('app')?.classList.contains('hidden'))return;const role=await waitForRole();if(!allowedRoles.has(role))return;ensureShell();await load()}
   start();
 })();
