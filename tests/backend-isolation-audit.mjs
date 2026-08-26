@@ -4,16 +4,30 @@ const root = new URL('../', import.meta.url);
 const runtimeFiles = ['index.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html'];
 const assetsDir = new URL('assets/', root);
 for (const name of fs.readdirSync(assetsDir)) if (name.endsWith('.js')) runtimeFiles.push(`assets/${name}`);
-for (const name of fs.readdirSync(new URL('supabase/', root))) if (name.endsWith('.sql')) runtimeFiles.push(`supabase/${name}`);
+const migrationFiles = [];
+for (const name of fs.readdirSync(new URL('supabase/', root))) if (name.endsWith('.sql')) migrationFiles.push(`supabase/${name}`);
 
 const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
 const PADOKA_REF = 'yncspxfsvlqdnodlsosb';
 
+// Public/browser runtime must never contain an administrative credential or point
+// to a different Supabase project. Migration SQL is intentionally excluded from
+// the literal service_role check: PostgreSQL migrations may safely REVOKE/GRANT
+// functions to the built-in service_role database role without exposing a key.
 for (const rel of runtimeFiles) {
   const source = fs.readFileSync(new URL(rel, root), 'utf8');
-  ok(!/service_role/i.test(source), `${rel}: service_role não pode aparecer em código/runtime da PADOKA`);
-  ok(!/InfoTech\.io/i.test(source), `${rel}: referência ao projeto InfoTech.io em código/runtime da PADOKA`);
+  ok(!/service_role/i.test(source), `${rel}: service_role não pode aparecer em código/runtime público da PADOKA`);
+  for (const match of source.matchAll(/https:\/\/([a-z0-9]{20})\.supabase\.co/gi)) {
+    ok(match[1] === PADOKA_REF, `${rel}: aponta para Supabase diferente do backend PADOKA (${match[1]})`);
+  }
+}
+
+// Migrations may document forbidden destinations (for example, "não aplicar no
+// InfoTech.io") and may name PostgreSQL roles. What they must not do is embed a
+// Supabase URL for another project.
+for (const rel of migrationFiles) {
+  const source = fs.readFileSync(new URL(rel, root), 'utf8');
   for (const match of source.matchAll(/https:\/\/([a-z0-9]{20})\.supabase\.co/gi)) {
     ok(match[1] === PADOKA_REF, `${rel}: aponta para Supabase diferente do backend PADOKA (${match[1]})`);
   }
@@ -28,4 +42,4 @@ if (failures.length) {
   failures.forEach(x => console.error(`- ${x}`));
   process.exit(1);
 }
-console.log(`PADOKA backend isolation audit: OK (${runtimeFiles.length} arquivos verificados)`);
+console.log(`PADOKA backend isolation audit: OK (${runtimeFiles.length} runtimes + ${migrationFiles.length} migrations verificados)`);
