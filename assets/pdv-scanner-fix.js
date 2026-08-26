@@ -23,8 +23,13 @@
   const MIN_AUTO_CODE_LENGTH=6;
   const normalize=value=>String(value??'').trim();
   const scannerInput=document.getElementById('scanner');
+  const readerStatus=document.getElementById('readerStatus');
   let inputBurstCount=0,inputLastKeyAt=0,inputCommitTimer=null;
   let hardwareBuffer='',hardwareStartedAt=0,hardwareLastKeyAt=0,hardwareCommitTimer=null;
+
+  function setReaderStatus(text){
+    if(readerStatus)readerStatus.textContent=text;
+  }
 
   function resetInputBurst(){
     inputBurstCount=0;
@@ -49,9 +54,11 @@
   function submitHardwareCode(code){
     const raw=normalize(code);
     if(!raw||!scannerInput||scannerInput.disabled)return false;
+    const product=typeof findByCode==='function'?findByCode(raw):null;
     scannerInput.value=raw;
     scan();
     scannerInput.focus();
+    setReaderStatus(product?`Leitura recebida • ${product.name}`:`Código recebido • ${raw} não cadastrado`);
     return true;
   }
 
@@ -95,6 +102,7 @@
       if(event.key==='Escape'){
         resetInputBurst();
         scannerInput.value='';
+        setReaderStatus('Modo leitor USB ativo — aguardando código.');
         return;
       }
       if(event.ctrlKey||event.altKey||event.metaKey||event.key.length!==1)return;
@@ -114,6 +122,7 @@
 
       if(event.key==='Escape'){
         resetHardwareBuffer();
+        setReaderStatus('Modo leitor USB ativo — aguardando código.');
         return;
       }
       if(event.key==='Enter'||event.key==='Tab'){
@@ -136,6 +145,8 @@
       if(scannerInput)scannerInput.value=hardwareBuffer;
       armHardwareAutoCommit();
     },true);
+
+    setReaderStatus('Modo leitor USB ativo — aguardando código.');
   }
 
   async function refreshBarcodes(){
