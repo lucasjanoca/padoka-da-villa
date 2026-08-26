@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const read = p => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const migration = read('supabase/003_operational_inventory_production_losses.sql');
+const planningMigration = read('supabase/032_production_plan_rpc.sql');
 const sync = read('assets/operational-sync.js');
 const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
@@ -19,6 +20,16 @@ ok(sync.includes('showUnavailable()'), 'operational-sync.js: estado indisponíve
 ok(sync.includes('salvar informações apenas neste navegador'), 'operational-sync.js: mensagem de bloqueio do fallback local ausente');
 ok(/if\(p\.error\)\{if\(relationMissing\(p\.error\)\)return false/.test(sync), 'operational-sync.js: produção não falha fechada quando a relação está ausente');
 ok(/if\(l\.error\)\{if\(relationMissing\(l\.error\)\)return false/.test(sync), 'operational-sync.js: perdas não falham fechadas quando a relação está ausente');
+
+ok(planningMigration.includes('public.padoka_upsert_production_plan'), 'migration 032: RPC de planejamento ausente');
+ok(planningMigration.includes("padoka_staff_has_role(array['owner','manager','production'])"), 'migration 032: RPC de planejamento não restringe função interna');
+ok(/security definer/i.test(planningMigration), 'migration 032: RPC de planejamento não é server-authoritative');
+ok(/set search_path = 'public'/i.test(planningMigration), 'migration 032: RPC de planejamento sem search_path fixo');
+ok(/auth\.uid\(\) is null/i.test(planningMigration), 'migration 032: RPC de planejamento não exige autenticação explícita');
+ok(/revoke all on function public\.padoka_upsert_production_plan\(date, text, numeric, text\) from anon/i.test(planningMigration), 'migration 032: anon não foi explicitamente revogado da RPC');
+ok(/grant execute on function public\.padoka_upsert_production_plan\(date, text, numeric, text\) to authenticated/i.test(planningMigration), 'migration 032: authenticated não recebeu EXECUTE da RPC');
+ok(sync.includes("rpc('padoka_upsert_production_plan'"), 'operational-sync.js: planejamento não usa RPC server-authoritative');
+ok(!/from\('padoka_production_plans'\)\.upsert\(/.test(sync), 'operational-sync.js: ainda existe UPSERT direto em padoka_production_plans');
 
 if (failures.length) {
   console.error(`PADOKA inventory audit: ${failures.length} falha(s)`);
