@@ -24,7 +24,7 @@ ok(/if\(l\.error\)\{if\(relationMissing\(l\.error\)\)return false/.test(sync), '
 ok(planningMigration.includes('public.padoka_upsert_production_plan'), 'migration 032: RPC de planejamento ausente');
 ok(planningMigration.includes("padoka_staff_has_role(array['owner','manager','production'])"), 'migration 032: RPC de planejamento não restringe função interna');
 ok(/security definer/i.test(planningMigration), 'migration 032: RPC de planejamento não é server-authoritative');
-ok(/set search_path = 'public'/i.test(planningMigration), 'migration 032: RPC de planejamento sem search_path fixo');
+ok(/set\s+search_path\s*=\s*public/i.test(planningMigration), 'migration 032: RPC de planejamento sem search_path fixo');
 ok(/auth\.uid\(\) is null/i.test(planningMigration), 'migration 032: RPC de planejamento não exige autenticação explícita');
 ok(/revoke all on function public\.padoka_upsert_production_plan\(date, text, numeric, text\) from anon/i.test(planningMigration), 'migration 032: anon não foi explicitamente revogado da RPC');
 ok(/grant execute on function public\.padoka_upsert_production_plan\(date, text, numeric, text\) to authenticated/i.test(planningMigration), 'migration 032: authenticated não recebeu EXECUTE da RPC');
