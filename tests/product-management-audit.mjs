@@ -5,10 +5,12 @@ const ok = message => console.log(`✓ ${message}`);
 const read = file => fs.readFileSync(file, 'utf8');
 
 const sql = read('supabase/017_product_catalog_management.sql');
+const publicCatalogSql = read('supabase/002_server_authoritative_test_catalog.sql');
 const js = read('assets/product-management.js');
 const nav = read('assets/internal-nav.js');
 
 const requireSql = (pattern, label) => pattern.test(sql) ? ok(label) : fail(label);
+const requirePublicCatalogSql = (pattern, label) => pattern.test(publicCatalogSql) ? ok(label) : fail(label);
 const requireJs = (pattern, label) => pattern.test(js) ? ok(label) : fail(label);
 
 requireSql(/padoka_list_products_admin/i, 'RPC administrativa de listagem existe');
@@ -16,7 +18,8 @@ requireSql(/padoka_save_product/i, 'RPC administrativa de gravação existe');
 requireSql(/padoka_staff_has_role\(array\['owner','manager'\]\)/i, 'somente owner/manager podem gerenciar catálogo');
 requireSql(/security\s+definer[\s\S]*?set\s+search_path\s*=\s*public/i, 'RPCs SECURITY DEFINER fixam search_path');
 requireSql(/revoke\s+insert\s*,\s*update\s*,\s*delete\s+on\s+public\.padoka_products\s+from\s+anon\s*,\s*authenticated/i, 'escrita direta no catálogo fica revogada');
-requireSql(/grant\s+select\s+on\s+public\.padoka_products\s+to\s+anon\s*,\s*authenticated/i, 'leitura pública do catálogo ativo é preservada');
+requirePublicCatalogSql(/grant\s+select\s+on\s+public\.padoka_products\s+to\s+anon\s*,\s*authenticated/i, 'leitura pública do catálogo ativo é preservada na migration pública');
+requirePublicCatalogSql(/create\s+policy\s+"padoka public active products"[\s\S]*?to\s+anon\s*,\s*authenticated[\s\S]*?using\s*\(active\s*=\s*true\)/i, 'leitura pública continua limitada a produtos ativos por RLS');
 requireSql(/invalid product id/i, 'ID de produto é validado');
 requireSql(/invalid product price/i, 'preço de produto é validado');
 requireSql(/on\s+conflict\s*\(id\)\s*do\s+update/i, 'produto é criado/atualizado sem delete destrutivo');
