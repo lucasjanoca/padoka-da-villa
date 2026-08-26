@@ -14,12 +14,13 @@ const fail = message => {
 const ok = message => console.log(`✓ ${message}`);
 const read = name => fs.readFileSync(path.join(dir, name), 'utf8');
 
-const expectedNumbers = Array.from({ length: 19 }, (_, i) => String(i + 1).padStart(3, '0'));
+const expectedNumbers = Array.from({ length: files.length }, (_, i) => String(i + 1).padStart(3, '0'));
 const actualNumbers = files.map(name => name.slice(0, 3));
+const lastExpected = expectedNumbers.at(-1) || '000';
 if (JSON.stringify(actualNumbers) !== JSON.stringify(expectedNumbers)) {
-  fail(`cadeia de migrations deve ser contínua 001→019; encontrada: ${actualNumbers.join(', ')}`);
+  fail(`cadeia de migrations deve ser contínua 001→${lastExpected}, sem números duplicados; encontrada: ${actualNumbers.join(', ')}`);
 } else {
-  ok('cadeia de migrations contínua 001→019');
+  ok(`cadeia de migrations contínua 001→${lastExpected}`);
 }
 
 for (const file of files) {

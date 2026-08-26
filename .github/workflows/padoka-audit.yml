@@ -33,6 +33,7 @@ jobs:
           node --check tests/reporting-frontend-audit.mjs
           node --check tests/settings-sync-audit.mjs
           node --check tests/pdv-idempotency-audit.mjs
+          node --check tests/pdv-hardware-scanner-audit.mjs
           node --check tests/admin-dashboard-audit.mjs
           node --check tests/order-idempotency-audit.mjs
           node --check tests/pickup-validation-audit.mjs
@@ -52,6 +53,8 @@ jobs:
         run: |
           node --check assets/staff-audit.js
           node --check assets/product-management.js
+          node --check assets/pdv-idempotency.js
+          node --check assets/pdv-scanner-fix.js
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
@@ -109,6 +112,9 @@ jobs:
 
       - name: Run PDV idempotency audit
         run: node tests/pdv-idempotency-audit.mjs
+
+      - name: Run hardware scanner audit
+        run: node tests/pdv-hardware-scanner-audit.mjs
 
       - name: Run admin dashboard audit
         run: node tests/admin-dashboard-audit.mjs

@@ -107,7 +107,6 @@ $$;
 -- O catálogo continua publicamente legível apenas para itens ativos pela RLS da 002.
 -- Escrita direta fica explicitamente revogada; alterações administrativas passam pela RPC.
 revoke insert, update, delete on public.padoka_products from anon, authenticated;
-grant select on public.padoka_products to anon, authenticated;
 
 revoke all on function public.padoka_list_products_admin() from public, anon;
 grant execute on function public.padoka_list_products_admin() to authenticated;

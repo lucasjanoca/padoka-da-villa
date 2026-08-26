@@ -18,7 +18,125 @@
     'agua':'7899000000164'
   };
 
+  const HARDWARE_KEY_GAP_MS=80;
+  const HARDWARE_COMMIT_DELAY_MS=130;
+  const MIN_AUTO_CODE_LENGTH=6;
   const normalize=value=>String(value??'').trim();
+  const scannerInput=document.getElementById('scanner');
+  let inputBurstCount=0,inputLastKeyAt=0,inputCommitTimer=null;
+  let hardwareBuffer='',hardwareStartedAt=0,hardwareLastKeyAt=0,hardwareCommitTimer=null;
+
+  function resetInputBurst(){
+    inputBurstCount=0;
+    inputLastKeyAt=0;
+    clearTimeout(inputCommitTimer);
+    inputCommitTimer=null;
+  }
+
+  function resetHardwareBuffer(){
+    hardwareBuffer='';
+    hardwareStartedAt=0;
+    hardwareLastKeyAt=0;
+    clearTimeout(hardwareCommitTimer);
+    hardwareCommitTimer=null;
+  }
+
+  function cameraIsOpen(){
+    const modal=document.getElementById('cameraModal');
+    return Boolean(modal&&!modal.classList.contains('hidden'));
+  }
+
+  function submitHardwareCode(code){
+    const raw=normalize(code);
+    if(!raw||!scannerInput||scannerInput.disabled)return false;
+    scannerInput.value=raw;
+    scan();
+    scannerInput.focus();
+    return true;
+  }
+
+  function commitHardwareBuffer(){
+    const raw=hardwareBuffer;
+    resetHardwareBuffer();
+    return submitHardwareCode(raw);
+  }
+
+  function armInputAutoCommit(){
+    clearTimeout(inputCommitTimer);
+    inputCommitTimer=setTimeout(()=>{
+      const raw=normalize(scannerInput?.value);
+      const looksLikeScanner=inputBurstCount>=MIN_AUTO_CODE_LENGTH&&raw.length>=MIN_AUTO_CODE_LENGTH;
+      resetInputBurst();
+      if(looksLikeScanner)submitHardwareCode(raw);
+    },HARDWARE_COMMIT_DELAY_MS);
+  }
+
+  function armHardwareAutoCommit(){
+    clearTimeout(hardwareCommitTimer);
+    hardwareCommitTimer=setTimeout(()=>{
+      const duration=Math.max(1,hardwareLastKeyAt-hardwareStartedAt);
+      const maxDuration=Math.max(HARDWARE_KEY_GAP_MS,(hardwareBuffer.length-1)*HARDWARE_KEY_GAP_MS);
+      if(hardwareBuffer.length>=MIN_AUTO_CODE_LENGTH&&duration<=maxDuration)commitHardwareBuffer();
+      else resetHardwareBuffer();
+    },HARDWARE_COMMIT_DELAY_MS);
+  }
+
+  function installHardwareKeyboardSupport(){
+    if(!scannerInput||scannerInput.dataset.hardwareScanner==='1')return;
+    scannerInput.dataset.hardwareScanner='1';
+
+    scannerInput.addEventListener('keydown',event=>{
+      if(event.key==='Tab'&&normalize(scannerInput.value)){
+        event.preventDefault();
+        resetInputBurst();
+        submitHardwareCode(scannerInput.value);
+        return;
+      }
+      if(event.key==='Escape'){
+        resetInputBurst();
+        scannerInput.value='';
+        return;
+      }
+      if(event.ctrlKey||event.altKey||event.metaKey||event.key.length!==1)return;
+      const now=performance.now();
+      if(!inputLastKeyAt||now-inputLastKeyAt>HARDWARE_KEY_GAP_MS)inputBurstCount=1;
+      else inputBurstCount+=1;
+      inputLastKeyAt=now;
+      armInputAutoCommit();
+    });
+
+    document.addEventListener('keydown',event=>{
+      if(scannerInput.disabled||cameraIsOpen()||event.ctrlKey||event.altKey||event.metaKey)return;
+      const active=document.activeElement;
+      if(active===scannerInput)return;
+      const tag=active?.tagName;
+      if(tag==='INPUT'||tag==='TEXTAREA'||active?.isContentEditable)return;
+
+      if(event.key==='Escape'){
+        resetHardwareBuffer();
+        return;
+      }
+      if(event.key==='Enter'||event.key==='Tab'){
+        if(!hardwareBuffer)return;
+        event.preventDefault();
+        commitHardwareBuffer();
+        return;
+      }
+      if(event.key.length!==1)return;
+
+      const now=performance.now();
+      if(!hardwareLastKeyAt||now-hardwareLastKeyAt>HARDWARE_KEY_GAP_MS){
+        hardwareBuffer=event.key;
+        hardwareStartedAt=now;
+      }else{
+        hardwareBuffer+=event.key;
+      }
+      hardwareLastKeyAt=now;
+      if(tag==='SELECT'||tag==='BUTTON')event.preventDefault();
+      if(scannerInput)scannerInput.value=hardwareBuffer;
+      armHardwareAutoCommit();
+    },true);
+  }
 
   async function refreshBarcodes(){
     if(!sb||!Array.isArray(products)||!products.length)return false;
@@ -112,12 +230,15 @@
   const cameraBtn=document.getElementById('cameraBtn');
   if(cameraBtn)cameraBtn.onclick=openCamera;
 
+  installHardwareKeyboardSupport();
+
   let attempts=0;
   const timer=setInterval(async()=>{
     attempts+=1;
     if(sb&&Array.isArray(products)&&products.length){
       clearInterval(timer);
       await refreshBarcodes();
+      scannerInput?.focus();
       return;
     }
     if(attempts>=40)clearInterval(timer);
