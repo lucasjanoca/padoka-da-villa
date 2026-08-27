@@ -24,9 +24,12 @@ assert.match(sql,/grant execute on function public\.padoka_create_order_once[\s\
 assert.doesNotMatch(sql,/create\s+trigger[\s\S]{0,160}auth\.users/i,'migration must not create a global auth.users trigger');
 
 assert.match(html,/assets\/order-idempotency\.js/i,'checkout must load idempotency layer');
+assert.doesNotMatch(html,/\.rpc\(['"]padoka_create_order['"]/,'checkout HTML must not keep a legacy non-idempotent RPC path');
+assert.doesNotMatch(html,/sendOrder['"]\)\.onclick\s*=\s*async/,'checkout HTML must not keep a legacy submit handler');
 assert.match(js,/crypto\.randomUUID\(\)/,'frontend must generate a unique request_id');
 assert.match(js,/sessionStorage/,'ambiguous checkout attempt must survive reload');
 assert.match(js,/padoka_create_order_once/,'frontend must use idempotent RPC when available');
+assert.doesNotMatch(js,/\.rpc\(['"]padoka_create_order['"]/,'idempotency layer must never call the legacy checkout RPC');
 assert.match(js,/p_request_id\s*:/,'request_id must be sent to RPC');
 assert.match(js,/Tentar novamente/,'ambiguous result must offer safe retry');
 assert.match(js,/pointerEvents='none'/,'editing must be locked while an ambiguous request is pending');
