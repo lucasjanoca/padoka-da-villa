@@ -14,6 +14,8 @@ const required = [
   "sb.rpc('padoka_register_loss'",
   'lockOperationalUi(',
   'showUnavailable()',
+  "window.addEventListener('padoka:catalog-updated'",
+  'productById=id=>catalog.find(',
 ];
 
 for (const marker of required) {
@@ -24,6 +26,10 @@ for (const marker of required) {
 
 if (/localStorage|sessionStorage/.test(sync)) {
   throw new Error('Operational sync não pode persistir estoque, produção ou perdas no navegador.');
+}
+
+if (/byId\s*=\s*Object\.fromEntries\(catalog\.map/.test(sync)) {
+  throw new Error('Operational sync não pode congelar o índice do catálogo antes do carregamento assíncrono.');
 }
 
 if (!sync.includes("if($('app')?.classList.contains('hidden'))return")) {
