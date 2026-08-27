@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const sync = fs.readFileSync('assets/operational-sync.js', 'utf8');
 const gestao = fs.readFileSync('gestao.html', 'utf8');
 const nav = fs.readFileSync('assets/internal-nav.js', 'utf8');
+const lossRegistration = fs.readFileSync('assets/loss-registration.js', 'utf8');
 
 const required = [
   "sb.from('padoka_inventory')",
@@ -11,7 +12,6 @@ const required = [
   "sb.rpc('padoka_adjust_inventory'",
   "sb.rpc('padoka_update_inventory_metadata'",
   "sb.rpc('padoka_upsert_production_plan'",
-  "sb.rpc('padoka_register_loss'",
   'lockOperationalUi(',
   'showUnavailable()',
   "window.addEventListener('padoka:catalog-updated'",
@@ -22,6 +22,14 @@ for (const marker of required) {
   if (!sync.includes(marker)) {
     throw new Error(`Operational sync perdeu proteção/integração obrigatória: ${marker}`);
   }
+}
+
+if (/rpc\('padoka_register_loss'/.test(sync) || /function registerLoss\(/.test(sync)) {
+  throw new Error('Operational sync não pode manter o caminho legado de registro de perdas.');
+}
+
+if (!lossRegistration.includes("sb.rpc('padoka_register_loss_once'")) {
+  throw new Error('Registro de perdas deve permanecer no módulo idempotente dedicado.');
 }
 
 if (/localStorage|sessionStorage/.test(sync)) {
@@ -52,6 +60,10 @@ if (/localStorage\.(?:getItem|setItem)\(['"]padoka_demo_(?:stock|production|loss
 
 if (!nav.includes("s.src='assets/operational-sync.js'")) {
   throw new Error('Gestão precisa carregar a sincronização operacional server-authoritative.');
+}
+
+if (!nav.includes("s.src='assets/loss-registration.js'")) {
+  throw new Error('Gestão precisa carregar o registrador idempotente de perdas.');
 }
 
 if (!gestao.includes('Carregando dados operacionais seguros do servidor…')) {
