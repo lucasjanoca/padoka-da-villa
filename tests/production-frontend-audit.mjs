@@ -17,8 +17,15 @@ const checks=[
   ['não simula sucesso sem RPC',!/localStorage|padoka_demo_production/.test(src)],
   ['trata permissão sem expor detalhe técnico',/não tem permissão|Sem permissão/i.test(src)],
   ['re-renderiza controle quando plano muda',/prodSignature/.test(src)&&/replaceChildren\(\)/.test(src)&&/function signature\(plan\)/.test(src)],
-  ['refresh reconcilia e recarrega antes de redesenhar',/async function refresh\(\)\{try\{await reconcilePending\(\);await loadPlans\(\);enhance\(\)/.test(src)],
+  ['refresh reconcilia e recarrega antes de redesenhar',/async function refresh\(\).*?reconcilePending\(epoch\).*?loadPlans\(epoch\).*?enhance\(\)/s.test(src)],
   ['realtime atualiza plano e lote',/padoka_production_plans/.test(src)&&/padoka_production_batches/.test(src)&&/scheduleRefresh/.test(src)],
+  ['observa lifecycle real do Supabase Auth',/onAuthStateChange/.test(src)&&/INITIAL_SESSION/.test(src)&&/TOKEN_REFRESHED/.test(src)],
+  ['limpa controles e realtime ao trocar sessão',/function clearProduction/.test(src)&&/removeChannel\(channel\)/.test(src)&&/observer\.disconnect\(\)/.test(src)&&/\[data-prod-cell\]/.test(src)],
+  ['invalida respostas assíncronas da sessão anterior',/lifecycleEpoch/.test(src)&&/epoch!==lifecycleEpoch/.test(src)],
+  ['espera o guard interno resolver o papel atual',/padoka-staff-pending/.test(src)&&/padoka-role-pending/.test(src)&&/waitForRole/.test(src)],
+  ['restringe ativação aos papéis de produção',/allowedRoles=new Set\(\['owner','manager','production'\]\)/.test(src)&&/allowedRoles\.has\(role\)/.test(src)],
+  ['confirma a mesma identidade antes de ativar',/session\?\.user\?\.id!==expectedUserId/.test(src)&&/activeUserId=expectedUserId/.test(src)],
+  ['encerra subscription no pagehide',/pagehide/.test(src)&&/authSubscription\?\.unsubscribe/.test(src)],
   ['carregamento interno inclui módulo',/production-completion\.js/.test(fs.readFileSync('assets/internal-nav.js','utf8'))]
 ];
 let failed=0;
