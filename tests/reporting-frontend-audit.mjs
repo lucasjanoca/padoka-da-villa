@@ -14,6 +14,14 @@ must(js,"Produtos mais vendidos",'Frontend deve exibir o ranking retornado pelo 
 must(js,"Relatórios consolidados financeiros são restritos à gerência.",'Frontend deve tratar falta de permissão sem expor erro técnico');
 must(js,"table:'padoka_sales'",'Relatório deve atualizar após mudanças de vendas');
 must(js,"table:'padoka_orders'",'Relatório deve atualizar após mudanças de pedidos');
+must(js,"new Set(['owner','manager'])",'Relatórios financeiros devem continuar restritos a owner/manager');
+must(js,"sb.auth.onAuthStateChange",'Relatório deve reagir a logout e troca de conta');
+must(js,"clearReporting()",'Troca de sessão deve limpar imediatamente relatório e estado anterior');
+must(js,"sb.removeChannel(channel)",'Troca de sessão deve remover o canal Realtime do staff anterior');
+must(js,"lifecycleEpoch",'Respostas assíncronas antigas devem ser invalidadas após troca de sessão');
+must(js,"document.documentElement.classList.contains('padoka-staff-pending')",'Relatório deve aguardar a revalidação global do staff antes de reativar');
+must(js,"session?.user?.id!==expectedUserId",'Relatório deve confirmar que a sessão ainda pertence ao usuário esperado');
+must(js,"setTimeout(()=>activate(nextUserId),0)",'Callback de Auth não deve executar chamadas Supabase assíncronas diretamente');
 mustNot(js,".from('padoka_sales')",'Frontend não deve recalcular vendas lendo tabelas diretamente');
 mustNot(js,".from('padoka_sale_items')",'Frontend não deve recalcular ranking diretamente no navegador');
 mustNot(js,"localStorage",'Relatório consolidado não deve depender de localStorage');
