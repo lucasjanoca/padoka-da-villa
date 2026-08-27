@@ -67,9 +67,7 @@
   function renderLosses(){
     const select=$('lossProduct');if(select)select.innerHTML=catalog.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
     const host=$('lossList');if(host)host.innerHTML=losses.length?losses.map(x=>{const p=productById(x.product_id);return `<div class="notice"><strong>${esc(p?.name||x.product_id)}</strong> • ${Number(x.quantity||0)} • ${esc(x.reason)}<br>${esc(x.note||'')}<br><small>${new Date(x.created_at).toLocaleString('pt-BR')}</small></div>`}).join(''):'<div class="notice">Nenhuma perda registrada.</div>';
-    const btn=$('lossSave');if(btn)btn.onclick=registerLoss;
   }
-  async function registerLoss(){const btn=$('lossSave'),product_id=$('lossProduct')?.value,quantity=Number($('lossQty')?.value||0),reason=$('lossReason')?.value,note=$('lossNote')?.value?.trim()||null;if(!product_id||quantity<=0)return toast('Informe produto e quantidade válida.');btn.disabled=true;const {error}=await sb.rpc('padoka_register_loss',{p_product_id:product_id,p_quantity:quantity,p_reason:reason,p_note:note});btn.disabled=false;if(error){toast(error.message?.includes('insufficient')?'Estoque insuficiente para registrar a perda.':error.message?.includes('permission')?'Sem permissão para registrar perdas.':'Não foi possível registrar a perda.');return}if($('lossNote'))$('lossNote').value='';toast('Perda registrada e estoque atualizado');await loadAll()}
   function setReportLabel(id,label){const el=$(id);const small=el?.parentElement?.querySelector('small');if(small)small.textContent=label}
   function renderReports(){
     const low=inventory.filter(x=>Number(x.min_quantity)>0&&Number(x.quantity)<=Number(x.min_quantity));
