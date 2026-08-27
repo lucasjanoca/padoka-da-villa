@@ -21,17 +21,25 @@ ok(/grant\s+execute\s+on\s+function\s+public\.padoka_save_profile[\s\S]*?to\s+au
 ok(/revoke\s+insert\s*,\s*update\s+on\s+table\s+public\.padoka_profiles\s+from\s+authenticated/i.test(migration), 'migration 013: escrita direta no perfil não é revogada após ativação');
 ok(!/create\s+trigger[\s\S]{0,500}?\bon\s+auth\.users\b/i.test(migration), 'migration 013: trigger global em auth.users é proibido');
 
-ok(account.includes("rpc('padoka_save_profile'"), 'conta.html: onboarding não tenta RPC padoka_save_profile');
-ok(account.includes('profileRpcMissing'), 'conta.html: fallback temporário não está limitado à ausência da RPC');
-ok(/PGRST202/.test(account) && /42883/.test(account), 'conta.html: códigos de função ausente não estão tratados');
+ok(account.includes("rpc('padoka_save_profile'"), 'conta.html: onboarding não usa RPC padoka_save_profile');
+ok(!account.includes('profileRpcMissing'), 'conta.html: fallback temporário de RPC ausente deve permanecer removido');
+ok(!/sb\.from\('padoka_profiles'\)\.update\(/.test(account), 'conta.html: escrita direta UPDATE em padoka_profiles é proibida');
+ok(!/sb\.from\('padoka_profiles'\)\.insert\(/.test(account), 'conta.html: escrita direta INSERT em padoka_profiles é proibida');
 ok(/p_privacy_accepted:\$\('privacy'\)\.checked/.test(account), 'conta.html: consentimento não é enviado à RPC');
 ok(/p_marketing_opt_in:\$\('marketing'\)\.checked/.test(account), 'conta.html: marketing opcional não é enviado à RPC');
-const argsMatch = account.match(/const args=\{([^}]*)\};const rpc=await sb\.rpc\('padoka_save_profile',args\)/);
+const argsMatch = account.match(/const args=\{([^}]*)\};return sb\.rpc\('padoka_save_profile',args\)/);
 ok(!!argsMatch, 'conta.html: argumentos da RPC não foram localizados de forma auditável');
 if (argsMatch) {
   ok(!/avatar_url/.test(argsMatch[1]), 'conta.html: avatar não deve ser confiado como argumento da RPC');
   ok(!/auth_provider/.test(argsMatch[1]), 'conta.html: provider não deve ser confiado como argumento da RPC');
 }
+
+ok(/external\?\.google/.test(account), 'conta.html: estado do provider Google não é pré-verificado');
+ok(/googleEnabled===false/.test(account), 'conta.html: provider Google desativado não é tratado antes do OAuth');
+ok(/provider:'google'/.test(account), 'conta.html: OAuth Google ausente');
+ok(/prompt:'select_account'/.test(account), 'conta.html: OAuth Google deve solicitar escolha de conta');
+ok(/flowType:'pkce'/.test(account), 'conta.html: cliente Auth deve manter fluxo PKCE');
+ok(!/client_secret|service_role|sb_secret_/i.test(account), 'conta.html: segredo administrativo não pode aparecer no cliente');
 
 ok(/function\s+esc\(v\)/.test(account), 'conta.html: helper de escape de HTML ausente');
 ok(/function\s+safeAvatarUrl\(v\)/.test(account), 'conta.html: validação de URL do avatar ausente');
