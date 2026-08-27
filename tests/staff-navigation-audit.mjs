@@ -16,8 +16,8 @@ expect(nav.includes("link.hidden=!allowed(link.dataset.padokaModule,role)"),'Lin
 expect(nav.includes('filterPageShortcuts(role)'),'Atalhos e abas fora do drawer também devem seguir a função do staff.');
 expect(nav.includes("window.padokaCanAccess=id=>allowed(id,role)"),'Demais módulos devem poder consultar a mesma decisão de acesso já resolvida.');
 expect(nav.includes("location.replace('internal.html')"),'Acesso direto a módulo incompatível deve voltar ao painel interno.');
-expect(nav.includes('.padoka-role-pending #app{visibility:hidden!important}'),'Módulo restrito não deve ficar visível enquanto a função ainda está sendo validada.');
-expect(nav.includes('.padoka-staff-pending #app{visibility:hidden!important}'),'Toda área interna deve ficar invisível enquanto qualquer sessão de staff estiver sendo validada.');
+expect(nav.includes('.padoka-role-pending #app')&&nav.includes('.padoka-role-pending body>main'),'Módulo restrito deve esconder tanto wrappers #app quanto páginas internas cujo conteúdo principal é body>main durante a validação.');
+expect(nav.includes('.padoka-staff-pending #app')&&nav.includes('.padoka-staff-pending body>main'),'Toda área interna deve esconder #app e a fila de pedidos body>main enquanto qualquer sessão de staff estiver sendo validada.');
 expect(nav.includes("document.documentElement.classList.add('padoka-staff-pending')"),'Guard global de staff deve ser ativado antes da validação inicial e em invalidações.');
 expect(nav.includes("document.documentElement.classList.remove('padoka-staff-pending')"),'Guard global só deve ser removido depois que a mesma sessão continuar autorizada.');
 expect(nav.includes('auth.onAuthStateChange'),'Navegação interna deve reagir a mudanças de autenticação sem depender de reload manual.');
