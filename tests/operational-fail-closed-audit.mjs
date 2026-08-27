@@ -9,7 +9,7 @@ const required = [
   "sb.from('padoka_inventory')",
   "sb.from('padoka_production_plans')",
   "sb.from('padoka_losses')",
-  "sb.rpc('padoka_adjust_inventory'",
+  "sb.rpc('padoka_adjust_inventory_once'",
   "sb.rpc('padoka_update_inventory_metadata'",
   "sb.rpc('padoka_upsert_production_plan'",
   'lockOperationalUi(',
@@ -24,6 +24,10 @@ for (const marker of required) {
   }
 }
 
+if (/rpc\('padoka_adjust_inventory'/.test(sync)) {
+  throw new Error('Operational sync não pode voltar ao ajuste de estoque legado sem request_id.');
+}
+
 if (/rpc\('padoka_register_loss'/.test(sync) || /function registerLoss\(/.test(sync)) {
   throw new Error('Operational sync não pode manter o caminho legado de registro de perdas.');
 }
@@ -32,8 +36,16 @@ if (!lossRegistration.includes("sb.rpc('padoka_register_loss_once'")) {
   throw new Error('Registro de perdas deve permanecer no módulo idempotente dedicado.');
 }
 
-if (/localStorage|sessionStorage/.test(sync)) {
-  throw new Error('Operational sync não pode persistir estoque, produção ou perdas no navegador.');
+if (/localStorage/.test(sync)) {
+  throw new Error('Operational sync não pode persistir estoque, produção ou perdas em localStorage.');
+}
+
+if (/sessionStorage\.(?:getItem|setItem)\(['"]padoka_demo_(?:stock|production|losses)['"]/.test(sync)) {
+  throw new Error('Operational sync não pode persistir dados operacionais demonstrativos na sessão.');
+}
+
+if (!sync.includes("const ADJUST_KEY='padoka_pending_inventory_adjustment_v1'")) {
+  throw new Error('SessionStorage operacional só é permitido para preservar a tentativa idempotente de ajuste de estoque.');
 }
 
 if (/byId\s*=\s*Object\.fromEntries\(catalog\.map/.test(sync)) {
