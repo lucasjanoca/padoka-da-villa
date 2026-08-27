@@ -25,10 +25,10 @@ const checks=[
   ['resposta ambígua não libera formulário',/networkish\(error\)[\s\S]*lockForm\(true\)/.test(frontend)],
   ['clique é interceptado mesmo sem capability',/function intercept\(e\)[\s\S]*if\(!btn\)return;[\s\S]*preventDefault\(\)[\s\S]*if\(!enabled\)/.test(frontend)],
   ['capability ausente mantém formulário bloqueado',/function blockCapability[\s\S]*btn\.disabled=true[\s\S]*Registro indisponível/.test(frontend)&&/if\(probe\.error\)[\s\S]*blockCapability\(\)/.test(frontend)],
-  ['handler legado é neutralizado',/function detachLegacyHandler\(\)[\s\S]*btn\.onclick=null/.test(frontend)&&/enabled=true;detachLegacyHandler\(\)/.test(frontend)],
+  ['handler legado é neutralizado por defesa em profundidade',/function detachLegacyHandler\(\)[\s\S]*btn\.onclick=null/.test(frontend)&&/enabled=true;detachLegacyHandler\(\)/.test(frontend)],
   ['frontend não altera estoque diretamente',!/(from\('padoka_inventory'\).*?(insert|update|upsert)|\.from\('padoka_inventory'\)\.update)/s.test(frontend)],
   ['módulo carrega só na gestão',/gestao\.html/.test(frontend)&&/loss-registration\.js/.test(nav)],
-  ['caminho legado permanece isolado do registrador seguro',/rpc\('padoka_register_loss'/.test(operationalSync)&&!/rpc\('padoka_register_loss'/.test(frontend)]
+  ['sincronizador operacional não contém RPC legada de perdas',!/rpc\('padoka_register_loss'/.test(operationalSync)&&!/function registerLoss\(/.test(operationalSync)&&!/lossSave'\);if\(btn\)btn\.onclick/.test(operationalSync)]
 ];
 
 let failed=0;
