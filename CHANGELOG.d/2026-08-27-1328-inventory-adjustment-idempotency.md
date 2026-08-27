@@ -4,10 +4,11 @@
 - Identificado risco de duplicação no ajuste manual: `padoka_adjust_inventory` aplica um delta relativo sem `request_id`, então uma resposta de rede perdida poderia levar o operador a repetir o mesmo ajuste e alterar o saldo duas vezes.
 - Criada a migration `035_inventory_adjustment_idempotency.sql` com a RPC `padoka_adjust_inventory_once(text,numeric,text,uuid)`, validando `auth.uid()`, papel `owner/manager/stock`, produto ativo, delta, motivo e conflito de reutilização do `request_id`.
 - Ajustes idempotentes usam `padoka_inventory_movements.reference_id` com índice único parcial somente para `source = 'adjustment'`; retries com o mesmo payload retornam o estado atual sem reaplicar o delta.
-- O rollout foi separado com segurança: a RPC nova foi aplicada primeiro sem revogar imediatamente a RPC legada, evitando uma janela de indisponibilidade enquanto o GitHub Pages ainda publica o frontend atualizado.
+- O rollout foi separado com segurança: a RPC nova foi aplicada primeiro sem revogar imediatamente a RPC legada, evitando uma janela de indisponibilidade enquanto o GitHub Pages ainda publicava o frontend atualizado.
 - `assets/operational-sync.js` passou a usar somente `padoka_adjust_inventory_once`, persistir a tentativa incerta em `sessionStorage`, reutilizar o mesmo UUID em retry e reconciliar a operação após recarregar a página.
 - Enquanto existir uma tentativa de ajuste com resposta incerta, a Gestão bloqueia um novo ajuste diferente e orienta repetir a mesma operação com segurança, evitando calcular novo delta sobre estado potencialmente desatualizado.
-- `tests/operational-inventory-audit.mjs` e `tests/migration-chain-audit.mjs` foram ampliados para impedir regressão ao ajuste sem idempotência.
+- Depois que a auditoria completa e o GitHub Pages confirmaram sucesso do frontend novo, a migration `036_inventory_legacy_adjustment_hardening.sql` retirou `EXECUTE` de `public`, `anon` e `authenticated` da RPC legada `padoka_adjust_inventory`; ela permanece disponível apenas para `service_role`.
+- `tests/operational-inventory-audit.mjs`, `tests/operational-fail-closed-audit.mjs` e `tests/migration-chain-audit.mjs` foram ampliados para impedir regressão ao ajuste sem idempotência.
 - Antes da migration, foi confirmado que `padoka_inventory` e `padoka_inventory_movements` mantêm RLS ativa; `anon` não possui acesso e `authenticated` não possui `INSERT/UPDATE/DELETE` direto nessas tabelas.
 - Security Advisors foram consultados antes da mudança; avisos de objetos não-PADOKA e de tabelas privadas sem policy foram preservados sem alterações.
 - Nenhum HTML/CSS foi alterado; o visual da Gestão foi preservado.
