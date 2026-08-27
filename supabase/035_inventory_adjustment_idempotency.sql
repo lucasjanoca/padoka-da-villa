@@ -120,9 +120,3 @@ revoke all on function public.padoka_adjust_inventory_once(text, numeric, text, 
 revoke all on function public.padoka_adjust_inventory_once(text, numeric, text, uuid) from authenticated;
 grant execute on function public.padoka_adjust_inventory_once(text, numeric, text, uuid) to authenticated;
 grant execute on function public.padoka_adjust_inventory_once(text, numeric, text, uuid) to service_role;
-
--- O navegador não deve voltar ao ajuste legado sem request_id.
-revoke all on function public.padoka_adjust_inventory(text, numeric, text, text, uuid) from public;
-revoke all on function public.padoka_adjust_inventory(text, numeric, text, text, uuid) from anon;
-revoke all on function public.padoka_adjust_inventory(text, numeric, text, text, uuid) from authenticated;
-grant execute on function public.padoka_adjust_inventory(text, numeric, text, text, uuid) to service_role;
