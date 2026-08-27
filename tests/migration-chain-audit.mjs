@@ -75,6 +75,7 @@ const requirements = {
   '017_product_catalog_management.sql': ['padoka_products', 'padoka_list_products_admin', 'padoka_save_product', 'product management permission required'],
   '018_product_catalog_audit.sql': ['padoka_product_audit', 'padoka_list_product_audit', 'padoka_save_product', 'before_state', 'after_state'],
   '019_operational_realtime_indexes.sql': ['supabase_realtime', 'padoka_inventory', 'padoka_inventory_movements', 'padoka_production_plans', 'padoka_losses'],
+  '035_inventory_adjustment_idempotency.sql': ['padoka_inventory_adjustment_request_uidx', 'padoka_adjust_inventory_once', 'p_request_id uuid', 'inventory request id conflict'],
 };
 
 for (const [file, tokens] of Object.entries(requirements)) {
