@@ -51,6 +51,8 @@ Isso evita mistura operacional com objetos `rass_*`, `emp_*`, `plexo_*` e demais
 - `padoka_update_order_status` está ativa no backend.
 - O papel `authenticated` não possui mais `UPDATE` direto em `padoka_orders`.
 - A fila interna não usa mais fallback de `UPDATE` direto: avanço/cancelamento passam exclusivamente pela RPC.
+- O PDV finaliza somente pela RPC idempotente `padoka_create_sale_once`, reutilizando o mesmo `request_id` em tentativas ambíguas; a RPC legada `padoka_create_sale` não é executável por `anon` nem `authenticated`.
+- Se a capability idempotente do PDV estiver indisponível, a finalização fica bloqueada em vez de retornar ao fluxo antigo sem `request_id`.
 
 ## Google Auth
 
