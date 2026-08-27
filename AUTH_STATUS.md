@@ -44,7 +44,7 @@ Isso evita mistura operacional com objetos `rass_*`, `emp_*`, `plexo_*` e demais
 
 ## Pedidos e área interna
 
-- `pagamento.html` cria pedidos por RPC server-authoritative `padoka_create_order`.
+- `pagamento.html` cria pedidos exclusivamente pela RPC server-authoritative e idempotente `padoka_create_order_once`, usando `request_id` persistido para reconciliar tentativas com resposta de rede ambígua sem duplicar o pedido; o finalizador legado `padoka_create_order` não faz parte do runtime do checkout.
 - `acompanhamento.html` carrega automaticamente somente pedidos do cliente autenticado e usa Realtime.
 - `internal.html` e `pedidos.html` exigem sessão e registro ativo em `padoka_staff_users`.
 - A navegação interna também reage a logout/troca de conta via `onAuthStateChange`: limpa o papel anterior, invalida validações assíncronas antigas e resolve novamente o acesso da conta atual antes de manter módulos restritos visíveis.
