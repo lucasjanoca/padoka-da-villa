@@ -24,6 +24,12 @@ const checks=[
   [frontend.includes('O salvamento local foi bloqueado'), 'frontend must explain that local-only settings are blocked'],
   [frontend.includes("btn.onclick=save"), 'server sync must take over the save action when available'],
   [!frontend.includes("localStorage.setItem('padoka_demo_config'"), 'server sync must not write settings to localStorage'],
+  [frontend.includes('sb.auth.onAuthStateChange'), 'settings sync must react to staff auth lifecycle changes'],
+  [frontend.includes("event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'"), 'settings sync must ignore non-identity auth refresh events'],
+  [frontend.includes('clearChannel()'), 'settings sync must tear down the previous realtime channel on identity change'],
+  [frontend.includes('sb.removeChannel(current)'), 'settings sync must unsubscribe the old realtime settings channel'],
+  [frontend.includes("blockLegacyFallback('Revalidando permissões da conta interna…')"), 'settings controls must fail closed while the new staff identity is revalidated'],
+  [frontend.includes("if(!allowedRoles.has(role)){blockLegacyFallback('Somente responsáveis autorizados podem alterar configurações.')"), 'settings controls must stay blocked after a switch to an unauthorized staff role'],
   [nav.includes("s.src='assets/settings-sync.js'"), 'management navigation must load settings sync'],
   [nav.includes('if(isGestao)'), 'settings sync must only be loaded in internal management']
 ];
