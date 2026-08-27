@@ -1,9 +1,12 @@
 import fs from 'node:fs';
 
 const sql=fs.readFileSync('supabase/006_production_completion_transaction.sql','utf8');
+const frontend=fs.readFileSync('assets/production-completion.js','utf8');
 const fail=(m)=>{console.error('FAIL:',m);process.exitCode=1};
 const need=(re,m)=>{if(!re.test(sql))fail(m)};
 const forbid=(re,m)=>{if(re.test(sql))fail(m)};
+const needFrontend=(re,m)=>{if(!re.test(frontend))fail(m)};
+const forbidFrontend=(re,m)=>{if(re.test(frontend))fail(m)};
 
 need(/create table if not exists public\.padoka_production_batches/i,'faltou padoka_production_batches');
 need(/request_id uuid not null unique/i,'request_id precisa ser único para idempotência');
@@ -25,5 +28,17 @@ need(/grant select on public\.padoka_production_batches to authenticated/i,'staf
 need(/revoke all on function public\.padoka_record_production\(uuid,numeric,uuid\) from public, anon/i,'RPC não pode ser executável por anon/public');
 forbid(/trigger[^;]*auth\.users/is,'migration não pode criar trigger global em auth.users');
 forbid(/grant (insert|update|delete).*padoka_production_batches.*authenticated/i,'frontend não deve escrever lotes diretamente');
+
+needFrontend(/padoka_pending_production_v1/,'frontend precisa persistir tentativa pendente da produção');
+needFrontend(/sessionStorage/,'tentativa pendente deve sobreviver a redesenho/realtime na sessão');
+needFrontend(/function savePending\([\s\S]*requestId/,'frontend precisa salvar request_id antes da RPC');
+needFrontend(/const operation=stored\|\|savePending/,'retry deve reutilizar a tentativa já persistida');
+needFrontend(/p_request_id:operation\.requestId/,'RPC deve receber o request_id persistido');
+needFrontend(/function reconcilePending\([\s\S]*padoka_production_batches/,'frontend precisa reconciliar resposta ambígua com o lote já criado');
+needFrontend(/batch\.plan_id===entry\.planId[\s\S]*batch\.quantity/,'reconciliação precisa validar plano e quantidade antes de limpar a tentativa');
+needFrontend(/clearPending\(plan\.id\)/,'tentativa só deve ser limpa após sucesso confirmado');
+needFrontend(/pending\?'Tentar novamente':'Registrar'/,'UI precisa indicar retry com a mesma operação');
+forbidFrontend(/from\('padoka_inventory'\)[\s\S]*\.(insert|update|upsert)\(/,'frontend de produção não pode escrever estoque diretamente');
+forbidFrontend(/crypto\.randomUUID\(\)[\s\S]*p_request_id:crypto\.randomUUID\(\)/,'retry não pode gerar UUID novo diretamente na chamada da RPC');
 
 if(!process.exitCode)console.log('Production transaction audit: OK');
