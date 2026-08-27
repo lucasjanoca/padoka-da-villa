@@ -3,7 +3,8 @@
   if(!isGestao)return;
   const $=id=>document.getElementById(id),today=()=>new Date().toLocaleDateString('en-CA');
   const PENDING_KEY='padoka_pending_production_v1';
-  let sb=null,plans=[],observer=null,channel=null,enabled=false,refreshTimer=null;
+  const allowedRoles=new Set(['owner','manager','production']);
+  let sb=null,plans=[],observer=null,channel=null,enabled=false,refreshTimer=null,lifecycleEpoch=0,activeUserId='',authSubscription=null;
   function toast(t){const el=$('toast');if(!el)return;el.textContent=t;el.classList.remove('hidden');clearTimeout(window.__padokaProdToast);window.__padokaProdToast=setTimeout(()=>el.classList.add('hidden'),1900)}
   function missing(error){return ['42P01','PGRST205','PGRST204'].includes(error?.code)||/does not exist|schema cache/i.test(error?.message||'')}
   function friendly(error){const m=String(error?.message||'').toLowerCase();if(m.includes('request id conflict'))return 'A tentativa anterior usa outra quantidade. Atualize a tela antes de registrar novamente.';if(m.includes('permission'))return 'Seu perfil não tem permissão para registrar produção.';if(m.includes('completed'))return 'Este plano já foi concluído.';if(m.includes('cancelled'))return 'Este plano foi cancelado.';if(m.includes('not found'))return 'Plano de produção não encontrado.';return 'Não foi possível confirmar o registro. Tente novamente com a mesma quantidade.'}
@@ -12,18 +13,24 @@
   function pendingFor(planId){return readPending()[planId]||null}
   function savePending(planId,quantity,requestId){const map=readPending();map[planId]={planId,quantity:Number(quantity),requestId:String(requestId),createdAt:Date.now()};writePending(map);return map[planId]}
   function clearPending(planId){const map=readPending();if(Object.prototype.hasOwnProperty.call(map,planId)){delete map[planId];writePending(map)}}
-  async function reconcilePending(){
+  function clearProduction(removeControls=true){
+    lifecycleEpoch+=1;enabled=false;plans=[];clearTimeout(refreshTimer);refreshTimer=null;
+    if(channel&&sb){try{sb.removeChannel(channel)}catch{}}channel=null;
+    if(observer){try{observer.disconnect()}catch{}}observer=null;
+    if(removeControls){document.querySelector('[data-prod-head]')?.remove();document.querySelectorAll('[data-prod-cell]').forEach(cell=>cell.remove())}
+  }
+  async function reconcilePending(epoch=lifecycleEpoch){
     const map=readPending(),entries=Object.values(map).filter(x=>x?.planId&&x?.requestId);
     if(!entries.length)return;
     const ids=entries.map(x=>x.requestId);
     const {data,error}=await sb.from('padoka_production_batches').select('plan_id,quantity,request_id').in('request_id',ids);
-    if(error)return;
+    if(epoch!==lifecycleEpoch||error)return;
     const byRequest=Object.fromEntries((data||[]).map(x=>[x.request_id,x]));
     let changed=false;
     for(const entry of entries){const batch=byRequest[entry.requestId];if(batch&&batch.plan_id===entry.planId&&Number(batch.quantity)===Number(entry.quantity)){delete map[entry.planId];changed=true}}
     if(changed)writePending(map);
   }
-  async function loadPlans(){const {data,error}=await sb.from('padoka_production_plans').select('id,product_id,planned_quantity,produced_quantity,status').eq('plan_date',today()).order('product_id');if(error)throw error;plans=data||[]}
+  async function loadPlans(epoch=lifecycleEpoch){const {data,error}=await sb.from('padoka_production_plans').select('id,product_id,planned_quantity,produced_quantity,status').eq('plan_date',today()).order('product_id');if(epoch!==lifecycleEpoch)return false;if(error)throw error;plans=data||[];return true}
   function planMap(){return Object.fromEntries(plans.map(p=>[p.product_id,p]))}
   function signature(plan){if(!plan?.id)return 'missing';const pending=pendingFor(plan.id);return [plan.id,Number(plan.planned_quantity||0),Number(plan.produced_quantity||0),plan.status||'planned',pending?.requestId||'',pending?.quantity||''].join('|')}
   function renderCell(row,id,plan){
@@ -45,7 +52,8 @@
     const map=planMap();table.querySelectorAll('tbody tr').forEach(row=>{const planInput=row.querySelector('[data-plan]');if(!planInput)return;const id=planInput.dataset.plan;renderCell(row,id,map[id])})
   }
   async function record(plan,input,btn){
-    const stored=pendingFor(plan.id);
+    if(!enabled||!activeUserId)return;
+    const epoch=lifecycleEpoch,stored=pendingFor(plan.id);
     const requested=Number(input?.value||0);
     const quantity=stored?Number(stored.quantity):requested;
     if(!Number.isFinite(quantity)||quantity<=0)return toast('Informe uma quantidade válida.');
@@ -54,13 +62,48 @@
     btn.dataset.requestId=operation.requestId;btn.dataset.requestQuantity=String(operation.quantity);
     btn.disabled=true;input.disabled=true;btn.textContent='Registrando…';
     const {error}=await sb.rpc('padoka_record_production',{p_plan_id:plan.id,p_quantity:Number(operation.quantity),p_request_id:operation.requestId});
+    if(epoch!==lifecycleEpoch)return;
     if(error){btn.disabled=false;input.disabled=true;input.value=String(operation.quantity);btn.textContent='Tentar novamente';toast(friendly(error));return}
     clearPending(plan.id);delete btn.dataset.requestId;delete btn.dataset.requestQuantity;toast('Produção registrada e estoque atualizado.');await refresh()
   }
-  async function refresh(){try{await reconcilePending();await loadPlans();enhance()}catch(e){console.error('PADOKA production refresh:',e)}}
-  function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=setTimeout(refresh,120)}
-  function observe(){const host=$('productionTable');if(!host||observer)return;observer=new MutationObserver(()=>setTimeout(enhance,40));observer.observe(host,{childList:true,subtree:true});enhance()}
-  function subscribe(){if(channel)return;channel=sb.channel('padoka-production-completion-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},scheduleRefresh).on('postgres_changes',{event:'INSERT',schema:'public',table:'padoka_production_batches'},scheduleRefresh).subscribe()}
-  async function start(){for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return;for(let n=0;n<100&&$('app')?.classList.contains('hidden');n++)await new Promise(r=>setTimeout(r,100));if($('app')?.classList.contains('hidden'))return;const probe=await sb.from('padoka_production_batches').select('id').limit(1);if(probe.error){if(!missing(probe.error))console.error('PADOKA production capability:',probe.error);return}enabled=true;try{await reconcilePending();await loadPlans();observe();subscribe()}catch(e){console.error('PADOKA production completion:',e)}}
+  async function refresh(){const epoch=lifecycleEpoch;if(!enabled)return;try{await reconcilePending(epoch);if(epoch!==lifecycleEpoch)return;if(!await loadPlans(epoch))return;if(epoch!==lifecycleEpoch)return;enhance()}catch(e){if(epoch===lifecycleEpoch)console.error('PADOKA production refresh:',e)}}
+  function scheduleRefresh(){if(!enabled)return;clearTimeout(refreshTimer);refreshTimer=setTimeout(refresh,120)}
+  function observe(){const host=$('productionTable');if(!host||observer||!enabled)return;observer=new MutationObserver(()=>setTimeout(()=>{if(enabled)enhance()},40));observer.observe(host,{childList:true,subtree:true});enhance()}
+  function subscribe(){if(channel||!enabled)return;channel=sb.channel('padoka-production-completion-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},scheduleRefresh).on('postgres_changes',{event:'INSERT',schema:'public',table:'padoka_production_batches'},scheduleRefresh).subscribe()}
+  async function waitForRole(expectedUserId){
+    for(let n=0;n<100;n++){
+      const role=String(window.padokaStaffRole||'').toLowerCase();
+      const pending=document.documentElement.classList.contains('padoka-staff-pending')||document.documentElement.classList.contains('padoka-role-pending');
+      const {data:{session}}=await sb.auth.getSession();
+      if(session?.user?.id!==expectedUserId)return '';
+      if(!pending&&role)return role;
+      await new Promise(r=>setTimeout(r,100));
+    }
+    return '';
+  }
+  async function activate(expectedUserId){
+    const epoch=lifecycleEpoch;if(!expectedUserId||!sb)return;
+    const role=await waitForRole(expectedUserId);
+    if(epoch!==lifecycleEpoch||!allowedRoles.has(role))return;
+    const {data:{session}}=await sb.auth.getSession();
+    if(epoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return;
+    const probe=await sb.from('padoka_production_batches').select('id').limit(1);
+    if(epoch!==lifecycleEpoch)return;
+    if(probe.error){if(!missing(probe.error))console.error('PADOKA production capability:',probe.error);return}
+    activeUserId=expectedUserId;enabled=true;
+    try{await reconcilePending(epoch);if(epoch!==lifecycleEpoch)return;if(!await loadPlans(epoch))return;if(epoch!==lifecycleEpoch)return;observe();subscribe()}catch(e){if(epoch===lifecycleEpoch)console.error('PADOKA production completion:',e)}
+  }
+  function watchAuth(){
+    const result=sb.auth.onAuthStateChange((event,session)=>{
+      if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
+      const nextUserId=session?.user?.id||'';
+      if(nextUserId===activeUserId&&event==='SIGNED_IN')return;
+      activeUserId=nextUserId;clearProduction();
+      if(nextUserId)setTimeout(()=>activate(nextUserId),0);
+    });
+    authSubscription=result?.data?.subscription||null;
+  }
+  async function start(){for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return;watchAuth();const {data:{session}}=await sb.auth.getSession();activeUserId=session?.user?.id||'';if(activeUserId)await activate(activeUserId)}
+  window.addEventListener('pagehide',()=>{clearProduction(false);try{authSubscription?.unsubscribe()}catch{}},{once:true});
   start();
 })();
