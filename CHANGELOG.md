@@ -1,5 +1,19 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-27 07:27 — PDV fecha caminho legado sem idempotência
+- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `pdv.html`, `assets/pdv-idempotency.js`, `assets/internal-nav.js`, `supabase/004_pdv_sales_transaction.sql`, `supabase/010_pdv_sale_idempotency.sql` e `tests/pdv-idempotency-audit.mjs` antes da alteração.
+- Confirmado no projeto correto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) que o backend está `ACTIVE_HEALTHY`; o projeto InfoTech.io não foi alterado.
+- Confirmado antes da mudança que `padoka_sales` já possui `request_id`, RLS está ativa nas tabelas de venda/estoque e `padoka_create_sale_once(jsonb,text,uuid)` está disponível apenas para `authenticated` sob validação interna de staff.
+- Identificado que a RPC legada `padoka_create_sale(jsonb,text)` ainda era executável por `authenticated` e que o `pdv.html` continha um finalizador antigo sem `request_id`; numa falha de rede ambígua, esse caminho poderia permitir uma nova venda com segunda baixa de estoque.
+- Criada e aplicada a migration `034_pdv_legacy_sale_rpc_hardening.sql`, que revoga `EXECUTE` da RPC legada para `public`, `anon` e `authenticated`, sem ampliar grants, sem alterar RLS e sem criar trigger em `auth.users`.
+- `assets/pdv-idempotency.js` agora assume o botão de finalização em modo **fail-closed** antes mesmo da checagem de capability: se a camada idempotente não puder ser confirmada, o botão permanece bloqueado e nenhuma venda é enviada pelo fluxo antigo.
+- Tentativas com resposta de rede ambígua continuam preservadas em `sessionStorage` e reutilizam exatamente o mesmo `request_id` ao usar `padoka_create_sale_once`, evitando duplicação silenciosa de venda/estoque.
+- `tests/pdv-idempotency-audit.mjs` passou a exigir tanto o bloqueio da RPC legada no banco quanto a neutralização do finalizador antigo no navegador.
+- O `PADOKA Static Audit` e o GitHub Pages passaram com sucesso no commit que contém o frontend fail-closed antes da revogação no banco.
+- Após a migration, foi confirmado que `padoka_create_sale` ficou com `anon_exec=false` e `auth_exec=false`, enquanto `padoka_create_sale_once` permanece com `anon_exec=false` e `auth_exec=true`, `SECURITY DEFINER` e `search_path=public`.
+- Security Advisors foram consultados depois da aplicação: o aviso específico de `padoka_create_sale` deixou de existir. Os avisos de RPCs `SECURITY DEFINER` intencionais e de tabelas privadas `padoka_payment_*`/`padoka_product_audit` sem policy foram preservados sem mudanças arriscadas; objetos `emp_*`, `mundo_kids_*` e `rass_*` permaneceram intocados.
+- Nenhum HTML/CSS foi alterado; o visual, o leitor de código de barras e a experiência responsiva do Caixa foram preservados.
+
 ## 2026-08-27 05:27 — Caminho legado de perdas removido do runtime
 - Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `assets/operational-sync.js`, `assets/loss-registration.js`, `assets/internal-nav.js` e `tests/loss-transaction-audit.mjs` antes da alteração.
 - Confirmado no projeto correto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) que o backend está ativo; o projeto InfoTech.io não foi alterado.
