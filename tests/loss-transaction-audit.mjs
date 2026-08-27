@@ -4,6 +4,7 @@ const migration=fs.readFileSync('supabase/007_loss_idempotency.sql','utf8');
 const exposureMigration=fs.readFileSync('supabase/033_loss_rpc_exposure_hardening.sql','utf8');
 const migrationCode=migration.replace(/^\s*--.*$/gm,'');
 const frontend=fs.readFileSync('assets/loss-registration.js','utf8');
+const operationalSync=fs.readFileSync('assets/operational-sync.js','utf8');
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 
 const checks=[
@@ -24,8 +25,10 @@ const checks=[
   ['resposta ambígua não libera formulário',/networkish\(error\)[\s\S]*lockForm\(true\)/.test(frontend)],
   ['clique é interceptado mesmo sem capability',/function intercept\(e\)[\s\S]*if\(!btn\)return;[\s\S]*preventDefault\(\)[\s\S]*if\(!enabled\)/.test(frontend)],
   ['capability ausente mantém formulário bloqueado',/function blockCapability[\s\S]*btn\.disabled=true[\s\S]*Registro indisponível/.test(frontend)&&/if\(probe\.error\)[\s\S]*blockCapability\(\)/.test(frontend)],
+  ['handler legado é neutralizado',/function detachLegacyHandler\(\)[\s\S]*btn\.onclick=null/.test(frontend)&&/enabled=true;detachLegacyHandler\(\)/.test(frontend)],
   ['frontend não altera estoque diretamente',!/(from\('padoka_inventory'\).*?(insert|update|upsert)|\.from\('padoka_inventory'\)\.update)/s.test(frontend)],
-  ['módulo carrega só na gestão',/gestao\.html/.test(frontend)&&/loss-registration\.js/.test(nav)]
+  ['módulo carrega só na gestão',/gestao\.html/.test(frontend)&&/loss-registration\.js/.test(nav)],
+  ['caminho legado permanece isolado do registrador seguro',/rpc\('padoka_register_loss'/.test(operationalSync)&&!/rpc\('padoka_register_loss'/.test(frontend)]
 ];
 
 let failed=0;
