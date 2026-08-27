@@ -54,7 +54,8 @@
     const epoch=lifecycleEpoch;
     if(!expectedUserId||!sb)return;
     const role=await waitForRole(expectedUserId);
-    if(epoch!==lifecycleEpoch||!allowedRoles.has(role))return;
+    if(epoch!==lifecycleEpoch)return;
+    if(!allowedRoles.has(role))return;
     const {data:{session}}=await sb.auth.getSession();
     if(epoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return;
     activeUserId=expectedUserId;enabled=true;ensureShell();await load();
