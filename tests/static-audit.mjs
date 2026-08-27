@@ -26,7 +26,7 @@ for (const f of ['internal.html','pedidos.html','pdv.html','gestao.html']) {
 for (const [name, source] of [['reporting-sync.js', reportingSync], ['settings-sync.js', settingsSync]]) {
   ok(source.includes("new Set(['owner','manager'])"), `${name}: sincronização sensível sem allowlist owner/manager`);
   ok(source.includes('window.padokaStaffRole'), `${name}: não espera o papel interno validado`);
-  ok(source.includes('if(!allowedRoles.has(role))return'), `${name}: não interrompe execução para papel sem permissão`);
+  ok(/if\s*\(!allowedRoles\.has\(role\)\)\s*(?:return|\{[\s\S]{0,220}?return)/.test(source), `${name}: não interrompe execução para papel sem permissão`);
 }
 
 // Customer order tracking invariants.
