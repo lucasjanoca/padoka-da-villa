@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
 const sql=fs.readFileSync('supabase/010_pdv_sale_idempotency.sql','utf8');
+const hardening=fs.readFileSync('supabase/034_pdv_legacy_sale_rpc_hardening.sql','utf8');
 const ui=fs.readFileSync('assets/pdv-idempotency.js','utf8');
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 const fail=(m)=>{console.error('FAIL:',m);process.exitCode=1};
@@ -25,6 +26,10 @@ need(sql,/grant execute on function public\.padoka_create_sale_once\(jsonb,text,
 forbid(sql,/create\s+trigger[\s\S]{0,300}\bon\s+auth\.users\b/i,'migration não pode criar trigger global em auth.users');
 forbid(sql,/grant (insert|update|delete).*padoka_sales.*authenticated/i,'frontend não deve escrever vendas diretamente');
 
+need(hardening,/revoke all on function public\.padoka_create_sale\(jsonb,text\) from public, anon, authenticated/i,'RPC antiga do PDV precisa estar revogada para navegador autenticado');
+forbid(hardening,/grant execute on function public\.padoka_create_sale\(jsonb,text\) to authenticated/i,'migration de hardening não pode reabrir a RPC antiga');
+forbid(hardening,/create\s+trigger[\s\S]{0,300}\bon\s+auth\.users\b/i,'hardening do PDV não pode criar trigger global em auth.users');
+
 need(nav,/assets\/pdv-idempotency\.js/i,'PDV precisa carregar a camada idempotente somente na área interna');
 need(ui,/padoka_pdv_pending_sale_v1/i,'frontend precisa persistir tentativa ambígua em sessionStorage');
 need(ui,/padoka_create_sale_once/i,'frontend precisa usar a RPC idempotente quando a migration 010 existir');
@@ -33,6 +38,10 @@ need(ui,/sessionStorage\.setItem/i,'retry ambíguo precisa preservar a tentativa
 need(ui,/Tentar novamente/i,'interface precisa oferecer retry explícito');
 need(ui,/Venda aguardando confirmação do servidor/i,'interface precisa explicar estado ambíguo sem simular sucesso');
 need(ui,/select\('request_id'\)/i,'camada só deve assumir o PDV quando a migration 010 estiver disponível');
+need(ui,/function disableLegacyFinish\(\)/i,'frontend precisa neutralizar o finalizador legado quando a camada segura não estiver pronta');
+need(ui,/updateFinish=update/i,'atualizações posteriores do PDV precisam continuar passando pelo guard idempotente');
+need(ui,/Finalização segura indisponível/i,'falha de capability precisa ser fail-closed e amigável');
+need(ui,/btn\.disabled=true/i,'botão de finalização precisa permanecer bloqueado sem capability idempotente');
 forbid(ui,/localStorage/i,'tentativa idempotente não deve virar venda local persistida');
 forbid(ui,/from\(['"]padoka_inventory['"]\).*\.(update|insert|delete)/is,'frontend não pode alterar estoque diretamente');
 
