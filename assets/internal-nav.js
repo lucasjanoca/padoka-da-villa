@@ -39,6 +39,8 @@
     return !roles||!!role&&roles.includes(role);
   };
   const targetNeedsRole=Array.isArray(roleAccess[current]);
+  let staffValidationEpoch=0;
+  let validatedStaffUserId='';
 
   if(targetNeedsRole){
     const style=document.createElement('style');
@@ -96,15 +98,30 @@
     }
     return null;
   }
-  async function applyStaffRole(){
+  function clearResolvedStaff(){
+    validatedStaffUserId='';
+    delete window.padokaStaffRole;
+    delete window.padokaCanAccess;
+    delete root.dataset.staffRole;
+    root.querySelectorAll('[data-padoka-module]').forEach(link=>{
+      if(roleAccess[link.dataset.padokaModule])link.hidden=true;
+    });
+    if(targetNeedsRole)document.documentElement.classList.add('padoka-role-pending');
+  }
+  async function applyStaffRole(expectedUserId=''){
+    const epoch=++staffValidationEpoch;
     try{
       const client=await waitForClient();
       if(!client)throw new Error('staff client unavailable');
       const {data:{session}}=await client.auth.getSession();
       if(!session)throw new Error('staff session unavailable');
+      if(expectedUserId&&session.user.id!==expectedUserId)throw new Error('staff session changed');
       const {data:staff,error}=await client.from('padoka_staff_users').select('role,active').eq('user_id',session.user.id).maybeSingle();
       if(error||!staff?.active)throw new Error('staff permission unavailable');
+      const {data:{session:latestSession}}=await client.auth.getSession();
+      if(epoch!==staffValidationEpoch||latestSession?.user?.id!==session.user.id)return;
       const role=String(staff.role||'').toLowerCase();
+      validatedStaffUserId=session.user.id;
       window.padokaStaffRole=role;
       window.padokaCanAccess=id=>allowed(id,role);
       root.dataset.staffRole=role;
@@ -119,12 +136,31 @@
       [250,750,1500].forEach(delay=>setTimeout(()=>filterPageShortcuts(role),delay));
       document.documentElement.classList.remove('padoka-role-pending');
     }catch(error){
+      if(epoch!==staffValidationEpoch)return;
+      clearResolvedStaff();
       console.warn('PADOKA internal permissions:',error);
       if(targetNeedsRole){
         location.replace('internal.html');
       }
     }
   }
+  async function watchStaffAuth(){
+    const client=await waitForClient();
+    if(!client)return;
+    client.auth.onAuthStateChange((event,session)=>{
+      if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
+      const nextUserId=session?.user?.id||'';
+      if(nextUserId===validatedStaffUserId&&event==='SIGNED_IN')return;
+      staffValidationEpoch+=1;
+      clearResolvedStaff();
+      if(!nextUserId){
+        location.replace('internal.html');
+        return;
+      }
+      setTimeout(()=>applyStaffRole(nextUserId),0);
+    });
+  }
+  watchStaffAuth();
   applyStaffRole();
 
   if(isAdmin&&!document.querySelector('script[data-padoka-admin-dashboard]')){
