@@ -1,6 +1,6 @@
 # PADOKA — Estado das contas e autenticação
 
-Atualizado em 26/08/2026.
+Atualizado em 27/08/2026.
 
 ## O que está ativo
 
@@ -47,6 +47,7 @@ Isso evita mistura operacional com objetos `rass_*`, `emp_*`, `plexo_*` e demais
 - `pagamento.html` cria pedidos por RPC server-authoritative `padoka_create_order`.
 - `acompanhamento.html` carrega automaticamente somente pedidos do cliente autenticado e usa Realtime.
 - `internal.html` e `pedidos.html` exigem sessão e registro ativo em `padoka_staff_users`.
+- A navegação interna também reage a logout/troca de conta via `onAuthStateChange`: limpa o papel anterior, invalida validações assíncronas antigas e resolve novamente o acesso da conta atual antes de manter módulos restritos visíveis.
 - `padoka_update_order_status` está ativa no backend.
 - O papel `authenticated` não possui mais `UPDATE` direto em `padoka_orders`.
 - A fila interna não usa mais fallback de `UPDATE` direto: avanço/cancelamento passam exclusivamente pela RPC.
