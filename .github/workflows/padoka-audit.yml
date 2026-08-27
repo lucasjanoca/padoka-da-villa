@@ -51,6 +51,7 @@ jobs:
           node --check tests/staff-audit-trail-audit.mjs
           node --check tests/product-management-audit.mjs
           node --check tests/product-audit-trail-audit.mjs
+          node --check tests/pix-edge-security-audit.mjs
 
       - name: Check internal extension syntax
         run: |
@@ -139,3 +140,6 @@ jobs:
 
       - name: Run PDV sale void audit
         run: node tests/pdv-sale-void-audit.mjs
+
+      - name: Run PIX Edge security audit
+        run: node tests/pix-edge-security-audit.mjs
