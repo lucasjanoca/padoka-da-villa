@@ -34,8 +34,15 @@ need(js,/rpc\('padoka_void_sale'/i,'frontend deve usar a RPC transacional de est
 need(js,/from\('padoka_sale_items'\)\.select/i,'detalhes da venda devem vir da tabela protegida de itens');
 need(js,/postgres_changes[\s\S]*padoka_sales/i,'histórico de vendas deve atualizar por Realtime');
 need(js,/reason\.length<3\|\|reason\.length>160/i,'frontend deve validar o motivo antes da RPC');
+need(js,/async function reconcileVoid\(id\)/i,'frontend precisa reconciliar resposta ambígua do estorno');
+need(js,/select\('id,status,voided_at,void_reason'\)\.eq\('id',id\)\.maybeSingle\(\)/i,'reconciliação deve consultar o estado autoritativo da venda');
+need(js,/data\.status==='voided'\?data:null/i,'reconciliação só pode assumir sucesso quando o servidor confirmar status voided');
+need(js,/catch\(error\)[\s\S]*uncertain=true/i,'falha de transporte precisa ser tratada como resposta incerta');
+need(js,/if\(reconciled\)[\s\S]*Venda estornada e estoque devolvido/i,'frontend deve confirmar sucesso quando a reconciliação provar o estorno');
+need(js,/Não foi possível confirmar o estorno/i,'falha ambígua não deve ser apresentada como estorno definitivamente falho');
 need(nav,/assets\/pdv-sale-void\.js/i,'PDV precisa carregar o módulo de estorno');
 forbid(js,/localStorage/i,'estorno não deve depender de localStorage');
+forbid(js,/sessionStorage/i,'estorno já é idempotente pela venda e não precisa persistir operação no navegador');
 forbid(js,/\.from\('padoka_sales'\)\.update/i,'frontend não pode atualizar vendas diretamente');
 forbid(js,/\.from\('padoka_inventory'\)\.(update|insert|upsert)/i,'frontend não pode devolver estoque diretamente');
 
