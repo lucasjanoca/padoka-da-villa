@@ -42,13 +42,12 @@
   let staffValidationEpoch=0;
   let validatedStaffUserId='';
 
-  if(targetNeedsRole){
-    const style=document.createElement('style');
-    style.id='padokaRoleGuardStyle';
-    style.textContent='.padoka-role-pending #app{visibility:hidden!important}';
-    document.head.appendChild(style);
-    document.documentElement.classList.add('padoka-role-pending');
-  }
+  const guardStyle=document.createElement('style');
+  guardStyle.id='padokaStaffGuardStyle';
+  guardStyle.textContent='.padoka-staff-pending #app{visibility:hidden!important}.padoka-role-pending #app{visibility:hidden!important}';
+  document.head.appendChild(guardStyle);
+  document.documentElement.classList.add('padoka-staff-pending');
+  if(targetNeedsRole)document.documentElement.classList.add('padoka-role-pending');
 
   root.innerHTML=`<header class="padoka-topbar"><div class="padoka-topbar-inner"><button class="padoka-menu-btn" id="padokaMenuBtn" type="button" aria-label="Abrir menu" aria-expanded="false">☰</button><a class="padoka-brand-link" href="index.html#cardapio" aria-label="Ir para o cardápio"><img src="assets/logo-padoka.svg" alt="PADOKA DA VILLA"><span class="padoka-brand-copy"><strong>PADOKA DA VILLA</strong><small>${subtitle}</small></span></a><div class="padoka-top-actions"><a class="padoka-cardapio-link" href="index.html#cardapio">Cardápio</a></div></div></header><div class="padoka-nav-overlay" id="padokaNavOverlay"></div><aside class="padoka-drawer" id="padokaDrawer" aria-hidden="true"><div class="padoka-drawer-head"><img src="assets/logo-padoka.svg" alt=""><div><strong>PADOKA DA VILLA</strong><small>NAVEGAÇÃO INTERNA</small></div><button class="padoka-close-btn" id="padokaCloseBtn" type="button" aria-label="Fechar menu">×</button></div><nav class="padoka-nav-list">${items.map(([href,id,ico,label])=>`<a href="${href}" data-padoka-module="${id}" ${roleAccess[id]?'hidden':''} class="${current===id?'active':''}"><span class="nav-ico">${ico}</span>${label}</a>`).join('')}</nav><div class="padoka-drawer-foot"><a href="index.html#cardapio">Abrir cardápio do cliente</a><button type="button" id="padokaNavLogout">Sair da conta interna</button></div></aside>`;
 
@@ -106,6 +105,7 @@
     root.querySelectorAll('[data-padoka-module]').forEach(link=>{
       if(roleAccess[link.dataset.padokaModule])link.hidden=true;
     });
+    document.documentElement.classList.add('padoka-staff-pending');
     if(targetNeedsRole)document.documentElement.classList.add('padoka-role-pending');
   }
   async function applyStaffRole(expectedUserId=''){
@@ -135,6 +135,7 @@
       filterPageShortcuts(role);
       [250,750,1500].forEach(delay=>setTimeout(()=>filterPageShortcuts(role),delay));
       document.documentElement.classList.remove('padoka-role-pending');
+      document.documentElement.classList.remove('padoka-staff-pending');
     }catch(error){
       if(epoch!==staffValidationEpoch)return;
       clearResolvedStaff();
