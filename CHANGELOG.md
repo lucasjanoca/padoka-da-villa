@@ -1,5 +1,15 @@
 # CHANGELOG — PADOKA DA VILLA
 
+## 2026-08-27 02:28 — Handler legado de perdas neutralizado no navegador
+- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `gestao.html`, `assets/internal-nav.js`, `assets/operational-sync.js`, `assets/loss-registration.js` e a auditoria de perdas antes da alteração.
+- Confirmado que o fluxo seguro já usa `padoka_register_loss_once` com `request_id` persistido em `sessionStorage`, mas `operational-sync.js` ainda instala um `onclick` legado que chama `padoka_register_loss`.
+- `assets/loss-registration.js` agora remove explicitamente qualquer `onclick` legado do botão de perdas ao bloquear a capability, ao habilitar o registrador seguro e antes de processar o clique.
+- A captura idempotente continua sendo a autoridade do navegador; resposta de rede ambígua mantém os mesmos dados e o mesmo `request_id` para nova tentativa, sem segunda baixa silenciosa.
+- `tests/loss-transaction-audit.mjs` passou a exigir a neutralização explícita do handler legado e continua verificando que o registrador seguro não chama a RPC antiga.
+- Nenhum HTML/CSS foi alterado; o visual e a experiência mobile-first permanecem intactos.
+- Nenhuma alteração de banco/RLS foi necessária nesta execução; o backend correto continua sendo **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) e o projeto InfoTech.io não foi alterado.
+- O GitHub Actions `PADOKA Static Audit` e o deploy do GitHub Pages concluíram com sucesso após os commits desta rodada.
+
 ## 2026-08-20 04:29 — Cardápio público passa a obedecer o catálogo do servidor
 - Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `index.html`, `assets/catalog.js` e a auditoria estática antes da alteração.
 - Identificado que o checkout já era autoritativo no servidor, porém o cardápio público ainda renderizava nomes/preços estáticos de `assets/catalog.js`.
