@@ -4,6 +4,7 @@ const read = p => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const migration = read('supabase/003_operational_inventory_production_losses.sql');
 const planningMigration = read('supabase/032_production_plan_rpc.sql');
 const adjustmentMigration = read('supabase/035_inventory_adjustment_idempotency.sql');
+const legacyHardening = read('supabase/036_inventory_legacy_adjustment_hardening.sql');
 const sync = read('assets/operational-sync.js');
 const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
@@ -31,6 +32,8 @@ ok(/inventory request id conflict/i.test(adjustmentMigration), 'migration 035: r
 ok(/set\s+search_path\s*=\s*public/i.test(adjustmentMigration), 'migration 035: SECURITY DEFINER sem search_path fixo');
 ok(/revoke all on function public\.padoka_adjust_inventory_once\(text, numeric, text, uuid\) from anon/i.test(adjustmentMigration), 'migration 035: anon não foi explicitamente revogado da RPC idempotente');
 ok(/grant execute on function public\.padoka_adjust_inventory_once\(text, numeric, text, uuid\) to authenticated/i.test(adjustmentMigration), 'migration 035: authenticated não recebeu EXECUTE da RPC idempotente');
+ok(/revoke all on function public\.padoka_adjust_inventory\(text, numeric, text, text, uuid\) from authenticated/i.test(legacyHardening), 'migration 036: RPC legada continua executável por authenticated');
+ok(/grant execute on function public\.padoka_adjust_inventory\(text, numeric, text, text, uuid\) to service_role/i.test(legacyHardening), 'migration 036: RPC legada não ficou restrita ao service_role');
 ok(sync.includes("rpc('padoka_adjust_inventory_once'"), 'operational-sync.js: ajuste manual não usa RPC idempotente');
 ok(!sync.includes("rpc('padoka_adjust_inventory'"), 'operational-sync.js: ajuste manual ainda chama RPC legada sem idempotência');
 ok(sync.includes("const ADJUST_KEY='padoka_pending_inventory_adjustment_v1'"), 'operational-sync.js: tentativa pendente de ajuste não é persistida na sessão');
