@@ -8,10 +8,12 @@ const sql = read('supabase/017_product_catalog_management.sql');
 const publicCatalogSql = read('supabase/002_server_authoritative_test_catalog.sql');
 const js = read('assets/product-management.js');
 const nav = read('assets/internal-nav.js');
+const navCss = read('assets/internal-nav.css');
 
 const requireSql = (pattern, label) => pattern.test(sql) ? ok(label) : fail(label);
 const requirePublicCatalogSql = (pattern, label) => pattern.test(publicCatalogSql) ? ok(label) : fail(label);
 const requireJs = (pattern, label) => pattern.test(js) ? ok(label) : fail(label);
+const requireCss = (pattern, label) => pattern.test(navCss) ? ok(label) : fail(label);
 
 requireSql(/padoka_list_products_admin/i, 'RPC administrativa de listagem existe');
 requireSql(/padoka_save_product/i, 'RPC administrativa de gravação existe');
@@ -35,5 +37,7 @@ if (/\.from\(['"]padoka_products['"]\)\.(insert|update|upsert|delete)/i.test(js)
 if (/localStorage/i.test(js)) fail('gestão de catálogo não deve usar localStorage'); else ok('gestão de catálogo sem localStorage');
 
 if (/assets\/product-management\.js/.test(nav)) ok('navegação interna carrega gestão de catálogo'); else fail('navegação interna precisa carregar product-management.js');
+requireCss(/#app #padokaProductAdmin\{display:none!important\}/, 'gestão de catálogo fica oculta por padrão durante troca/revalidação de staff');
+requireCss(/data-staff-role="owner"[\s\S]*?#padokaProductAdmin[\s\S]*?data-staff-role="manager"[\s\S]*?#padokaProductAdmin/, 'somente owner/manager tornam os controles de catálogo visíveis após revalidação');
 
 if (!process.exitCode) console.log('\nPADOKA product management audit OK.');
