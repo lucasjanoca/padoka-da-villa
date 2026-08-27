@@ -53,6 +53,7 @@ Isso evita mistura operacional com objetos `rass_*`, `emp_*`, `plexo_*` e demais
 - A fila interna não usa mais fallback de `UPDATE` direto: avanço/cancelamento passam exclusivamente pela RPC.
 - O PDV finaliza somente pela RPC idempotente `padoka_create_sale_once`, reutilizando o mesmo `request_id` em tentativas ambíguas; a RPC legada `padoka_create_sale` não é executável por `anon` nem `authenticated`.
 - Se a capability idempotente do PDV estiver indisponível, a finalização fica bloqueada em vez de retornar ao fluxo antigo sem `request_id`.
+- O ajuste manual de saldo no estoque usa exclusivamente `padoka_adjust_inventory_once` com `request_id` persistido na sessão para retry/reconciliação segura; a RPC legada `padoka_adjust_inventory` não é executável por `anon` nem `authenticated`.
 
 ## Google Auth
 
