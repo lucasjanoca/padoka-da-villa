@@ -10,9 +10,10 @@
   function uuid(){if(globalThis.crypto?.randomUUID)return crypto.randomUUID();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16)})}
   function savePending(v){pending=v;try{if(v)sessionStorage.setItem(KEY,JSON.stringify(v));else sessionStorage.removeItem(KEY)}catch{}}
   function restorePending(){try{const v=JSON.parse(sessionStorage.getItem(KEY)||'null');if(v?.requestId&&v?.productId&&Number(v?.quantity)>0)pending=v}catch{}}
+  function detachLegacyHandler(){const btn=$('lossSave');if(btn)btn.onclick=null}
   function lockForm(lock){['lossProduct','lossQty','lossReason','lossNote'].forEach(id=>{const el=$(id);if(el)el.disabled=lock});const btn=$('lossSave');if(btn){btn.disabled=false;btn.textContent=lock?'Tentar novamente':'Registrar perda'}}
   function blockCapability(message='Registro seguro de perdas indisponível no momento.'){
-    enabled=false;
+    enabled=false;detachLegacyHandler();
     ['lossProduct','lossQty','lossReason','lossNote'].forEach(id=>{const el=$(id);if(el)el.disabled=true});
     const btn=$('lossSave');if(btn){btn.disabled=true;btn.textContent='Registro indisponível';btn.title=message}
   }
@@ -29,7 +30,7 @@
   }
   function intercept(e){
     const btn=e.target.closest?.('#lossSave');if(!btn)return;
-    e.preventDefault();e.stopImmediatePropagation();
+    e.preventDefault();e.stopImmediatePropagation();detachLegacyHandler();
     if(!enabled){toast('Registro seguro de perdas indisponível no momento.');return}
     submit();
   }
@@ -40,7 +41,7 @@
     for(let n=0;n<100&&$('app')?.classList.contains('hidden');n++)await new Promise(r=>setTimeout(r,100));if($('app')?.classList.contains('hidden'))return blockCapability();
     const probe=await sb.from('padoka_losses').select('request_id').limit(1);
     if(probe.error){if(!missing(probe.error))console.error('PADOKA loss capability:',probe.error);blockCapability();return}
-    enabled=true;restorePending();
+    enabled=true;detachLegacyHandler();restorePending();
     if(pending)setTimeout(applyPending,120);else lockForm(false);
   }
   start();
