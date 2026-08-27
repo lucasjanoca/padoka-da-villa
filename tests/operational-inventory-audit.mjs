@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const read = p => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const migration = read('supabase/003_operational_inventory_production_losses.sql');
 const planningMigration = read('supabase/032_production_plan_rpc.sql');
+const adjustmentMigration = read('supabase/035_inventory_adjustment_idempotency.sql');
 const sync = read('assets/operational-sync.js');
 const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
@@ -20,6 +21,22 @@ ok(sync.includes('showUnavailable()'), 'operational-sync.js: estado indisponíve
 ok(sync.includes('salvar informações apenas neste navegador'), 'operational-sync.js: mensagem de bloqueio do fallback local ausente');
 ok(/if\(p\.error\)\{if\(relationMissing\(p\.error\)\)return false/.test(sync), 'operational-sync.js: produção não falha fechada quando a relação está ausente');
 ok(/if\(l\.error\)\{if\(relationMissing\(l\.error\)\)return false/.test(sync), 'operational-sync.js: perdas não falham fechadas quando a relação está ausente');
+
+ok(adjustmentMigration.includes('public.padoka_adjust_inventory_once'), 'migration 035: RPC idempotente de ajuste ausente');
+ok(adjustmentMigration.includes("padoka_staff_has_role(array['owner','manager','stock'])"), 'migration 035: ajuste idempotente não limita função interna');
+ok(/auth\.uid\(\) is null/i.test(adjustmentMigration), 'migration 035: ajuste idempotente não exige autenticação explícita');
+ok(/p_request_id uuid/i.test(adjustmentMigration), 'migration 035: ajuste idempotente sem request_id');
+ok(/where source = 'adjustment' and reference_id is not null/i.test(adjustmentMigration), 'migration 035: índice idempotente não está limitado aos ajustes manuais');
+ok(/inventory request id conflict/i.test(adjustmentMigration), 'migration 035: request_id reutilizado com payload diferente não é rejeitado');
+ok(/set\s+search_path\s*=\s*public/i.test(adjustmentMigration), 'migration 035: SECURITY DEFINER sem search_path fixo');
+ok(/revoke all on function public\.padoka_adjust_inventory_once\(text, numeric, text, uuid\) from anon/i.test(adjustmentMigration), 'migration 035: anon não foi explicitamente revogado da RPC idempotente');
+ok(/grant execute on function public\.padoka_adjust_inventory_once\(text, numeric, text, uuid\) to authenticated/i.test(adjustmentMigration), 'migration 035: authenticated não recebeu EXECUTE da RPC idempotente');
+ok(sync.includes("rpc('padoka_adjust_inventory_once'"), 'operational-sync.js: ajuste manual não usa RPC idempotente');
+ok(!sync.includes("rpc('padoka_adjust_inventory'"), 'operational-sync.js: ajuste manual ainda chama RPC legada sem idempotência');
+ok(sync.includes("const ADJUST_KEY='padoka_pending_inventory_adjustment_v1'"), 'operational-sync.js: tentativa pendente de ajuste não é persistida na sessão');
+ok(sync.includes('crypto.randomUUID()'), 'operational-sync.js: ajuste não gera request_id estável');
+ok(sync.includes('reconcilePendingAdjustment()'), 'operational-sync.js: tentativa pendente não é reconciliada após recarregar');
+ok(sync.includes('Pressione Enter para repetir a mesma operação com segurança'), 'operational-sync.js: resposta ambígua não orienta retry com o mesmo request_id');
 
 ok(planningMigration.includes('public.padoka_upsert_production_plan'), 'migration 032: RPC de planejamento ausente');
 ok(planningMigration.includes("padoka_staff_has_role(array['owner','manager','production'])"), 'migration 032: RPC de planejamento não restringe função interna');
