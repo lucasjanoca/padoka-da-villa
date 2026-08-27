@@ -4,6 +4,7 @@ const read = p => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const files = ['index.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html'];
 const html = Object.fromEntries(files.map(f => [f, read(f)]));
 const catalog = read('assets/catalog.js');
+const orderIdempotency = read('assets/order-idempotency.js');
 const reportingSync = read('assets/reporting-sync.js');
 const settingsSync = read('assets/settings-sync.js');
 const auth = read('AUTH_STATUS.md');
@@ -36,8 +37,10 @@ for (const status of ['received','seen','confirmed','preparing','ready','complet
 ok(html['acompanhamento.html'].includes('Pode vir buscar!'), 'acompanhamento.html: destaque ready ausente');
 ok(html['acompanhamento.html'].includes('postgres_changes'), 'acompanhamento.html: atualização Realtime ausente');
 
-// Checkout and public catalog must remain server-authoritative.
-ok(html['pagamento.html'].includes("rpc('padoka_create_order'"), 'pagamento.html: pedido não usa padoka_create_order');
+// Checkout and public catalog must remain server-authoritative and retry-safe.
+ok(html['pagamento.html'].includes('assets/order-idempotency.js'), 'pagamento.html: camada idempotente de checkout ausente');
+ok(orderIdempotency.includes("rpc('padoka_create_order_once'"), 'checkout: pedido não usa padoka_create_order_once');
+ok(!/\.rpc\(['"]padoka_create_order['"]/.test(html['pagamento.html']), 'pagamento.html: RPC legada de pedido reapareceu');
 ok(!/insert\s*\([^)]*padoka_orders/i.test(html['pagamento.html']), 'pagamento.html: não deve inserir pedido diretamente');
 ok(catalog.includes('/rest/v1/padoka_products'), 'assets/catalog.js: catálogo público não consulta padoka_products');
 ok(catalog.includes('active=eq.true'), 'assets/catalog.js: catálogo público não filtra somente produtos ativos');
