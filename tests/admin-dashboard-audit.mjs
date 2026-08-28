@@ -20,6 +20,18 @@ need(ui,/VALOR EM PEDIDOS/i,'dashboard não deve chamar pedidos de faturamento/v
 need(ui,/INVENTORY_ROLES=new Set\(\[['"]owner['"],['"]manager['"],['"]stock['"]\]\)/i,'alertas de estoque precisam seguir a mesma allowlist operacional do menu');
 need(ui,/PRODUCTION_ROLES=new Set\(\[['"]owner['"],['"]manager['"],['"]production['"]\]\)/i,'alertas de produção precisam seguir a mesma allowlist operacional do menu');
 need(ui,/window\.padokaStaffRole/i,'dashboard precisa aguardar o papel interno validado antes de consultar módulos restritos');
+need(ui,/padoka-staff-pending/i,'dashboard precisa respeitar o guard de staff antes de renderizar dados');
+need(ui,/waitForValidatedStaff/i,'dashboard precisa esperar a identidade atual ser validada pelo guard interno');
+need(ui,/onAuthStateChange/i,'dashboard precisa reagir a logout e troca de conta sem depender de reload');
+need(ui,/clearDashboardState/i,'dashboard precisa limpar dados e subscriptions da identidade anterior');
+need(ui,/lifecycleEpoch/i,'respostas assíncronas antigas precisam ser invalidadas por geração de sessão');
+need(ui,/activeUserId/i,'dashboard precisa vincular consultas e Realtime à identidade validada atual');
+need(ui,/removeChannel/i,'troca de sessão precisa remover canais Realtime antigos');
+need(ui,/clearInterval\(orderInterval\)/i,'troca de sessão precisa encerrar o refresh periódico de pedidos');
+need(ui,/clearInterval\(opsInterval\)/i,'troca de sessão precisa encerrar o refresh periódico operacional');
+need(ui,/replaceChildren\(\)/i,'dados de pedidos renderizados precisam ser removidos ao invalidar a sessão');
+need(ui,/if\(!lifecycleCurrent\(epoch,userId\)\)return/i,'respostas de pedidos antigas não podem renderizar após troca de identidade');
+need(ui,/if\(!lifecycleCurrent\(epoch,userId\)\)return false/i,'respostas operacionais antigas não podem renderizar após troca de identidade');
 need(ui,/if\(access\.inventory\)\{[\s\S]*?\.from\(['"]padoka_inventory['"]\)\.select\(/i,'estoque só pode ser consultado depois da checagem de papel');
 need(ui,/if\(access\.production\)\{[\s\S]*?\.from\(['"]padoka_production_plans['"]\)\.select\(/i,'produção só pode ser consultada depois da checagem de papel');
 need(ui,/if\(access\.inventory&&!inventoryChannel\)/i,'Realtime de estoque só deve abrir para papel autorizado');
