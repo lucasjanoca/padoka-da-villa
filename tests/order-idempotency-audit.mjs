@@ -26,6 +26,12 @@ assert.doesNotMatch(sql,/create\s+trigger[\s\S]{0,160}auth\.users/i,'migration m
 assert.match(html,/assets\/order-idempotency\.js/i,'checkout must load idempotency layer');
 assert.doesNotMatch(html,/\.rpc\(['"]padoka_create_order['"]/,'checkout HTML must not keep a legacy non-idempotent RPC path');
 assert.doesNotMatch(html,/sendOrder['"]\)\.onclick\s*=\s*async/,'checkout HTML must not keep a legacy submit handler');
+assert.match(js,/const AUTOMATIC_PIX_READY=false/,'checkout must remain fail-closed until automatic Pix provider is really integrated');
+assert.match(js,/function enforceAutomaticPaymentOnly\(\)/,'checkout must have an explicit automatic-payment gate');
+assert.match(js,/if\(enforceAutomaticPaymentOnly\(\)\)return;/,'order creation must stop before RPC when automatic payment is unavailable');
+assert.match(js,/Pagamento automático em configuração/,'customer must receive a clear non-technical payment-unavailable message');
+assert.match(js,/Nenhum comprovante ou confirmação manual libera pedido/,'checkout must explicitly reject manual proof as authorization');
+assert.match(js,/btn\.disabled=true/,'automatic-payment gate must keep order submit disabled');
 assert.match(js,/crypto\.randomUUID\(\)/,'frontend must generate a unique request_id');
 assert.match(js,/sessionStorage/,'ambiguous checkout attempt must survive reload');
 assert.match(js,/padoka_create_order_once/,'frontend must use idempotent RPC when available');
