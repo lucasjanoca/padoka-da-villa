@@ -33,6 +33,14 @@ requireJs(/client\.rpc\('padoka_save_product'/, 'frontend salva catálogo via RP
 requireJs(/is_demo/, 'frontend preserva marcação provisória');
 requireJs(/confirm\('Marcar este produto como oficial\?/, 'retirada da marca provisória exige confirmação');
 requireJs(/data-field="active"/, 'frontend permite desativar sem apagar histórico');
+requireJs(/onAuthStateChange/, 'gestão de catálogo acompanha logout e troca de conta');
+requireJs(/lifecycleEpoch/, 'gestão de catálogo invalida operações assíncronas antigas por epoch');
+requireJs(/activeUserId/, 'gestão de catálogo vincula o estado à identidade autenticada atual');
+requireJs(/sessionStillMatches\(expectedUserId,expectedEpoch\)/, 'listagens e gravações revalidam sessão e identidade');
+requireJs(/resetForAuthChange\(\)[\s\S]*?padokaProductAdmin['"]\)\?\.remove\(\)/, 'troca de identidade remove imediatamente controles e estado do catálogo anterior');
+requireJs(/if\(!await sessionStillMatches\(operationUserId,operationEpoch\)\)return;/, 'resposta de gravação antiga não continua após troca de funcionário');
+requireJs(/padoka-product-admin-ui-\$\{activeUserId\}/, 'canal Realtime do catálogo fica associado à identidade validada');
+requireJs(/cleanupRealtime\(\)/, 'canal Realtime anterior é removido antes de reutilizar o módulo');
 if (/\.from\(['"]padoka_products['"]\)\.(insert|update|upsert|delete)/i.test(js)) fail('frontend não pode escrever diretamente em padoka_products'); else ok('frontend sem escrita direta em padoka_products');
 if (/localStorage/i.test(js)) fail('gestão de catálogo não deve usar localStorage'); else ok('gestão de catálogo sem localStorage');
 
