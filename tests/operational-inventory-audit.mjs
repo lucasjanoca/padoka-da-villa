@@ -36,9 +36,19 @@ ok(/revoke all on function public\.padoka_adjust_inventory\(text, numeric, text,
 ok(/grant execute on function public\.padoka_adjust_inventory\(text, numeric, text, text, uuid\) to service_role/i.test(legacyHardening), 'migration 036: RPC legada não ficou restrita ao service_role');
 ok(sync.includes("rpc('padoka_adjust_inventory_once'"), 'operational-sync.js: ajuste manual não usa RPC idempotente');
 ok(!sync.includes("rpc('padoka_adjust_inventory'"), 'operational-sync.js: ajuste manual ainda chama RPC legada sem idempotência');
-ok(sync.includes("const ADJUST_KEY='padoka_pending_inventory_adjustment_v1'"), 'operational-sync.js: tentativa pendente de ajuste não é persistida na sessão');
+ok(sync.includes("ADJUST_KEY_PREFIX='padoka_pending_inventory_adjustment_v2:'"), 'operational-sync.js: retry de ajuste não usa chave versionada por identidade');
+ok(sync.includes("LEGACY_ADJUST_KEY='padoka_pending_inventory_adjustment_v1'"), 'operational-sync.js: chave legada de ajuste não é reconhecida para descarte');
+ok(sync.includes('pendingAdjustmentKey=(userId=activeUserId)'), 'operational-sync.js: chave de retry não depende do user_id ativo');
+ok(sync.includes('parsed?.user_id!==userId'), 'operational-sync.js: payload persistido não valida o dono da tentativa');
+ok(sync.includes('JSON.stringify({...value,user_id:userId})'), 'operational-sync.js: retry persistido não grava o user_id do funcionário');
+ok(sync.includes('sessionStorage.removeItem(LEGACY_ADJUST_KEY)'), 'operational-sync.js: chave legada compartilhada não é descartada');
+ok(!sync.includes('sessionStorage.removeItem(ADJUST_KEY)'), 'operational-sync.js: ainda existe limpeza por chave global de ajuste');
+ok(!sync.includes('identityChanged'), 'operational-sync.js: troca de identidade ainda usa limpeza global do retry');
 ok(sync.includes('crypto.randomUUID()'), 'operational-sync.js: ajuste não gera request_id estável');
 ok(sync.includes('reconcilePendingAdjustment('), 'operational-sync.js: tentativa pendente não é reconciliada após recarregar');
+ok(sync.includes('readPendingAdjustment(expectedUserId)'), 'operational-sync.js: reconciliação não está vinculada ao funcionário esperado');
+ok(sync.includes('clearPendingAdjustment(pending.request_id,expectedUserId)'), 'operational-sync.js: reconciliação pode limpar retry de outra identidade');
+ok(sync.includes('writePendingAdjustment(pending,userId)'), 'operational-sync.js: novo ajuste não é persistido sob a identidade atual');
 ok(sync.includes('Pressione Enter para repetir a mesma operação com segurança'), 'operational-sync.js: resposta ambígua não orienta retry com o mesmo request_id');
 
 ok(planningMigration.includes('public.padoka_upsert_production_plan'), 'migration 032: RPC de planejamento ausente');
@@ -57,8 +67,7 @@ ok(sync.includes('activeUserId'), 'operational-sync.js: operações não ficam v
 ok(sync.includes("classList.contains('padoka-staff-pending')"), 'operational-sync.js: reativação não espera o guard global de staff');
 ok(sync.includes('sessionStillMatches'), 'operational-sync.js: resposta de RPC não reconfirma a mesma sessão');
 ok(sync.includes('sb.removeChannel(channel)'), 'operational-sync.js: canal Realtime anterior não é removido na troca de identidade');
-ok(sync.includes('sessionStorage.removeItem(ADJUST_KEY)'), 'operational-sync.js: tentativa de ajuste pode sobreviver à troca de funcionário');
-ok(sync.includes('identityChanged'), 'operational-sync.js: limpeza da tentativa pendente não está condicionada à mudança de identidade');
+ok(sync.includes("clearOperationalState('Validando novamente o acesso interno…')"), 'operational-sync.js: troca de conta não limpa o estado operacional em memória');
 ok(sync.includes("window.addEventListener('pagehide'"), 'operational-sync.js: lifecycle não encerra subscription/canal ao sair da página');
 
 if (failures.length) {
