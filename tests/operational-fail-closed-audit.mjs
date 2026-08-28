@@ -44,8 +44,17 @@ if (/sessionStorage\.(?:getItem|setItem)\(['"]padoka_demo_(?:stock|production|lo
   throw new Error('Operational sync não pode persistir dados operacionais demonstrativos na sessão.');
 }
 
-if (!sync.includes("const ADJUST_KEY='padoka_pending_inventory_adjustment_v1'")) {
-  throw new Error('SessionStorage operacional só é permitido para preservar a tentativa idempotente de ajuste de estoque.');
+const scopedAdjustmentMarkers = [
+  "ADJUST_KEY_PREFIX='padoka_pending_inventory_adjustment_v2:'",
+  'pendingAdjustmentKey=(userId=activeUserId)',
+  'parsed?.user_id!==userId',
+  'JSON.stringify({...value,user_id:userId})',
+  "sessionStorage.removeItem(LEGACY_ADJUST_KEY)",
+];
+for (const marker of scopedAdjustmentMarkers) {
+  if (!sync.includes(marker)) {
+    throw new Error(`SessionStorage operacional deve preservar somente retry idempotente de estoque vinculado ao staff: ${marker}`);
+  }
 }
 
 if (/byId\s*=\s*Object\.fromEntries\(catalog\.map/.test(sync)) {
