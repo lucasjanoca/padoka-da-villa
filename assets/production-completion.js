@@ -2,16 +2,23 @@
   const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
   if(!isGestao)return;
   const $=id=>document.getElementById(id),today=()=>new Date().toLocaleDateString('en-CA');
-  const PENDING_KEY='padoka_pending_production_v1';
+  const PENDING_KEY='padoka_pending_production_v2';
+  const LEGACY_PENDING_KEY='padoka_pending_production_v1';
   const allowedRoles=new Set(['owner','manager','production']);
   let sb=null,plans=[],observer=null,channel=null,enabled=false,refreshTimer=null,lifecycleEpoch=0,activeUserId='',authSubscription=null;
   function toast(t){const el=$('toast');if(!el)return;el.textContent=t;el.classList.remove('hidden');clearTimeout(window.__padokaProdToast);window.__padokaProdToast=setTimeout(()=>el.classList.add('hidden'),1900)}
   function missing(error){return ['42P01','PGRST205','PGRST204'].includes(error?.code)||/does not exist|schema cache/i.test(error?.message||'')}
   function friendly(error){const m=String(error?.message||'').toLowerCase();if(m.includes('request id conflict'))return 'A tentativa anterior usa outra quantidade. Atualize a tela antes de registrar novamente.';if(m.includes('permission'))return 'Seu perfil não tem permissão para registrar produção.';if(m.includes('completed'))return 'Este plano já foi concluído.';if(m.includes('cancelled'))return 'Este plano foi cancelado.';if(m.includes('not found'))return 'Plano de produção não encontrado.';return 'Não foi possível confirmar o registro. Tente novamente com a mesma quantidade.'}
-  function readPending(){try{const raw=sessionStorage.getItem(PENDING_KEY);const parsed=raw?JSON.parse(raw):{};return parsed&&typeof parsed==='object'?parsed:{}}catch{return {}}}
-  function writePending(map){try{const keys=Object.keys(map);if(keys.length)sessionStorage.setItem(PENDING_KEY,JSON.stringify(map));else sessionStorage.removeItem(PENDING_KEY)}catch{}}
+  function scopedPendingKey(userId=activeUserId){return userId?`${PENDING_KEY}:${userId}`:''}
+  function discardLegacyPending(){try{sessionStorage.removeItem(LEGACY_PENDING_KEY)}catch{}}
+  function readPending(){
+    const key=scopedPendingKey();if(!key)return {};
+    try{const raw=sessionStorage.getItem(key);const parsed=raw?JSON.parse(raw):{};if(!parsed||typeof parsed!=='object')return {};const clean={};for(const [planId,entry] of Object.entries(parsed)){if(entry?.userId===activeUserId&&entry?.planId===planId&&entry?.requestId)clean[planId]=entry}return clean}catch{return {}}
+  }
+  function writePending(map){const key=scopedPendingKey();if(!key)return;try{const keys=Object.keys(map);if(keys.length)sessionStorage.setItem(key,JSON.stringify(map));else sessionStorage.removeItem(key)}catch{}}
+  function clearIdentityPending(userId){const key=scopedPendingKey(userId);if(!key)return;try{sessionStorage.removeItem(key)}catch{}}
   function pendingFor(planId){return readPending()[planId]||null}
-  function savePending(planId,quantity,requestId){const map=readPending();map[planId]={planId,quantity:Number(quantity),requestId:String(requestId),createdAt:Date.now()};writePending(map);return map[planId]}
+  function savePending(planId,quantity,requestId){const map=readPending();map[planId]={userId:activeUserId,planId,quantity:Number(quantity),requestId:String(requestId),createdAt:Date.now()};writePending(map);return map[planId]}
   function clearPending(planId){const map=readPending();if(Object.prototype.hasOwnProperty.call(map,planId)){delete map[planId];writePending(map)}}
   function clearProduction(removeControls=true){
     lifecycleEpoch+=1;enabled=false;plans=[];clearTimeout(refreshTimer);refreshTimer=null;
@@ -20,7 +27,7 @@
     if(removeControls){document.querySelector('[data-prod-head]')?.remove();document.querySelectorAll('[data-prod-cell]').forEach(cell=>cell.remove())}
   }
   async function reconcilePending(epoch=lifecycleEpoch){
-    const map=readPending(),entries=Object.values(map).filter(x=>x?.planId&&x?.requestId);
+    const map=readPending(),entries=Object.values(map).filter(x=>x?.userId===activeUserId&&x?.planId&&x?.requestId);
     if(!entries.length)return;
     const ids=entries.map(x=>x.requestId);
     const {data,error}=await sb.from('padoka_production_batches').select('plan_id,quantity,request_id').in('request_id',ids);
@@ -53,7 +60,7 @@
   }
   async function record(plan,input,btn){
     if(!enabled||!activeUserId)return;
-    const epoch=lifecycleEpoch,stored=pendingFor(plan.id);
+    const epoch=lifecycleEpoch,userId=activeUserId,stored=pendingFor(plan.id);
     const requested=Number(input?.value||0);
     const quantity=stored?Number(stored.quantity):requested;
     if(!Number.isFinite(quantity)||quantity<=0)return toast('Informe uma quantidade válida.');
@@ -62,7 +69,7 @@
     btn.dataset.requestId=operation.requestId;btn.dataset.requestQuantity=String(operation.quantity);
     btn.disabled=true;input.disabled=true;btn.textContent='Registrando…';
     const {error}=await sb.rpc('padoka_record_production',{p_plan_id:plan.id,p_quantity:Number(operation.quantity),p_request_id:operation.requestId});
-    if(epoch!==lifecycleEpoch)return;
+    if(epoch!==lifecycleEpoch||userId!==activeUserId)return;
     if(error){btn.disabled=false;input.disabled=true;input.value=String(operation.quantity);btn.textContent='Tentar novamente';toast(friendly(error));return}
     clearPending(plan.id);delete btn.dataset.requestId;delete btn.dataset.requestQuantity;toast('Produção registrada e estoque atualizado.');await refresh()
   }
@@ -96,14 +103,15 @@
   function watchAuth(){
     const result=sb.auth.onAuthStateChange((event,session)=>{
       if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
-      const nextUserId=session?.user?.id||'';
-      if(nextUserId===activeUserId&&event==='SIGNED_IN')return;
+      const nextUserId=session?.user?.id||'',previousUserId=activeUserId;
+      if(nextUserId===previousUserId&&event==='SIGNED_IN')return;
+      if(nextUserId!==previousUserId)clearIdentityPending(previousUserId);
       activeUserId=nextUserId;clearProduction();
       if(nextUserId)setTimeout(()=>activate(nextUserId),0);
     });
     authSubscription=result?.data?.subscription||null;
   }
-  async function start(){for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return;watchAuth();const {data:{session}}=await sb.auth.getSession();activeUserId=session?.user?.id||'';if(activeUserId)await activate(activeUserId)}
+  async function start(){for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return;discardLegacyPending();watchAuth();const {data:{session}}=await sb.auth.getSession();activeUserId=session?.user?.id||'';if(activeUserId)await activate(activeUserId)}
   window.addEventListener('pagehide',()=>{clearProduction(false);try{authSubscription?.unsubscribe()}catch{}},{once:true});
   start();
 })();
