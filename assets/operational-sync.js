@@ -3,14 +3,15 @@
   const $=id=>document.getElementById(id), catalog=window.PADOKA_CATALOG||[];
   const productById=id=>catalog.find(p=>p.id===id);
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}), esc=v=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-  const ADJUST_KEY='padoka_pending_inventory_adjustment_v1';
+  const ADJUST_KEY_PREFIX='padoka_pending_inventory_adjustment_v2:', LEGACY_ADJUST_KEY='padoka_pending_inventory_adjustment_v1';
   let sb,inventory=[],plans=[],losses=[],channel=null,active=false,lifecycleEpoch=0,activeUserId='',authSubscription=null;
   const today=()=>new Date().toLocaleDateString('en-CA');
+  const pendingAdjustmentKey=(userId=activeUserId)=>userId?`${ADJUST_KEY_PREFIX}${userId}`:'';
   function toast(t){const el=$('toast');if(!el)return;el.textContent=t;el.classList.remove('hidden');clearTimeout(window.__padokaOpsToast);window.__padokaOpsToast=setTimeout(()=>el.classList.add('hidden'),2600)}
   function relationMissing(error){return ['42P01','PGRST205','PGRST204'].includes(error?.code)||/does not exist|schema cache/i.test(error?.message||'')}
-  function readPendingAdjustment(){try{const raw=sessionStorage.getItem(ADJUST_KEY);if(!raw)return null;const parsed=JSON.parse(raw);if(!parsed?.request_id||!parsed?.product_id||!Number.isFinite(Number(parsed.delta))||!Number.isFinite(Number(parsed.target_quantity)))throw new Error('invalid');return parsed}catch{sessionStorage.removeItem(ADJUST_KEY);return null}}
-  function writePendingAdjustment(value){sessionStorage.setItem(ADJUST_KEY,JSON.stringify(value))}
-  function clearPendingAdjustment(requestId){const pending=readPendingAdjustment();if(!pending||!requestId||pending.request_id===requestId)sessionStorage.removeItem(ADJUST_KEY)}
+  function readPendingAdjustment(userId=activeUserId){const key=pendingAdjustmentKey(userId);if(!key)return null;try{const raw=sessionStorage.getItem(key);if(!raw)return null;const parsed=JSON.parse(raw);if(parsed?.user_id!==userId||!parsed?.request_id||!parsed?.product_id||!Number.isFinite(Number(parsed.delta))||!Number.isFinite(Number(parsed.target_quantity)))throw new Error('invalid');return parsed}catch{sessionStorage.removeItem(key);return null}}
+  function writePendingAdjustment(value,userId=activeUserId){const key=pendingAdjustmentKey(userId);if(!key||!value)return false;sessionStorage.setItem(key,JSON.stringify({...value,user_id:userId}));return true}
+  function clearPendingAdjustment(requestId,userId=activeUserId){const key=pendingAdjustmentKey(userId);if(!key)return;const pending=readPendingAdjustment(userId);if(!pending||!requestId||pending.request_id===requestId)sessionStorage.removeItem(key)}
   function ambiguousAdjustmentError(error){return !error?.code||error.code==='23505'||/fetch|network|timeout|connection|abort/i.test(error?.message||'')}
   function lockOperationalUi(message){
     active=false;
@@ -23,10 +24,9 @@
     for(const id of ['stockProducts','stockCodes','stockLow','stockPending','rWeight','rLoss','rCodes'])if($(id))$(id).textContent='—';
     const badge=$('staffBadge');if(badge&&!badge.textContent.includes('SERVIDOR'))badge.textContent+=' • SERVIDOR PENDENTE';
   }
-  function clearOperationalState(message='Validando novamente o acesso interno…',clearPending=false){
+  function clearOperationalState(message='Validando novamente o acesso interno…'){
     lifecycleEpoch+=1;active=false;inventory=[];plans=[];losses=[];
     if(channel&&sb){try{sb.removeChannel(channel)}catch{}}channel=null;
-    if(clearPending)sessionStorage.removeItem(ADJUST_KEY);
     lockOperationalUi(message);
   }
   function showUnavailable(){
@@ -51,12 +51,12 @@
     return false;
   }
   async function reconcilePendingAdjustment(epoch=lifecycleEpoch,expectedUserId=activeUserId){
-    const pending=readPendingAdjustment();if(!pending)return true;
+    const pending=readPendingAdjustment(expectedUserId);if(!pending)return true;
     if(!await sessionStillMatches(expectedUserId,epoch))return false;
     const {error}=await sb.rpc('padoka_adjust_inventory_once',{p_product_id:pending.product_id,p_delta:Number(pending.delta),p_reason:pending.reason||'Ajuste pela gestão',p_request_id:pending.request_id});
     if(!await sessionStillMatches(expectedUserId,epoch))return false;
-    if(!error){clearPendingAdjustment(pending.request_id);return true}
-    if(!ambiguousAdjustmentError(error)){clearPendingAdjustment(pending.request_id);toast(error.message?.includes('permission')?'Sem permissão para reconciliar o ajuste de estoque.':'O ajuste pendente foi rejeitado pelo servidor.');return true}
+    if(!error){clearPendingAdjustment(pending.request_id,expectedUserId);return true}
+    if(!ambiguousAdjustmentError(error)){clearPendingAdjustment(pending.request_id,expectedUserId);toast(error.message?.includes('permission')?'Sem permissão para reconciliar o ajuste de estoque.':'O ajuste pendente foi rejeitado pelo servidor.');return true}
     toast('Ainda há um ajuste de estoque com resposta incerta. A mesma operação será reutilizada na próxima tentativa.');
     return false;
   }
@@ -77,7 +77,7 @@
   function renderStock(){
     const host=$('stockTable');if(!host)return;
     const inv=Object.fromEntries(inventory.map(x=>[x.product_id,x]));
-    const pending=readPendingAdjustment();
+    const pending=readPendingAdjustment(activeUserId);
     const rows=catalog.map(p=>{const s=inv[p.id]||{quantity:0,min_quantity:0,barcode:''},quantity=pending?.product_id===p.id?Number(pending.target_quantity):Number(s.quantity||0);return `<tr><td><strong>${esc(p.name)}</strong><br><small>${esc(p.id)}</small></td><td>${esc(p.unit)}</td><td><input data-srv-code="${esc(p.id)}" value="${esc(s.barcode||'')}" placeholder="Bipe o EAN"></td><td><input data-srv-qty="${esc(p.id)}" type="number" step="0.001" min="0" value="${quantity}"></td><td><input data-srv-min="${esc(p.id)}" type="number" step="0.001" min="0" value="${Number(s.min_quantity||0)}"></td><td><span class="status ${s.barcode?'ok':''}">${s.barcode?'Cadastrado':'Pendente'}</span></td></tr>`}).join('');
     host.innerHTML=`<table class="table"><thead><tr><th>Produto</th><th>Unidade</th><th>Código/EAN</th><th>Saldo</th><th>Mínimo</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
     document.querySelectorAll('[data-srv-code]').forEach(i=>i.onchange=()=>saveMeta(i.dataset.srvCode,{barcode:i.value.trim()||null}));
@@ -100,7 +100,7 @@
   }
   async function adjustQty(input){
     if(!active||!activeUserId)return;
-    const epoch=lifecycleEpoch,userId=activeUserId,id=input.dataset.srvQty,current=Number(inventory.find(x=>x.product_id===id)?.quantity||0),next=Math.max(0,Number(input.value||0)),delta=Number((next-current).toFixed(3)),existing=readPendingAdjustment();
+    const epoch=lifecycleEpoch,userId=activeUserId,id=input.dataset.srvQty,current=Number(inventory.find(x=>x.product_id===id)?.quantity||0),next=Math.max(0,Number(input.value||0)),delta=Number((next-current).toFixed(3)),existing=readPendingAdjustment(userId);
     if(existing&&(existing.product_id!==id||Number(existing.target_quantity)!==next)){
       if(existing.product_id===id)input.value=existing.target_quantity;
       toast('Existe um ajuste de estoque pendente. Confirme a mesma tentativa antes de iniciar outro ajuste.');
@@ -108,19 +108,19 @@
     }
     if(!delta&&!existing)return;
     const pending=existing||{product_id:id,target_quantity:next,delta,reason:'Ajuste pela gestão',request_id:crypto.randomUUID()};
-    if(!existing)writePendingAdjustment(pending);
+    if(!existing&&!writePendingAdjustment(pending,userId))return;
     input.disabled=true;
     const {error}=await sb.rpc('padoka_adjust_inventory_once',{p_product_id:pending.product_id,p_delta:Number(pending.delta),p_reason:pending.reason,p_request_id:pending.request_id});
     if(!await sessionStillMatches(userId,epoch))return;
     input.disabled=false;
     if(error){
       const ambiguous=ambiguousAdjustmentError(error);
-      if(!ambiguous)clearPendingAdjustment(pending.request_id);
+      if(!ambiguous)clearPendingAdjustment(pending.request_id,userId);
       toast(ambiguous?'Resposta incerta do servidor. Pressione Enter para repetir a mesma operação com segurança.':error.message?.includes('permission')?'Sem permissão para ajustar estoque.':error.message?.includes('insufficient')?'Saldo insuficiente para esse ajuste.':'Não foi possível ajustar o estoque.');
       if(!ambiguous)await loadAll(epoch,userId);
       return;
     }
-    clearPendingAdjustment(pending.request_id);toast('Saldo atualizado');await loadAll(epoch,userId)
+    clearPendingAdjustment(pending.request_id,userId);toast('Saldo atualizado');await loadAll(epoch,userId)
   }
   function renderProduction(){
     const host=$('productionTable');if(!host)return;const map=Object.fromEntries(plans.map(x=>[x.product_id,x]));
@@ -172,8 +172,7 @@
       if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
       const nextUserId=session?.user?.id||'';
       if(nextUserId===activeUserId&&event==='SIGNED_IN')return;
-      const identityChanged=nextUserId!==activeUserId;
-      activeUserId=nextUserId;clearOperationalState('Validando novamente o acesso interno…',identityChanged);
+      activeUserId=nextUserId;clearOperationalState('Validando novamente o acesso interno…');
       if(nextUserId)setTimeout(()=>activate(nextUserId),0);
     });
     authSubscription=result?.data?.subscription||null;
@@ -181,6 +180,7 @@
   async function start(){
     for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));
     sb=window.padokaSupabase;if(!sb)return;
+    sessionStorage.removeItem(LEGACY_ADJUST_KEY);
     watchAuth();
     const {data:{session}}=await sb.auth.getSession();activeUserId=session?.user?.id||'';
     if(activeUserId)await activate(activeUserId);else clearOperationalState('Entre com uma conta interna autorizada para acessar os dados operacionais.');
