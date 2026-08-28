@@ -30,11 +30,17 @@
     if(op.userId!==userId){resetForIdentityChange();return}
     if(!pending)savePending(op,userId);
     lockForm(true);btn.disabled=true;btn.textContent='Registrando…';
-    const {error}=await sb.rpc('padoka_register_loss_once',{p_product_id:op.productId,p_quantity:op.quantity,p_reason:op.reason,p_note:op.note,p_request_id:op.requestId});
+    let rpcError=null;
+    try{
+      const result=await sb.rpc('padoka_register_loss_once',{p_product_id:op.productId,p_quantity:op.quantity,p_reason:op.reason,p_note:op.note,p_request_id:op.requestId});
+      rpcError=result.error||null;
+    }catch(error){
+      rpcError=error instanceof Error?error:new Error(String(error||'Falha de rede'));
+    }
     if(epoch!==lifecycleEpoch)return;
     const {data:{session:latestSession}}=await sb.auth.getSession();
     if(epoch!==lifecycleEpoch||latestSession?.user?.id!==userId)return resetForIdentityChange();
-    if(error){btn.disabled=false;if(networkish(error)){lockForm(true);toast('Não foi possível confirmar a resposta. Tente novamente com os mesmos dados.');return}savePending(null,userId);lockForm(false);toast(friendly(error));return}
+    if(rpcError){btn.disabled=false;if(networkish(rpcError)){lockForm(true);toast('Não foi possível confirmar a resposta. Tente novamente com os mesmos dados.');return}savePending(null,userId);lockForm(false);toast(friendly(rpcError));return}
     savePending(null,userId);lockForm(false);if($('lossNote'))$('lossNote').value='';toast('Perda registrada e estoque atualizado.');
   }
   function intercept(e){
