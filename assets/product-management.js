@@ -6,7 +6,7 @@
   const safeId=value=>/^[a-z0-9][a-z0-9_-]{0,79}$/i.test(String(value||'').trim());
   const missingRpc=error=>['PGRST202','42883'].includes(String(error?.code||''))||/padoka_list_products_admin|padoka_save_product|function .* does not exist|schema cache/i.test(String(error?.message||''));
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-  let client=null,role='',rows=[],saving=false;
+  let client=null,role='',rows=[],saving=false,activeUserId='',lifecycleEpoch=0,realtimeChannel=null,authBound=false;
 
   async function waitForContext(){
     for(let i=0;i<80;i++){
@@ -14,6 +14,41 @@
       await sleep(100);
     }
     return null;
+  }
+
+  async function sessionStillMatches(expectedUserId,expectedEpoch){
+    if(!client||expectedEpoch!==lifecycleEpoch||!expectedUserId)return false;
+    const {data:{session}}=await client.auth.getSession();
+    return expectedEpoch===lifecycleEpoch&&session?.user?.id===expectedUserId;
+  }
+
+  function cleanupRealtime(){
+    if(client&&realtimeChannel){
+      try{client.removeChannel(realtimeChannel)}catch{}
+    }
+    realtimeChannel=null;
+  }
+
+  function resetForAuthChange(){
+    lifecycleEpoch+=1;
+    saving=false;
+    activeUserId='';
+    role='';
+    rows=[];
+    cleanupRealtime();
+    document.getElementById('padokaProductAdmin')?.remove();
+  }
+
+  function bindAuthLifecycle(){
+    if(authBound||!client)return;
+    authBound=true;
+    client.auth.onAuthStateChange((event,session)=>{
+      if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
+      const nextUserId=session?.user?.id||'';
+      if(nextUserId&&nextUserId===activeUserId&&event==='SIGNED_IN')return;
+      resetForAuthChange();
+      if(nextUserId)setTimeout(()=>init(),0);
+    });
   }
 
   function addStyles(){
@@ -80,7 +115,10 @@
   }
 
   async function save(index){
-    if(saving)return;
+    if(saving||!activeUserId)return;
+    const operationEpoch=lifecycleEpoch;
+    const operationUserId=activeUserId;
+    if(!await sessionStillMatches(operationUserId,operationEpoch))return;
     const row=readRow(index);if(!row)return;
     if(!safeId(row.id)){message('O ID deve usar apenas letras, números, hífen ou underline.','error');return}
     if(!row.name||row.name.length>120){message('Informe um nome de produto válido.','error');return}
@@ -90,6 +128,7 @@
     if(!row.is_demo&&!confirm('Marcar este produto como oficial? Faça isso somente depois de confirmar nome e preço com a padaria.'))return;
     saving=true;render();message('Salvando…');
     const {error}=await client.rpc('padoka_save_product',{p_id:row.id,p_name:row.name,p_category:row.category,p_price:row.price,p_active:row.active,p_is_demo:row.is_demo,p_sort_order:row.sort_order});
+    if(!await sessionStillMatches(operationUserId,operationEpoch))return;
     saving=false;
     if(error){
       if(missingRpc(error)){document.getElementById('padokaProductAdmin')?.remove();return}
@@ -99,27 +138,42 @@
       else message('Não foi possível salvar o produto agora.','error');
       render();return;
     }
-    await load();
+    await load(operationEpoch,operationUserId);
+    if(operationEpoch!==lifecycleEpoch||operationUserId!==activeUserId)return;
     message('Produto salvo no catálogo.','ok');
     window.dispatchEvent(new CustomEvent('padoka:product-admin-saved',{detail:{id:row.id}}));
   }
 
-  async function load(){
+  async function load(expectedEpoch=lifecycleEpoch,expectedUserId=activeUserId){
+    if(!expectedUserId||!await sessionStillMatches(expectedUserId,expectedEpoch))return false;
     const {data,error}=await client.rpc('padoka_list_products_admin');
     if(error)throw error;
+    if(!await sessionStillMatches(expectedUserId,expectedEpoch))return false;
     rows=(data||[]).map(normalize);
     render();
+    return true;
   }
 
   async function init(){
+    const initEpoch=lifecycleEpoch;
     const context=await waitForContext();
-    if(!context||!['owner','manager'].includes(context.role))return;
+    if(!context||!['owner','manager'].includes(context.role)||initEpoch!==lifecycleEpoch)return;
     client=context.client;role=context.role;
-    const {data,error}=await client.rpc('padoka_list_products_admin');
-    if(error){if(!missingRpc(error))console.warn('PADOKA product management:',error);return}
-    rows=(data||[]).map(normalize);
+    bindAuthLifecycle();
+    const {data:{session}}=await client.auth.getSession();
+    if(!session||initEpoch!==lifecycleEpoch)return;
+    activeUserId=session.user.id;
+    const loaded=await load(initEpoch,activeUserId).catch(error=>{
+      if(!missingRpc(error))console.warn('PADOKA product management:',error);
+      return false;
+    });
+    if(!loaded||initEpoch!==lifecycleEpoch)return;
     mount();render();
-    client.channel('padoka-product-admin-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_products'},()=>load().catch(()=>{})).subscribe();
+    cleanupRealtime();
+    realtimeChannel=client.channel(`padoka-product-admin-ui-${activeUserId}`).on('postgres_changes',{event:'*',schema:'public',table:'padoka_products'},()=>{
+      const eventEpoch=lifecycleEpoch,eventUserId=activeUserId;
+      load(eventEpoch,eventUserId).catch(()=>{});
+    }).subscribe();
   }
 
   init();
