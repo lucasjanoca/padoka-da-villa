@@ -1,50 +1,41 @@
-# PADOKA DA VILLA — Checklist para ativar Pix automático
+# PADOKA DA VILLA — Pix e segurança de pagamento
 
-A fundação de segurança já está instalada, porém o pagamento permanece **desativado** até o banco/provedor ser definido e testado.
+## Estado atual
 
-## Informações que precisamos da PADOKA
+O site está com **Pix manual protegido** habilitado para testes.
 
-1. **Banco ou provedor que receberá o Pix** (nome exato).
-2. Confirmar se a conta usada para recebimento é **conta PJ**.
-3. Confirmar se esse banco/provedor oferece:
-   - API Pix/Cobrança imediata (Cob / CobV, conforme o provedor);
-   - QR Code Pix dinâmico;
-   - Pix Copia e Cola;
-   - consulta de cobrança por txid/ID;
-   - webhook/notificação de pagamento;
-   - API de devolução/estorno, se disponível.
-4. Informar qual é o **ambiente de testes/sandbox** oferecido pelo provedor, se houver.
-5. Definir a regra para Pix recebido depois dos 5 minutos. Padrão já preparado: **revisão manual**; o pedido não é liberado automaticamente.
-6. Definir quais perfis internos poderão revisar pagamento tardio/devolução. Padrão: **owner/manager**.
-7. Confirmar o **domínio definitivo** usado pela PADOKA para configurar URLs de retorno/webhook, quando o provedor exigir.
+- QR Code Pix estático e Pix Copia e Cola são gerados localmente no navegador.
+- O valor do pedido é incluído no BR Code.
+- Novos pedidos Pix ficam com pagamento `pending`.
+- Pedido Pix não pago não pode avançar de etapa; o bloqueio existe no banco de dados, não apenas na interface.
+- Somente perfis internos `owner` ou `manager` podem confirmar o Pix manual.
+- A confirmação manual deve ser feita somente depois de conferir o crédito no **próprio aplicativo/extrato do banco**.
+- A confirmação exige uma referência/ID/E2E da transação e impede reutilizar a mesma referência em outro pedido.
+- Comprovante, imagem, PDF ou texto enviado pelo cliente **não é prova de pagamento** e não deve ser usado para liberar o pedido.
+- Clientes não podem alterar diretamente `padoka_orders`, equipe ou eventos de pagamento.
+- Eventos de confirmação ficam registrados para auditoria.
 
-## Credenciais técnicas que serão necessárias depois
+## Pix automático
 
-O tipo exato depende do banco/provedor. Pode incluir Client ID, Client Secret, token OAuth, certificado mTLS, chave privada/certificado Pix ou segredo de webhook.
+A confirmação **automática** continua desativada. O provedor/banco ainda não foi integrado.
 
-**Não colocar essas credenciais no HTML, JavaScript, GitHub ou mensagens públicas.** Elas devem ser cadastradas diretamente como Secrets no backend/Supabase.
+O endpoint `padoka-pix-checkout` permanece fechado por padrão enquanto não houver um provedor oficial configurado. Para ativar Pix automático em produção ainda precisamos:
 
-Nunca precisamos de senha do internet banking, senha do cartão, PIN ou código de acesso pessoal da conta bancária.
+1. Definir o banco/provedor que receberá o Pix.
+2. Confirmar suporte a API Pix/cobrança imediata, QR Code dinâmico, consulta por txid/ID e webhook.
+3. Guardar Client ID, Client Secret, certificado ou segredo de webhook somente em Secrets do backend.
+4. Validar assinatura/webhook conforme a documentação do provedor.
+5. Conferir no backend o valor pago contra o total calculado pelo servidor.
+6. Deduplicar eventos e pagamentos.
+7. Testar pagamento aprovado, expirado, valor incorreto, evento duplicado, pagamento tardio e devolução.
+8. Só então definir `provider_configured=true`.
 
-## Regras de segurança já preparadas
+## Regra antifraude
 
-- Expiração padrão do Pix: **300 segundos (5 minutos)**.
-- Cliente não possui permissão de banco para marcar pedido como pago.
-- O fluxo antigo de criação direta de pedido foi bloqueado; checkout usa RPC idempotente e preços do servidor.
-- Valor da cobrança será comparado com o total calculado no servidor.
-- Cada cobrança terá identificadores exclusivos do provedor/txid.
-- Eventos repetidos serão deduplicados para evitar confirmação dupla.
-- Pagamento após expiração fica como `paid_late` e exige revisão; não libera produção automaticamente.
-- Quando o Pix automático estiver ativo, pedido com pagamento pendente/expirado **não aparece na fila operacional da equipe e não entra nas contagens do painel**.
-- Pedido com Pix obrigatório não pode avançar em nenhuma etapa operacional enquanto o status de pagamento não for `paid`.
-- Funções que alteram pagamento para `paid` aceitam somente `service_role`, nunca o navegador do cliente.
-- Registro de eventos de pagamento preparado para auditoria.
-- Endpoint `padoka-pix-checkout` já existe e falha fechado enquanto o provedor não estiver configurado.
+Enquanto o Pix for manual, a regra operacional é simples:
 
-## Antes de ativar em produção
+> **Nunca liberar um pedido por comprovante enviado pelo cliente. Conferir a entrada no próprio banco e usar o ID/E2E exibido pelo banco para confirmar no painel.**
 
-1. Integrar o adaptador oficial do banco/provedor.
-2. Implementar validação oficial do webhook/assinatura exigida pelo provedor.
-3. Consultar a cobrança no provedor antes de confirmar quando a documentação permitir/recomendar.
-4. Testar pagamento aprovado, expirado, valor incorreto, webhook duplicado, pagamento tardio e devolução.
-5. Só depois mudar `provider_configured=true` e `enabled=true`.
+## Privacidade da chave
+
+A chave Pix usada no QR Code precisa ser enviada ao pagador e, portanto, fica visível no frontend. Como a chave de teste atual é um número de telefone, esse número também fica público no site/repositório. Para produção, prefira uma chave aleatória ou uma chave empresarial quando possível.
