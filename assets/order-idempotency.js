@@ -1,12 +1,15 @@
 (()=>{
 const KEY='padoka_pending_order_v1';
+// Automatic Pix is intentionally fail-closed until a real provider adapter + authenticated webhook are deployed.
+// Do not flip this flag just to enable checkout: provider integration must be implemented and audited first.
+const AUTOMATIC_PIX_READY=false;
 let active=false,detectAttempts=0;
 const el=id=>document.getElementById(id);
 const parse=()=>{try{return JSON.parse(sessionStorage.getItem(KEY)||'null')}catch{return null}};
 const store=v=>sessionStorage.setItem(KEY,JSON.stringify(v));
 const clear=()=>sessionStorage.removeItem(KEY);
 const initialButton=el('sendOrder');
-if(initialButton)initialButton.onclick=null;
+if(initialButton){initialButton.onclick=null;initialButton.disabled=true;}
 function notice(text,type='warn'){
   let box=el('orderRetryNotice');
   if(!box){
@@ -18,6 +21,16 @@ function notice(text,type='warn'){
   }
   box.className=`notice ${type}`;
   box.textContent=text;
+}
+function enforceAutomaticPaymentOnly(){
+  if(AUTOMATIC_PIX_READY)return false;
+  const card=el('paymentCard');
+  if(card){
+    card.innerHTML='<div class="payment-title"><h2>Forma de pagamento</h2><span class="payment-badge">PIX AUTOMÁTICO</span></div><div class="notice warn"><strong>Pagamento automático em configuração.</strong><br>O checkout está temporariamente bloqueado até a integração com um provedor Pix real confirmar pagamentos automaticamente. Nenhum comprovante ou confirmação manual libera pedido.</div>';
+  }
+  const btn=el('sendOrder');
+  if(btn){btn.onclick=null;btn.disabled=true;btn.textContent='Pagamento em configuração';}
+  return true;
 }
 function lockPending(){
   const btn=el('sendOrder');
@@ -42,6 +55,7 @@ function ambiguous(error){
   return !code||/fetch|network|timeout|load failed|connection/i.test(msg);
 }
 async function sendOnce(){
+  if(enforceAutomaticPaymentOnly())return;
   if(!sb||!user||!profile?.onboarding_completed||!pickup)return;
   const btn=el('sendOrder');
   const existing=parse();
@@ -91,7 +105,12 @@ function detect(){
   detectAttempts+=1;
   const ready=typeof sb!=='undefined'&&sb&&user&&profile?.onboarding_completed;
   if(!ready){
+    enforceAutomaticPaymentOnly();
     if(detectAttempts<100)setTimeout(detect,120);
+    return;
+  }
+  if(enforceAutomaticPaymentOnly()){
+    active=true;
     return;
   }
   active=true;
