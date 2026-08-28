@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js@edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.112.4";
 
 const ALLOWED_ORIGIN = "https://lucasjanoca.github.io";
@@ -63,12 +63,29 @@ Deno.serve(async (req: Request) => {
 
   const [{ data: order, error: orderError }, { data: settings, error: settingsError }] = await Promise.all([
     admin.from("padoka_orders").select("id,customer_id,total,payment_status").eq("id", orderId).maybeSingle(),
-    admin.from("padoka_payment_settings").select("enabled,provider,provider_configured,expiration_seconds").eq("id", true).maybeSingle(),
+    admin.from("padoka_payment_settings").select("enabled,provider,provider_configured,expiration_seconds,require_provider_confirmation").eq("id", true).maybeSingle(),
   ]);
 
   // Return the same response for nonexistent and unauthorized orders to avoid leaking order existence.
   if (orderError || !order || order.customer_id !== user.id) return json(404, { error: "order_not_found" }, origin);
   if (settingsError || !settings) return json(503, { error: "payment_settings_unavailable" }, origin);
+
+  // Automatic Pix must never be allowed to bypass provider confirmation, even if settings drift.
+  if (settings.require_provider_confirmation !== true) {
+    return json(503, { error: "provider_confirmation_required" }, origin);
+  }
+
+  // Refuse duplicate/finalized payment flows before any future provider adapter is invoked.
+  if (["paid", "paid_late", "refunded"].includes(String(order.payment_status || ""))) {
+    return json(409, { error: "payment_already_finalized" }, origin);
+  }
+
+  // The amount always comes from the server-authoritative order and must be valid before charge creation.
+  const orderTotal = Number(order.total);
+  if (!Number.isFinite(orderTotal) || orderTotal <= 0) {
+    return json(409, { error: "invalid_order_total" }, origin);
+  }
+
   if (!settings.enabled || !settings.provider_configured || settings.provider === "unconfigured") {
     return json(409, {
       error: "payment_provider_not_configured",
