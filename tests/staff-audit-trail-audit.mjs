@@ -26,4 +26,12 @@ expect(js.includes('esc(value')||js.includes('const esc='),'Frontend deve saniti
 expect(js.includes('missingRpc')&&js.includes("document.getElementById('staffAudit')?.remove()"),'Frontend deve sumir com segurança quando a migration 016 ainda não existir.');
 expect(nav.includes("s.src='assets/staff-audit.js'"),'Navegação interna deve carregar o módulo de auditoria somente na Gestão.');
 
+expect(js.includes('onAuthStateChange'),'Área Equipe deve reagir a logout/troca de identidade sem depender de reload manual.');
+expect(js.includes('clearTeamUi()')&&js.includes("document.querySelector('[data-panel=\"equipe\"]')?.remove()"),'Troca de identidade deve remover imediatamente a interface sensível de equipe.');
+expect(js.includes("location.replace('internal.html')"),'Troca/logout na área Equipe deve retornar para o guard interno antes de qualquer nova exibição.');
+expect(js.includes('lifecycleEpoch')&&js.includes('activeUserId'),'Respostas assíncronas antigas devem ser vinculadas ao ciclo e à identidade que iniciou a consulta.');
+expect(js.includes('sessionStillValid(epoch,userId)'),'Resultado da auditoria só pode ser renderizado se a mesma sessão owner continuar válida.');
+expect(js.includes("classList.contains('padoka-staff-pending')"),'Histórico não pode reativar enquanto o guard global de staff estiver pendente.');
+expect(!/onAuthStateChange\(async/.test(js),'Callback de onAuthStateChange não deve executar trabalho assíncrono diretamente.');
+
 console.log('staff-audit-trail-audit: ok');
