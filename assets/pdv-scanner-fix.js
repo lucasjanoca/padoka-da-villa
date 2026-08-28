@@ -9,6 +9,7 @@
   const readerStatus=document.getElementById('readerStatus');
   let inputBurstCount=0,inputLastKeyAt=0,inputCommitTimer=null;
   let hardwareBuffer='',hardwareStartedAt=0,hardwareLastKeyAt=0,hardwareCommitTimer=null;
+  let scannerLifecycleEpoch=0,scannerUserId='',authSubscription=null;
 
   function setReaderStatus(text){
     if(readerStatus)readerStatus.textContent=text;
@@ -29,6 +30,33 @@
     hardwareCommitTimer=null;
   }
 
+  function clearLocalBarcodes(){
+    try{
+      if(Array.isArray(products)){
+        products=products.map(product=>({...product,barcode:null}));
+        renderProducts();
+      }
+    }catch{}
+  }
+
+  function resetScannerForIdentityChange(message='Acesso ao leitor sendo revalidado.'){
+    scannerLifecycleEpoch+=1;
+    scannerUserId='';
+    resetInputBurst();
+    resetHardwareBuffer();
+    if(scannerInput)scannerInput.value='';
+    clearLocalBarcodes();
+    setReaderStatus(message);
+  }
+
+  function staffGuardPending(){
+    return document.documentElement.classList.contains('padoka-staff-pending')||document.documentElement.classList.contains('padoka-role-pending');
+  }
+
+  function scannerContextCurrent(epoch,userId){
+    return epoch===scannerLifecycleEpoch&&!!userId&&userId===scannerUserId&&!staffGuardPending();
+  }
+
   function rejectOversizedRead(){
     resetInputBurst();
     resetHardwareBuffer();
@@ -45,7 +73,7 @@
   function submitHardwareCode(code){
     const raw=normalize(code);
     if(raw.length>MAX_SCANNER_CODE_LENGTH)return rejectOversizedRead();
-    if(!raw||!scannerInput||scannerInput.disabled)return false;
+    if(!raw||!scannerInput||scannerInput.disabled||!scannerUserId||staffGuardPending())return false;
     const product=typeof findByCode==='function'?findByCode(raw):null;
     scannerInput.value=raw;
     scan();
@@ -110,7 +138,7 @@
     });
 
     document.addEventListener('keydown',event=>{
-      if(scannerInput.disabled||cameraIsOpen()||event.ctrlKey||event.altKey||event.metaKey)return;
+      if(scannerInput.disabled||cameraIsOpen()||!scannerUserId||staffGuardPending()||event.ctrlKey||event.altKey||event.metaKey)return;
       const active=document.activeElement;
       if(active===scannerInput)return;
       const tag=active?.tagName;
@@ -157,18 +185,23 @@
     return 'Modo leitor USB ativo — aguardando código.';
   }
 
-  async function refreshBarcodes(){
-    if(!sb||!Array.isArray(products)||!products.length)return false;
+  async function refreshBarcodes(expectedEpoch=scannerLifecycleEpoch,expectedUserId=scannerUserId){
+    if(!sb||!Array.isArray(products)||!products.length||!scannerContextCurrent(expectedEpoch,expectedUserId))return false;
     let rows=[];
     try{
       const {data,error}=await sb.rpc('padoka_list_product_barcodes');
       if(error)throw error;
+      if(!scannerContextCurrent(expectedEpoch,expectedUserId))return false;
+      const {data:{session}}=await sb.auth.getSession();
+      if(!scannerContextCurrent(expectedEpoch,expectedUserId)||session?.user?.id!==expectedUserId)return false;
       if(Array.isArray(data))rows=data;
     }catch(error){
+      if(!scannerContextCurrent(expectedEpoch,expectedUserId))return false;
       console.warn('PADOKA barcode catalog RPC:',error);
       setReaderStatus('Modo leitor USB ativo — não foi possível atualizar os códigos do servidor.');
       return false;
     }
+    if(!scannerContextCurrent(expectedEpoch,expectedUserId))return false;
     const fromDb=new Map(rows.map(row=>[String(row.product_id),normalize(row.barcode)]));
     products=products.map(product=>({
       ...product,
@@ -177,6 +210,37 @@
     setReaderStatus(describeBarcodeState(rows));
     try{renderProducts()}catch{}
     return true;
+  }
+
+  async function activateScannerForUser(expectedUserId){
+    const epoch=++scannerLifecycleEpoch;
+    if(!expectedUserId||!sb)return false;
+    for(let i=0;i<80;i++){
+      if(epoch!==scannerLifecycleEpoch)return false;
+      if(!staffGuardPending()&&window.padokaStaffRole&&window.padokaCanAccess){
+        const {data:{session}}=await sb.auth.getSession();
+        if(epoch!==scannerLifecycleEpoch||session?.user?.id!==expectedUserId)return false;
+        if(!window.padokaCanAccess('pdv'))return false;
+        scannerUserId=expectedUserId;
+        await refreshBarcodes(epoch,expectedUserId);
+        if(scannerContextCurrent(epoch,expectedUserId))scannerInput?.focus();
+        return true;
+      }
+      await new Promise(resolve=>setTimeout(resolve,100));
+    }
+    return false;
+  }
+
+  function watchScannerAuth(){
+    if(!sb)return;
+    const result=sb.auth.onAuthStateChange((event,session)=>{
+      if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
+      const nextUserId=session?.user?.id||'';
+      if(nextUserId===scannerUserId&&event==='SIGNED_IN')return;
+      resetScannerForIdentityChange();
+      if(nextUserId)setTimeout(()=>activateScannerForUser(nextUserId),0);
+    });
+    authSubscription=result?.data?.subscription||null;
   }
 
   // Beep no limite digital do navegador. O volume físico final ainda depende do volume de mídia do aparelho.
@@ -237,8 +301,12 @@
 
   const originalOpenCamera=openCamera;
   openCamera=async function(){
-    await refreshBarcodes();
+    const epoch=scannerLifecycleEpoch,userId=scannerUserId;
+    if(!scannerContextCurrent(epoch,userId))return;
+    await refreshBarcodes(epoch,userId);
+    if(!scannerContextCurrent(epoch,userId))return;
     try{await prepareAudio()}catch{}
+    if(!scannerContextCurrent(epoch,userId))return;
     return originalOpenCamera();
   };
   const cameraBtn=document.getElementById('cameraBtn');
@@ -251,10 +319,21 @@
     attempts+=1;
     if(sb&&Array.isArray(products)&&products.length){
       clearInterval(timer);
-      await refreshBarcodes();
-      scannerInput?.focus();
+      const {data:{session}}=await sb.auth.getSession();
+      const userId=session?.user?.id||'';
+      if(userId){
+        watchScannerAuth();
+        await activateScannerForUser(userId);
+      }else{
+        resetScannerForIdentityChange('Entre novamente com uma conta interna autorizada para usar o leitor.');
+      }
       return;
     }
     if(attempts>=40)clearInterval(timer);
   },250);
+
+  window.addEventListener('pagehide',()=>{
+    resetScannerForIdentityChange();
+    try{authSubscription?.unsubscribe()}catch{}
+  },{once:true});
 })();
