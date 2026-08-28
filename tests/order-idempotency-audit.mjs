@@ -42,4 +42,12 @@ assert.match(js,/pointerEvents='none'/,'editing must be locked while an ambiguou
 assert.match(js,/localStorage\.removeItem\(CART_KEY\)/,'cart must be cleared only after confirmed success');
 assert.match(js,/location\.href='acompanhamento\.html\?code='/,'confirmed order must continue to tracking');
 
+assert.match(js,/onAuthStateChange/,'checkout must react to logout/account changes after page initialization');
+assert.match(js,/activeUserId/,'checkout retries must remain bound to the authenticated identity');
+assert.match(js,/lifecycleEpoch/,'stale async checkout responses must be invalidated after auth lifecycle changes');
+assert.match(js,/if\(epoch!==lifecycleEpoch\|\|requestUserId!==activeUserId\)return/,'RPC responses from an old identity must never update checkout state');
+assert.match(js,/pending\?\.user_id===previousId\)clear\(\)/,'switching directly to another account must discard the previous identity pending retry');
+assert.match(js,/Sessão encerrada ou alterada/,'logout/account change must immediately replace sensitive account presentation');
+assert.match(js,/location\.reload\(\)/,'a newly authenticated identity must reload profile and server-authoritative checkout state');
+
 console.log('Checkout idempotency audit passed.');
