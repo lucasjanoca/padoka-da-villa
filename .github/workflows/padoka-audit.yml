@@ -59,6 +59,7 @@ jobs:
           node --check assets/product-management.js
           node --check assets/pdv-idempotency.js
           node --check assets/pdv-scanner-fix.js
+          node --check assets/orders-auth-lifecycle.js
 
       - name: Run PADOKA static audit
         run: node tests/static-audit.mjs
