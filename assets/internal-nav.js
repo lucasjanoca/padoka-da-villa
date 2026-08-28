@@ -7,6 +7,7 @@
   const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
   const isPdv=location.pathname.endsWith('/pdv.html')||location.pathname.endsWith('pdv.html');
   const isAdmin=location.pathname.endsWith('/internal.html')||location.pathname.endsWith('internal.html');
+  const isOrders=location.pathname.endsWith('/pedidos.html')||location.pathname.endsWith('pedidos.html');
   if(isGestao)current=params.get('tab')||'produtos';
 
   const subtitle=root.dataset.subtitle||'GESTÃO INTERNA';
@@ -169,6 +170,13 @@
     s.src='assets/admin-dashboard-live.js';
     s.defer=true;
     s.dataset.padokaAdminDashboard='1';
+    document.head.appendChild(s);
+  }
+  if(isOrders&&!document.querySelector('script[data-padoka-orders-auth-lifecycle]')){
+    const s=document.createElement('script');
+    s.src='assets/orders-auth-lifecycle.js';
+    s.defer=true;
+    s.dataset.padokaOrdersAuthLifecycle='1';
     document.head.appendChild(s);
   }
   if(isPdv&&!document.querySelector('script[data-padoka-pdv-idempotency]')){
