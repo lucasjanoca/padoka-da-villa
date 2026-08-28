@@ -31,10 +31,13 @@ forbid(hardening,/grant execute on function public\.padoka_create_sale\(jsonb,te
 forbid(hardening,/create\s+trigger[\s\S]{0,300}\bon\s+auth\.users\b/i,'hardening do PDV não pode criar trigger global em auth.users');
 
 need(nav,/assets\/pdv-idempotency\.js/i,'PDV precisa carregar a camada idempotente somente na área interna');
-need(ui,/padoka_pdv_pending_sale_v1/i,'frontend precisa persistir tentativa ambígua em sessionStorage');
+need(ui,/padoka_pdv_pending_sale_v2/i,'frontend precisa usar armazenamento de retry isolado por identidade');
+need(ui,/LEGACY_KEY='padoka_pdv_pending_sale_v1'/i,'frontend precisa reconhecer a chave legada compartilhada');
+need(ui,/const scopedKey=\(userId=activeUserId\)=>userId\?`\$\{KEY\}:\$\{userId\}`:''/i,'retry precisa usar chave de sessionStorage vinculada ao funcionário');
+need(ui,/function discardLegacyPending\(\)[\s\S]*removeItem\(LEGACY_KEY\)/i,'chave legada compartilhada precisa ser descartada');
 need(ui,/padoka_create_sale_once/i,'frontend precisa usar a RPC idempotente quando a migration 010 existir');
 need(ui,/p_request_id:op\.request_id/i,'frontend precisa reutilizar o mesmo request_id no retry');
-need(ui,/sessionStorage\.setItem/i,'retry ambíguo precisa preservar a tentativa');
+need(ui,/sessionStorage\.setItem\(key,JSON\.stringify\(v\)\)/i,'retry ambíguo precisa preservar a tentativa na chave do funcionário');
 need(ui,/Tentar novamente/i,'interface precisa oferecer retry explícito');
 need(ui,/Venda aguardando confirmação do servidor/i,'interface precisa explicar estado ambíguo sem simular sucesso');
 need(ui,/select\('request_id'\)/i,'camada só deve assumir o PDV quando a migration 010 estiver disponível');
@@ -45,9 +48,11 @@ need(ui,/btn\.disabled=true/i,'botão de finalização precisa permanecer bloque
 need(ui,/onAuthStateChange\(\(event,session\)=>/i,'PDV precisa reagir a logout/troca de conta na mesma aba');
 forbid(ui,/onAuthStateChange\(async/i,'callback de auth não deve executar fluxo async diretamente');
 need(ui,/user_id:userId/i,'tentativa pendente precisa ficar vinculada ao operador que iniciou a venda');
-need(ui,/v\.user_id===expectedUserId/i,'retry salvo precisa ser recusado quando pertence a outra identidade');
-need(ui,/function resetForIdentityChange\(\)[\s\S]*savePending\(null\)/i,'troca de identidade precisa apagar tentativa pendente');
+need(ui,/v\.user_id===expectedUserId/i,'retry salvo precisa ser recusado quando não pertence à identidade atual');
+need(ui,/function resetForIdentityChange\(\)[\s\S]*pending=null/i,'troca de identidade precisa limpar o retry apenas da memória ativa');
+forbid(ui,/function resetForIdentityChange\(\)[^}]*savePending\(null\)/i,'troca de identidade não deve apagar a tentativa persistida da conta anterior');
 need(ui,/saleBusy=false;cart=\{\};renderCart\(\)/i,'troca de identidade precisa limpar carrinho e estado de venda');
+need(ui,/pending=loadPending\(expectedUserId\)/i,'reativação precisa restaurar somente a tentativa da identidade atual');
 need(ui,/padoka-staff-pending/i,'reativação precisa esperar o guard interno concluir');
 need(ui,/allowedRoles\.has\(String\(window\.padokaStaffRole/i,'PDV precisa confirmar papel permitido após revalidação');
 need(ui,/window\.padokaCanAccess\('pdv'\)/i,'PDV precisa confirmar capability do módulo após revalidação');
