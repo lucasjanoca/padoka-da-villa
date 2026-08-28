@@ -2,40 +2,42 @@
 
 ## Estado atual
 
-O site está com **Pix manual protegido** habilitado para testes.
+O checkout público está em modo **Pix automático obrigatório / fail-closed**.
 
-- QR Code Pix estático e Pix Copia e Cola são gerados localmente no navegador.
-- O valor do pedido é incluído no BR Code.
-- Novos pedidos Pix ficam com pagamento `pending`.
-- Pedido Pix não pago não pode avançar de etapa; o bloqueio existe no banco de dados, não apenas na interface.
-- Somente perfis internos `owner` ou `manager` podem confirmar o Pix manual.
-- A confirmação manual deve ser feita somente depois de conferir o crédito no **próprio aplicativo/extrato do banco**.
-- A confirmação exige uma referência/ID/E2E da transação e impede reutilizar a mesma referência em outro pedido.
-- Comprovante, imagem, PDF ou texto enviado pelo cliente **não é prova de pagamento** e não deve ser usado para liberar o pedido.
+- O fluxo manual não deve ser usado para novos pedidos públicos.
+- Enquanto não houver um banco/provedor Pix real integrado, o botão de envio do pedido permanece bloqueado.
+- O cliente recebe uma mensagem amigável informando que o pagamento automático está em configuração.
+- Comprovante, imagem, PDF, texto ou confirmação manual **não libera pedido**.
+- O endpoint `padoka-pix-checkout` continua fechado por padrão enquanto não houver um provedor oficial configurado.
+- Valores e itens continuam autoritativos no servidor; o navegador não define total pago, txid nem status `paid`.
 - Clientes não podem alterar diretamente `padoka_orders`, equipe ou eventos de pagamento.
-- Eventos de confirmação ficam registrados para auditoria.
+
+A estrutura de confirmação manual existente no banco pode permanecer preservada para histórico/auditoria e eventual contingência interna futura, mas **não é o fluxo público escolhido para produção** e não deve ser reativada apenas para contornar a ausência do provedor automático.
 
 ## Pix automático
 
-A confirmação **automática** continua desativada. O provedor/banco ainda não foi integrado.
-
-O endpoint `padoka-pix-checkout` permanece fechado por padrão enquanto não houver um provedor oficial configurado. Para ativar Pix automático em produção ainda precisamos:
+A confirmação automática continua desativada até a integração real do provedor/banco. Para ativá-la com segurança ainda precisamos:
 
 1. Definir o banco/provedor que receberá o Pix.
 2. Confirmar suporte a API Pix/cobrança imediata, QR Code dinâmico, consulta por txid/ID e webhook.
 3. Guardar Client ID, Client Secret, certificado ou segredo de webhook somente em Secrets do backend.
-4. Validar assinatura/webhook conforme a documentação do provedor.
-5. Conferir no backend o valor pago contra o total calculado pelo servidor.
-6. Deduplicar eventos e pagamentos.
-7. Testar pagamento aprovado, expirado, valor incorreto, evento duplicado, pagamento tardio e devolução.
-8. Só então definir `provider_configured=true`.
+4. Implementar o adapter do provedor em Edge Function sensível, mantendo JWT onde aplicável e CORS restrito ao host necessário.
+5. Implementar endpoint de webhook autenticado conforme a documentação oficial do provedor, sem confiar em campos enviados pelo navegador.
+6. Conferir no backend o valor pago contra o total calculado pelo servidor e vincular a cobrança ao pedido correto.
+7. Deduplicar eventos, cobranças e pagamentos por identificador confiável do provedor.
+8. Testar pagamento aprovado, expirado, valor incorreto, evento duplicado, pagamento tardio e devolução.
+9. Consultar os Security Advisors quando houver mudança em banco/RLS e revisar `auth.uid()`, ACL e `search_path` de qualquer `SECURITY DEFINER` envolvida.
+10. Só então marcar a integração como configurada e liberar o checkout público.
 
 ## Regra antifraude
 
-Enquanto o Pix for manual, a regra operacional é simples:
+A regra operacional atual é:
 
-> **Nunca liberar um pedido por comprovante enviado pelo cliente. Conferir a entrada no próprio banco e usar o ID/E2E exibido pelo banco para confirmar no painel.**
+> **Sem confirmação automática autenticada do banco/provedor, o checkout não cria um novo pedido público e nenhum comprovante enviado pelo cliente é aceito como autorização.**
 
-## Privacidade da chave
+## Privacidade e secrets
 
-A chave Pix usada no QR Code precisa ser enviada ao pagador e, portanto, fica visível no frontend. Como a chave de teste atual é um número de telefone, esse número também fica público no site/repositório. Para produção, prefira uma chave aleatória ou uma chave empresarial quando possível.
+- Nunca colocar Client Secret, certificado privado, segredo de webhook, `service_role` ou outra chave administrativa em HTML/JavaScript público.
+- Secrets financeiros devem existir somente no backend do projeto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`).
+- O projeto InfoTech.io não deve ser usado ou alterado para a integração PADOKA.
+- Objetos exclusivos continuam isolados por prefixo `padoka_`.
