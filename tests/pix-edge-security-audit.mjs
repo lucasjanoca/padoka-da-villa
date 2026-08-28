@@ -20,6 +20,12 @@ need(edge, /SUPABASE_SERVICE_ROLE_KEY/i, 'service role deve existir somente no r
 forbid(edge, /console\.log\([^\n]*(serviceKey|SUPABASE_SERVICE_ROLE_KEY|token)/i, 'segredos/tokens não podem ser enviados para logs');
 need(edge, /order\.customer_id\s*!==\s*user\.id/i, 'pedido precisa pertencer ao usuário autenticado');
 need(edge, /return\s+json\(404,\s*\{\s*error:\s*["']order_not_found["']/i, 'pedido inexistente e não autorizado devem responder de forma não enumerável');
+need(edge, /require_provider_confirmation/i, 'checkout Pix deve conferir a exigência de confirmação pelo provedor');
+need(edge, /settings\.require_provider_confirmation\s*!==\s*true/i, 'drift que desative confirmação do provedor deve falhar fechado');
+need(edge, /\[["']paid["'],\s*["']paid_late["'],\s*["']refunded["']\]\.includes/i, 'pedidos com pagamento finalizado não podem abrir nova cobrança');
+need(edge, /payment_already_finalized/i, 'checkout Pix deve responder de forma explícita para pagamento já finalizado');
+need(edge, /Number\.isFinite\(orderTotal\).*orderTotal\s*<=\s*0/is, 'total server-authoritative precisa ser validado antes da cobrança');
+need(edge, /invalid_order_total/i, 'total inválido deve bloquear a criação da cobrança');
 need(edge, /provider_configured/i, 'provider precisa estar marcado como configurado no servidor');
 need(edge, /settings\.provider\s*===\s*["']unconfigured["']/i, 'provider não configurado precisa falhar fechado');
 need(edge, /return\s+json\(501,\s*\{\s*error:\s*["']provider_adapter_pending["']/i, 'sem adapter real, a função precisa continuar falhando fechado');
