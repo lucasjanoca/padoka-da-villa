@@ -61,6 +61,7 @@ Isso evita mistura operacional com objetos `rass_*`, `emp_*`, `plexo_*` e demais
 - O retry ambíguo de ajuste de estoque também fica sob chave vinculada ao `user_id` do funcionário. Logout/troca de conta invalida o estado operacional em memória e revalida a nova identidade, mas preserva a tentativa da conta original sem expô-la à conta seguinte; ao retornar, somente o mesmo funcionário reconcilia a operação com o mesmo `request_id`.
 - O registro de produção usa retry idempotente vinculado ao `user_id` do funcionário. Logout/troca de conta remove somente o runtime e os controles da identidade anterior, preservando a tentativa ambígua em `sessionStorage`; ao retornar, somente a própria identidade reconcilia o mesmo `request_id`, plano e quantidade.
 - A gestão de catálogo acompanha o lifecycle de autenticação do staff: logout ou troca de conta remove imediatamente os controles e dados em memória da identidade anterior, encerra o canal Realtime associado e invalida listagens/gravações assíncronas pelo `lifecycleEpoch`; a nova identidade só remonta o módulo depois de sessão e papel `owner`/`manager` serem revalidados.
+- As configurações internas também são isoladas pelo lifecycle do staff: `padoka_get_settings` e `padoka_update_settings` capturam `user_id` + `lifecycleEpoch`, revalidam a sessão antes de aplicar qualquer resposta e mantêm controles bloqueados durante troca de conta; respostas atrasadas e callbacks Realtime da identidade anterior são descartados.
 
 ## Google Auth
 
