@@ -50,6 +50,7 @@ Isso evita mistura operacional com objetos `rass_*`, `emp_*`, `plexo_*` e demais
 - O retry ambíguo do checkout fica em `sessionStorage` sob chave vinculada ao `user_id` do cliente. Logout/troca de conta não mistura nem apaga a tentativa persistida da identidade anterior; ao retornar, somente o mesmo cliente restaura aquele `request_id`, enquanto respostas da sessão antiga continuam sendo ignoradas após mudança de autenticação.
 - `acompanhamento.html` carrega automaticamente somente pedidos do cliente autenticado e usa Realtime.
 - `internal.html` e `pedidos.html` exigem sessão e registro ativo em `padoka_staff_users`.
+- A fila interna de `pedidos.html` possui guard dedicado de lifecycle: logout ou troca de funcionário escondem e bloqueiam imediatamente a interface, encerram os canais Realtime da identidade anterior e só reconstroem a página depois de confirmar que a nova sessão ainda pertence a um `padoka_staff_users` ativo; respostas/estado da conta anterior não são reutilizados.
 - A navegação interna também reage a logout/troca de conta via `onAuthStateChange`: limpa o papel anterior, invalida validações assíncronas antigas e resolve novamente o acesso da conta atual antes de manter módulos restritos visíveis.
 - `padoka_update_order_status` está ativa no backend.
 - O papel `authenticated` não possui mais `UPDATE` direto em `padoka_orders`.
