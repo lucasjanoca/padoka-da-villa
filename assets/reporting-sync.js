@@ -1,10 +1,15 @@
 (()=>{
   const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
   if(!isGestao)return;
-  const $=id=>document.getElementById(id),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),num=v=>Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:3}),esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const $=id=>document.getElementById(id),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),num=v=>Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:3}),esc=v=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
   let sb=null,enabled=false,channel=null,refreshTimer=null,lifecycleEpoch=0,activeUserId='',authSubscription=null;
   const allowedRoles=new Set(['owner','manager']);
-  const today=()=>new Date().toLocaleDateString('en-CA');
+  const REPORT_TZ='America/Sao_Paulo';
+  const today=()=>{
+    const parts=new Intl.DateTimeFormat('en-US',{timeZone:REPORT_TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+    const pick=type=>parts.find(part=>part.type===type)?.value||'';
+    return `${pick('year')}-${pick('month')}-${pick('day')}`;
+  };
   function missing(error){return ['42883','PGRST202','PGRST204','PGRST205'].includes(error?.code)||/could not find the function|does not exist|schema cache/i.test(String(error?.message||''))}
   function denied(error){return /permission|required|not allowed/i.test(String(error?.message||''))}
   function panel(){return document.querySelector('[data-panel="relatorios"]')}
