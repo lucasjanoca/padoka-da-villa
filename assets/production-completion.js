@@ -16,7 +16,6 @@
     try{const raw=sessionStorage.getItem(key);const parsed=raw?JSON.parse(raw):{};if(!parsed||typeof parsed!=='object')return {};const clean={};for(const [planId,entry] of Object.entries(parsed)){if(entry?.userId===activeUserId&&entry?.planId===planId&&entry?.requestId)clean[planId]=entry}return clean}catch{return {}}
   }
   function writePending(map){const key=scopedPendingKey();if(!key)return;try{const keys=Object.keys(map);if(keys.length)sessionStorage.setItem(key,JSON.stringify(map));else sessionStorage.removeItem(key)}catch{}}
-  function clearIdentityPending(userId){const key=scopedPendingKey(userId);if(!key)return;try{sessionStorage.removeItem(key)}catch{}}
   function pendingFor(planId){return readPending()[planId]||null}
   function savePending(planId,quantity,requestId){const map=readPending();map[planId]={userId:activeUserId,planId,quantity:Number(quantity),requestId:String(requestId),createdAt:Date.now()};writePending(map);return map[planId]}
   function clearPending(planId){const map=readPending();if(Object.prototype.hasOwnProperty.call(map,planId)){delete map[planId];writePending(map)}}
@@ -105,7 +104,6 @@
       if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
       const nextUserId=session?.user?.id||'',previousUserId=activeUserId;
       if(nextUserId===previousUserId&&event==='SIGNED_IN')return;
-      if(nextUserId!==previousUserId)clearIdentityPending(previousUserId);
       activeUserId=nextUserId;clearProduction();
       if(nextUserId)setTimeout(()=>activate(nextUserId),0);
     });
