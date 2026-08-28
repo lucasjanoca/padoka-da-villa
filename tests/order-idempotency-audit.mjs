@@ -46,7 +46,13 @@ assert.match(js,/onAuthStateChange/,'checkout must react to logout/account chang
 assert.match(js,/activeUserId/,'checkout retries must remain bound to the authenticated identity');
 assert.match(js,/lifecycleEpoch/,'stale async checkout responses must be invalidated after auth lifecycle changes');
 assert.match(js,/if\(epoch!==lifecycleEpoch\|\|requestUserId!==activeUserId\)return/,'RPC responses from an old identity must never update checkout state');
-assert.match(js,/pending\?\.user_id===previousId\)clear\(\)/,'switching directly to another account must discard the previous identity pending retry');
+assert.match(js,/const KEY_PREFIX='padoka_pending_order_v2:'/,'pending checkout retries must use a per-customer key namespace');
+assert.match(js,/const keyFor=userId=>userId\?KEY_PREFIX\+userId:''/,'pending checkout storage key must be derived from user_id');
+assert.match(js,/store\(requestUserId,pending\)/,'pending order must be persisted under the requesting customer identity');
+assert.match(js,/const existing=parse\(requestUserId\)/,'retry restoration must only read the authenticated customer key');
+assert.match(js,/const pending=parse\(user\.id\)/,'page initialization must only restore the current customer retry');
+assert.match(js,/sessionStorage\.removeItem\(LEGACY_KEY\)/,'legacy shared checkout retry key must be discarded');
+assert.doesNotMatch(js,/pending\?\.user_id===previousId\)clear\(\)/,'account switching must not destroy the previous customer retry');
 assert.match(js,/Sessão encerrada ou alterada/,'logout/account change must immediately replace sensitive account presentation');
 assert.match(js,/location\.reload\(\)/,'a newly authenticated identity must reload profile and server-authoritative checkout state');
 
