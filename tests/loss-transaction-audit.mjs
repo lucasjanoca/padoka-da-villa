@@ -20,8 +20,11 @@ const checks=[
   ['RPC legada não é executável pelo navegador',/revoke execute on function public\.padoka_register_loss\(text, numeric, text, text\) from public, anon, authenticated/i.test(exposureMigration)],
   ['RPC idempotente segue disponível ao autenticado',/grant execute on function public\.padoka_register_loss_once\(text, numeric, text, text, uuid\) to authenticated, service_role/i.test(exposureMigration)],
   ['frontend usa RPC idempotente',/rpc\('padoka_register_loss_once'/.test(frontend)],
-  ['frontend preserva request no sessionStorage',/sessionStorage/.test(frontend)&&/padoka_pending_loss_v1/.test(frontend)],
-  ['retry mantém mesmos dados',/pending\|\|currentOperation/.test(frontend)&&/Tentar novamente/.test(frontend)],
+  ['frontend preserva request no sessionStorage',/sessionStorage/.test(frontend)&&/padoka_pending_loss_v2/.test(frontend)],
+  ['retry mantém mesmos dados',/pending\|\|currentOperation\(userId\)/.test(frontend)&&/Tentar novamente/.test(frontend)],
+  ['retry é isolado por identidade do staff',/function storageKey\(userId\)[\s\S]*KEY_PREFIX[\s\S]*userId/.test(frontend)&&/v\?\.userId===expectedUserId/.test(frontend)&&/return \{requestId:uuid\(\),userId,productId,quantity,reason,note\}/.test(frontend)],
+  ['troca de conta não apaga retry ambíguo do funcionário anterior',/function resetForIdentityChange\(\)[\s\S]*pending=null;activeUserId=''/.test(frontend)&&!/function resetForIdentityChange\(\)[\s\S]{0,120}savePending\(null/.test(frontend)],
+  ['chave legada compartilhada é descartada',/LEGACY_KEY='padoka_pending_loss_v1'/.test(frontend)&&/sessionStorage\.removeItem\(LEGACY_KEY\)/.test(frontend)],
   ['resposta ambígua não libera formulário',/networkish\(error\)[\s\S]*lockForm\(true\)/.test(frontend)],
   ['clique é interceptado mesmo sem capability',/function intercept\(e\)[\s\S]*if\(!btn\)return;[\s\S]*preventDefault\(\)[\s\S]*if\(!enabled\)/.test(frontend)],
   ['capability ausente mantém formulário bloqueado',/function blockCapability[\s\S]*btn\.disabled=true[\s\S]*Registro indisponível/.test(frontend)&&/if\(probe\.error\)[\s\S]*blockCapability\(\)/.test(frontend)],
@@ -30,9 +33,10 @@ const checks=[
   ['módulo carrega só na gestão',/gestao\.html/.test(frontend)&&/loss-registration\.js/.test(nav)],
   ['sincronizador operacional não contém RPC legada de perdas',!/rpc\('padoka_register_loss'/.test(operationalSync)&&!/function registerLoss\(/.test(operationalSync)&&!/lossSave'\);if\(btn\)btn\.onclick/.test(operationalSync)],
   ['lifecycle acompanha Supabase Auth',/onAuthStateChange/.test(frontend)&&/INITIAL_SESSION/.test(frontend)&&/TOKEN_REFRESHED/.test(frontend)],
-  ['troca de identidade limpa tentativa pendente',/function resetForIdentityChange\(\)[\s\S]*savePending\(null\)[\s\S]*blockCapability/.test(frontend)],
+  ['troca de identidade invalida somente estado em memória',/function resetForIdentityChange\(\)[\s\S]*lifecycleEpoch\+=1;pending=null;activeUserId=''[\s\S]*blockCapability/.test(frontend)],
   ['papel interno é revalidado antes de reativar perdas',/allowedRoles=new Set\(\['owner','manager','stock','production'\]\)/.test(frontend)&&/padokaStaffRole/.test(frontend)&&/padokaCanAccess\('perdas'\)/.test(frontend)],
-  ['resposta assíncrona antiga é invalidada',/const epoch=lifecycleEpoch/.test(frontend)&&/epoch!==lifecycleEpoch/.test(frontend)&&/latestSession\?\.user\?\.id!==activeUserId/.test(frontend)],
+  ['resposta assíncrona antiga é invalidada pela identidade capturada',/const epoch=lifecycleEpoch,userId=activeUserId/.test(frontend)&&/epoch!==lifecycleEpoch/.test(frontend)&&/latestSession\?\.user\?\.id!==userId/.test(frontend)],
+  ['operação pendente nunca cruza identidade',/if\(op\.userId!==userId\)\{resetForIdentityChange\(\);return\}/.test(frontend)],
   ['nova sessão só reativa fora do callback de auth',/setTimeout\(\(\)=>activateForUser\(nextUserId\),0\)/.test(frontend)]
 ];
 
