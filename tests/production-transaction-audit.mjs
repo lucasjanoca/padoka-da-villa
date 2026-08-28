@@ -29,13 +29,20 @@ need(/revoke all on function public\.padoka_record_production\(uuid,numeric,uuid
 forbid(/trigger[^;]*auth\.users/is,'migration não pode criar trigger global em auth.users');
 forbid(/grant (insert|update|delete).*padoka_production_batches.*authenticated/i,'frontend não deve escrever lotes diretamente');
 
-needFrontend(/padoka_pending_production_v1/,'frontend precisa persistir tentativa pendente da produção');
-needFrontend(/sessionStorage/,'tentativa pendente deve sobreviver a redesenho/realtime na sessão');
-needFrontend(/function savePending\([\s\S]*requestId/,'frontend precisa salvar request_id antes da RPC');
+needFrontend(/padoka_pending_production_v2/,'frontend precisa usar versão de retry com isolamento por identidade');
+needFrontend(/LEGACY_PENDING_KEY='padoka_pending_production_v1'/,'frontend precisa reconhecer e retirar o estado legado sem escopo');
+needFrontend(/sessionStorage/,'tentativa pendente deve sobreviver a redesenho\/realtime na sessão');
+needFrontend(/function scopedPendingKey\(userId=activeUserId\)[\s\S]*PENDING_KEY[\s\S]*userId/,'chave de retry precisa ser escopada pelo funcionário ativo');
+needFrontend(/function savePending\([\s\S]*userId:activeUserId[\s\S]*requestId/,'retry persistido precisa registrar a identidade dona da tentativa');
+needFrontend(/function readPending\([\s\S]*entry\?\.userId===activeUserId/,'leitura não pode reutilizar tentativa de outra identidade');
 needFrontend(/const operation=stored\|\|savePending/,'retry deve reutilizar a tentativa já persistida');
 needFrontend(/p_request_id:operation\.requestId/,'RPC deve receber o request_id persistido');
-needFrontend(/function reconcilePending\([\s\S]*padoka_production_batches/,'frontend precisa reconciliar resposta ambígua com o lote já criado');
+needFrontend(/function reconcilePending\([\s\S]*x\?\.userId===activeUserId[\s\S]*padoka_production_batches/,'reconciliação deve considerar apenas tentativas da identidade atual');
 needFrontend(/batch\.plan_id===entry\.planId[\s\S]*batch\.quantity/,'reconciliação precisa validar plano e quantidade antes de limpar a tentativa');
+needFrontend(/const epoch=lifecycleEpoch,userId=activeUserId/,'registro precisa capturar identidade e lifecycle antes da RPC');
+needFrontend(/epoch!==lifecycleEpoch\|\|userId!==activeUserId/,'resposta atrasada da RPC não pode continuar após troca de identidade');
+needFrontend(/onAuthStateChange/,'produção precisa reagir a logout e troca de conta');
+needFrontend(/nextUserId!==previousUserId\)clearIdentityPending\(previousUserId\)/,'troca de identidade deve remover retry pertencente ao funcionário anterior');
 needFrontend(/clearPending\(plan\.id\)/,'tentativa só deve ser limpa após sucesso confirmado');
 needFrontend(/pending\?'Tentar novamente':'Registrar'/,'UI precisa indicar retry com a mesma operação');
 forbidFrontend(/from\('padoka_inventory'\)[\s\S]*\.(insert|update|upsert)\(/,'frontend de produção não pode escrever estoque diretamente');
