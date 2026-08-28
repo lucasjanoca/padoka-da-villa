@@ -1,13 +1,16 @@
 (()=>{
-const KEY='padoka_pending_order_v1';
+const KEY_PREFIX='padoka_pending_order_v2:';
+const LEGACY_KEY='padoka_pending_order_v1';
 // Automatic Pix is intentionally fail-closed until a real provider adapter + authenticated webhook are deployed.
 // Do not flip this flag just to enable checkout: provider integration must be implemented and audited first.
 const AUTOMATIC_PIX_READY=false;
 let active=false,detectAttempts=0,authLifecycleBound=false,activeUserId=null,lifecycleEpoch=0;
 const el=id=>document.getElementById(id);
-const parse=()=>{try{return JSON.parse(sessionStorage.getItem(KEY)||'null')}catch{return null}};
-const store=v=>sessionStorage.setItem(KEY,JSON.stringify(v));
-const clear=()=>sessionStorage.removeItem(KEY);
+const keyFor=userId=>userId?KEY_PREFIX+userId:'';
+const parse=userId=>{const key=keyFor(userId);if(!key)return null;try{return JSON.parse(sessionStorage.getItem(key)||'null')}catch{return null}};
+const store=(userId,v)=>{const key=keyFor(userId);if(key)sessionStorage.setItem(key,JSON.stringify(v))};
+const clear=userId=>{const key=keyFor(userId);if(key)sessionStorage.removeItem(key)};
+sessionStorage.removeItem(LEGACY_KEY);
 const initialButton=el('sendOrder');
 if(initialButton){initialButton.onclick=null;initialButton.disabled=true;}
 function notice(text,type='warn'){
@@ -39,17 +42,12 @@ function bindAuthLifecycle(){
     const nextUser=session?.user||null;
     const nextId=nextUser?.id||null;
     if(nextId===activeUserId)return;
-    const previousId=activeUserId;
     activeUserId=nextId;
     disableCheckout();
-    if(nextId&&previousId&&nextId!==previousId){
-      const pending=parse();
-      if(pending?.user_id===previousId)clear();
-    }
     user=nextUser;
     profile=null;
     if(nextId){
-      // Reload so profile/onboarding and server-authoritative catalog are resolved for the new identity.
+      // Reload so profile/onboarding, per-user pending retry and server-authoritative catalog are resolved for the new identity.
       location.reload();
     }
   });
@@ -93,7 +91,7 @@ async function sendOnce(){
   const requestUserId=user.id;
   if(activeUserId&&activeUserId!==requestUserId)return;
   const btn=el('sendOrder');
-  const existing=parse();
+  const existing=parse(requestUserId);
   const pending=existing?.user_id===requestUserId?existing:{
     user_id:requestUserId,
     request_id:crypto.randomUUID(),
@@ -101,7 +99,7 @@ async function sendOnce(){
     created_at:new Date().toISOString()
   };
   if(!pending.payload?.items?.length)return;
-  store(pending);
+  store(requestUserId,pending);
   if(btn){btn.disabled=true;btn.textContent='Enviando…';}
   const p=pending.payload;
   const {data,error}=await sb.rpc('padoka_create_order_once',{
@@ -120,7 +118,7 @@ async function sendOnce(){
       notice('A conexão foi interrompida durante o envio. Use “Tentar novamente”: a mesma tentativa será reconciliada sem criar outro pedido.');
       return;
     }
-    clear();
+    clear(requestUserId);
     unlock();
     notice('Não foi possível enviar o pedido. Atualize a página e tente novamente.');
     return;
@@ -131,7 +129,7 @@ async function sendOnce(){
     notice('O envio ficou sem confirmação. Tente novamente para reconciliar o mesmo pedido.');
     return;
   }
-  clear();
+  clear(requestUserId);
   localStorage.removeItem(CART_KEY);
   localStorage.removeItem(PICKUP_KEY);
   location.href='acompanhamento.html?code='+encodeURIComponent(order.code);
@@ -155,12 +153,12 @@ function detect(){
   active=true;
   const btn=el('sendOrder');
   if(btn)btn.onclick=sendOnce;
-  const pending=parse();
-  if(pending&&pending.user_id===user.id){
+  const pending=parse(user.id);
+  if(pending?.user_id===user.id){
     lockPending();
     notice('Existe um envio pendente de confirmação. Tente novamente para reconciliar exatamente o mesmo pedido.');
   }else if(pending){
-    clear();
+    clear(user.id);
   }
 }
 setTimeout(detect,0);
