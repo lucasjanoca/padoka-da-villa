@@ -19,6 +19,14 @@ ok(!/\$\{user\.email\}/.test(checkout), 'pagamento.html: e-mail não deve entrar
 ok(!/\$\{profile\.phone\}/.test(checkout), 'pagamento.html: telefone não deve entrar cru em HTML');
 ok(!/src="\$\{pic\}"/.test(checkout), 'pagamento.html: avatar não deve entrar cru no atributo src');
 
+// Automatic Pix must stay fail-closed until a real provider adapter + authenticated webhook are deployed.
+ok(!/pix-static\.js/.test(checkout), 'pagamento.html: não deve carregar gerador Pix estático');
+ok(!/qrcode\.min\.js/.test(checkout), 'pagamento.html: não deve carregar QR estático enquanto Pix automático estiver indisponível');
+ok(!/PADOKA_PIX/.test(checkout), 'pagamento.html: não deve depender de chave/payload Pix no navegador');
+ok(!/PIX MANUAL/.test(checkout), 'pagamento.html: não deve oferecer confirmação Pix manual');
+ok(/PIX AUTOMÁTICO/.test(checkout), 'pagamento.html: estado do pagamento automático não está identificado');
+ok(/checkout permanece bloqueado/i.test(checkout), 'pagamento.html: ausência do provedor deve manter checkout fail-closed');
+
 if (failures.length) {
   console.error(`PADOKA checkout rendering audit: ${failures.length} falha(s)`);
   failures.forEach(x => console.error(`- ${x}`));
