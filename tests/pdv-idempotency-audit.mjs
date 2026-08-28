@@ -38,10 +38,21 @@ need(ui,/sessionStorage\.setItem/i,'retry ambíguo precisa preservar a tentativa
 need(ui,/Tentar novamente/i,'interface precisa oferecer retry explícito');
 need(ui,/Venda aguardando confirmação do servidor/i,'interface precisa explicar estado ambíguo sem simular sucesso');
 need(ui,/select\('request_id'\)/i,'camada só deve assumir o PDV quando a migration 010 estiver disponível');
-need(ui,/function disableLegacyFinish\(\)/i,'frontend precisa neutralizar o finalizador legado quando a camada segura não estiver pronta');
+need(ui,/function disableLegacyFinish\(message\)/i,'frontend precisa neutralizar o finalizador legado quando a camada segura não estiver pronta');
 need(ui,/updateFinish=update/i,'atualizações posteriores do PDV precisam continuar passando pelo guard idempotente');
 need(ui,/Finalização segura indisponível/i,'falha de capability precisa ser fail-closed e amigável');
 need(ui,/btn\.disabled=true/i,'botão de finalização precisa permanecer bloqueado sem capability idempotente');
+need(ui,/onAuthStateChange\(\(event,session\)=>/i,'PDV precisa reagir a logout/troca de conta na mesma aba');
+forbid(ui,/onAuthStateChange\(async/i,'callback de auth não deve executar fluxo async diretamente');
+need(ui,/user_id:userId/i,'tentativa pendente precisa ficar vinculada ao operador que iniciou a venda');
+need(ui,/v\.user_id===expectedUserId/i,'retry salvo precisa ser recusado quando pertence a outra identidade');
+need(ui,/function resetForIdentityChange\(\)[\s\S]*savePending\(null\)/i,'troca de identidade precisa apagar tentativa pendente');
+need(ui,/saleBusy=false;cart=\{\};renderCart\(\)/i,'troca de identidade precisa limpar carrinho e estado de venda');
+need(ui,/padoka-staff-pending/i,'reativação precisa esperar o guard interno concluir');
+need(ui,/allowedRoles\.has\(String\(window\.padokaStaffRole/i,'PDV precisa confirmar papel permitido após revalidação');
+need(ui,/window\.padokaCanAccess\('pdv'\)/i,'PDV precisa confirmar capability do módulo após revalidação');
+need(ui,/latestSession\?\.user\?\.id!==userId/i,'resposta da venda precisa ser descartada se a sessão mudar durante a RPC');
+need(ui,/setTimeout\(\(\)=>activateForUser\(nextUserId\),0\)/i,'reativação após evento de auth deve ocorrer fora do callback');
 forbid(ui,/localStorage/i,'tentativa idempotente não deve virar venda local persistida');
 forbid(ui,/from\(['"]padoka_inventory['"]\).*\.(update|insert|delete)/is,'frontend não pode alterar estoque diretamente');
 
