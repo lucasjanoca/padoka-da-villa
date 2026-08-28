@@ -1,5 +1,5 @@
 (()=>{
-const PIX_KEY='15997696477';
+const PIX_KEY='+5515997696477';
 const MERCHANT_NAME='PADOKA DA VILLA';
 const MERCHANT_CITY='CERQUILHO';
 const ascii=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9 ]/g,' ').replace(/\s+/g,' ').trim().toUpperCase();
