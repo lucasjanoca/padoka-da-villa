@@ -6,7 +6,7 @@
   const labels={owner:'Proprietário',manager:'Gerente',cashier:'Caixa',attendant:'Atendimento',production:'Produção',stock:'Estoque'};
   const missingRpc=error=>['PGRST202','42883'].includes(String(error?.code||''))||/padoka_list_staff_audit|function .* does not exist|schema cache/i.test(String(error?.message||''));
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-  let client=null,available=false,loading=false;
+  let client=null,available=false,loading=false,activeUserId='',lifecycleEpoch=0;
 
   async function waitForContext(){
     for(let i=0;i<100;i++){
@@ -23,6 +23,32 @@
       await sleep(100);
     }
     return null;
+  }
+
+  function clearTeamUi(){
+    available=false;
+    loading=false;
+    document.getElementById('staffAudit')?.remove();
+    document.querySelector('[data-panel="equipe"]')?.remove();
+    document.querySelector('.tabs a[href="?tab=equipe"]')?.remove();
+    document.querySelector('.padoka-nav-list [data-padoka-module="equipe"]')?.remove();
+  }
+
+  function sessionStillValid(epoch,userId){
+    return epoch===lifecycleEpoch&&!!userId&&userId===activeUserId&&window.padokaStaffRole==='owner'&&!document.documentElement.classList.contains('padoka-staff-pending');
+  }
+
+  function watchAuth(){
+    if(!client)return;
+    client.auth.onAuthStateChange((event,session)=>{
+      if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
+      const nextUserId=session?.user?.id||'';
+      if(nextUserId&&nextUserId===activeUserId&&event==='SIGNED_IN')return;
+      lifecycleEpoch+=1;
+      activeUserId='';
+      clearTeamUi();
+      setTimeout(()=>location.replace('internal.html'),0);
+    });
   }
 
   function addStyles(){
@@ -82,11 +108,13 @@
   }
 
   async function load(){
-    if(!client||!available||loading)return;
+    if(!client||!available||loading||!activeUserId)return;
+    const epoch=lifecycleEpoch,userId=activeUserId;
     loading=true;
     const button=document.getElementById('staffAuditRefresh');
     if(button){button.disabled=true;button.textContent='Atualizando…'}
     const {data,error}=await client.rpc('padoka_list_staff_audit',{p_limit:30});
+    if(!sessionStillValid(epoch,userId))return;
     loading=false;
     if(button){button.disabled=false;button.textContent='Atualizar'}
     if(error){
@@ -100,8 +128,9 @@
     })));
   }
 
-  async function probe(){
+  async function probe(epoch,userId){
     const {error}=await client.rpc('padoka_list_staff_audit',{p_limit:1});
+    if(!sessionStillValid(epoch,userId))return false;
     if(!error)return true;
     return !missingRpc(error);
   }
@@ -110,20 +139,25 @@
     const context=await waitForContext();
     if(!context||context.role!=='owner')return;
     client=context.client;
-    available=await probe();
-    if(!available)return;
+    const {data:{session}}=await client.auth.getSession();
+    if(!session?.user?.id||window.padokaStaffRole!=='owner')return;
+    activeUserId=session.user.id;
+    const epoch=++lifecycleEpoch,userId=activeUserId;
+    watchAuth();
+    available=await probe(epoch,userId);
+    if(!sessionStillValid(epoch,userId)||!available)return;
     const panel=await waitForTeamPanel();
-    if(!panel)return;
+    if(!sessionStillValid(epoch,userId)||!panel)return;
     ensureMount(panel);
     await load();
 
     document.addEventListener('click',event=>{
-      if(event.target.closest('[data-save]'))setTimeout(load,900);
+      if(event.target.closest('[data-save]'))setTimeout(()=>{if(sessionStillValid(lifecycleEpoch,activeUserId))load()},900);
     },true);
     document.addEventListener('submit',event=>{
-      if(event.target?.id==='staffEnrollForm')setTimeout(load,1100);
+      if(event.target?.id==='staffEnrollForm')setTimeout(()=>{if(sessionStillValid(lifecycleEpoch,activeUserId))load()},1100);
     },true);
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load()});
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&sessionStillValid(lifecycleEpoch,activeUserId))load()});
   }
 
   init().catch(error=>console.warn('PADOKA staff audit:',error));
