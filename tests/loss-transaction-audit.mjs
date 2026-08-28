@@ -28,7 +28,12 @@ const checks=[
   ['handler legado é neutralizado por defesa em profundidade',/function detachLegacyHandler\(\)[\s\S]*btn\.onclick=null/.test(frontend)&&/enabled=true;detachLegacyHandler\(\)/.test(frontend)],
   ['frontend não altera estoque diretamente',!/(from\('padoka_inventory'\).*?(insert|update|upsert)|\.from\('padoka_inventory'\)\.update)/s.test(frontend)],
   ['módulo carrega só na gestão',/gestao\.html/.test(frontend)&&/loss-registration\.js/.test(nav)],
-  ['sincronizador operacional não contém RPC legada de perdas',!/rpc\('padoka_register_loss'/.test(operationalSync)&&!/function registerLoss\(/.test(operationalSync)&&!/lossSave'\);if\(btn\)btn\.onclick/.test(operationalSync)]
+  ['sincronizador operacional não contém RPC legada de perdas',!/rpc\('padoka_register_loss'/.test(operationalSync)&&!/function registerLoss\(/.test(operationalSync)&&!/lossSave'\);if\(btn\)btn\.onclick/.test(operationalSync)],
+  ['lifecycle acompanha Supabase Auth',/onAuthStateChange/.test(frontend)&&/INITIAL_SESSION/.test(frontend)&&/TOKEN_REFRESHED/.test(frontend)],
+  ['troca de identidade limpa tentativa pendente',/function resetForIdentityChange\(\)[\s\S]*savePending\(null\)[\s\S]*blockCapability/.test(frontend)],
+  ['papel interno é revalidado antes de reativar perdas',/allowedRoles=new Set\(\['owner','manager','stock','production'\]\)/.test(frontend)&&/padokaStaffRole/.test(frontend)&&/padokaCanAccess\('perdas'\)/.test(frontend)],
+  ['resposta assíncrona antiga é invalidada',/const epoch=lifecycleEpoch/.test(frontend)&&/epoch!==lifecycleEpoch/.test(frontend)&&/latestSession\?\.user\?\.id!==activeUserId/.test(frontend)],
+  ['nova sessão só reativa fora do callback de auth',/setTimeout\(\(\)=>activateForUser\(nextUserId\),0\)/.test(frontend)]
 ];
 
 let failed=0;
