@@ -1,0 +1,12 @@
+## 2026-08-28 18:26 — Fila interna fecha troca de identidade em runtime
+- Relidos `README.md`, `CHANGELOG.md`, `AUTH_STATUS.md`, `pedidos.html`, `assets/internal-nav.js`, a suíte de auditorias e o workflow antes da alteração.
+- Confirmado que o backend documentado da PADOKA continua sendo **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) e que nenhuma mudança de banco seria necessária nesta rodada.
+- Identificado que `pedidos.html` validava staff na carga inicial, porém o runtime próprio da fila não acompanhava diretamente logout/troca de funcionário; isso permitia que estado e callbacks já carregados permanecessem ativos até a navegação global concluir sua reação.
+- Criado `assets/orders-auth-lifecycle.js`, carregado somente em `pedidos.html` por `assets/internal-nav.js`.
+- Em mudança real de identidade, a fila entra imediatamente em modo fail-closed: conteúdo principal fica oculto, botões/inputs/selects são desabilitados e canais Realtime do cliente Supabase são encerrados.
+- Logout retorna ao painel interno; troca para outra conta revalida sessão atual e `padoka_staff_users.active` antes de reconstruir a página com `location.reload()`, evitando reutilizar estado da identidade anterior.
+- A revalidação usa `activeUserId` + `lifecycleEpoch` e confirma novamente a sessão após consultar o cadastro de staff, descartando respostas atrasadas caso a identidade mude novamente.
+- `tests/staff-navigation-audit.mjs` passou a exigir o guard dedicado, bloqueio imediato, limpeza de Realtime e revalidação da mesma identidade.
+- O workflow `PADOKA Static Audit` agora executa `node --check assets/orders-auth-lifecycle.js`.
+- `AUTH_STATUS.md` foi atualizado com a garantia de isolamento da fila interna.
+- Nenhuma migration, RLS, grant, RPC, secret ou Edge Function foi alterada; nenhum objeto fora do prefixo `padoka_` foi tocado.
