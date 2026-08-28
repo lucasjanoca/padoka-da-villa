@@ -52,8 +52,21 @@ if (/byId\s*=\s*Object\.fromEntries\(catalog\.map/.test(sync)) {
   throw new Error('Operational sync não pode congelar o índice do catálogo antes do carregamento assíncrono.');
 }
 
-if (!sync.includes("if($('app')?.classList.contains('hidden'))return")) {
-  throw new Error('Operational sync deve aguardar a área interna autenticada antes de iniciar.');
+const authLifecycleMarkers = [
+  'async function waitForStaffGuard(expectedUserId)',
+  "document.documentElement.classList.contains('padoka-staff-pending')",
+  "document.documentElement.classList.contains('padoka-role-pending')",
+  'async function sessionStillMatches(expectedUserId,epoch=lifecycleEpoch)',
+  'if(!await waitForStaffGuard(expectedUserId)||epoch!==lifecycleEpoch)return',
+  'const {data:{session}}=await sb.auth.getSession()',
+  'onAuthStateChange',
+  "clearOperationalState('Validando novamente o acesso interno…'",
+];
+
+for (const marker of authLifecycleMarkers) {
+  if (!sync.includes(marker)) {
+    throw new Error(`Operational sync deve aguardar e revalidar a área interna autenticada: ${marker}`);
+  }
 }
 
 if (!sync.includes("lockOperationalUi('Carregando dados operacionais seguros do servidor…')")) {
