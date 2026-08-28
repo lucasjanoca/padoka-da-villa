@@ -3,7 +3,7 @@ const KEY='padoka_pending_order_v1';
 // Automatic Pix is intentionally fail-closed until a real provider adapter + authenticated webhook are deployed.
 // Do not flip this flag just to enable checkout: provider integration must be implemented and audited first.
 const AUTOMATIC_PIX_READY=false;
-let active=false,detectAttempts=0;
+let active=false,detectAttempts=0,authLifecycleBound=false,activeUserId=null,lifecycleEpoch=0;
 const el=id=>document.getElementById(id);
 const parse=()=>{try{return JSON.parse(sessionStorage.getItem(KEY)||'null')}catch{return null}};
 const store=v=>sessionStorage.setItem(KEY,JSON.stringify(v));
@@ -21,6 +21,38 @@ function notice(text,type='warn'){
   }
   box.className=`notice ${type}`;
   box.textContent=text;
+}
+function disableCheckout(text='Sua sessão mudou. Entre novamente para continuar com segurança.'){
+  active=false;
+  lifecycleEpoch+=1;
+  const btn=el('sendOrder');
+  if(btn){btn.onclick=null;btn.disabled=true;btn.textContent='Entre novamente';}
+  const account=el('accountCard');
+  if(account)account.innerHTML='<div class="notice warn"><strong>Sessão encerrada ou alterada.</strong><br>Entre novamente na sua conta PADOKA antes de continuar.</div>';
+  notice(text);
+}
+function bindAuthLifecycle(){
+  if(authLifecycleBound||!sb?.auth?.onAuthStateChange)return;
+  authLifecycleBound=true;
+  activeUserId=user?.id||null;
+  sb.auth.onAuthStateChange((event,session)=>{
+    const nextUser=session?.user||null;
+    const nextId=nextUser?.id||null;
+    if(nextId===activeUserId)return;
+    const previousId=activeUserId;
+    activeUserId=nextId;
+    disableCheckout();
+    if(nextId&&previousId&&nextId!==previousId){
+      const pending=parse();
+      if(pending?.user_id===previousId)clear();
+    }
+    user=nextUser;
+    profile=null;
+    if(nextId){
+      // Reload so profile/onboarding and server-authoritative catalog are resolved for the new identity.
+      location.reload();
+    }
+  });
 }
 function enforceAutomaticPaymentOnly(){
   if(AUTOMATIC_PIX_READY)return false;
@@ -57,10 +89,13 @@ function ambiguous(error){
 async function sendOnce(){
   if(enforceAutomaticPaymentOnly())return;
   if(!sb||!user||!profile?.onboarding_completed||!pickup)return;
+  const epoch=lifecycleEpoch;
+  const requestUserId=user.id;
+  if(activeUserId&&activeUserId!==requestUserId)return;
   const btn=el('sendOrder');
   const existing=parse();
-  const pending=existing?.user_id===user.id?existing:{
-    user_id:user.id,
+  const pending=existing?.user_id===requestUserId?existing:{
+    user_id:requestUserId,
     request_id:crypto.randomUUID(),
     payload:payloadFromPage(),
     created_at:new Date().toISOString()
@@ -77,6 +112,7 @@ async function sendOnce(){
     p_pickup_name:p.name,
     p_items:p.items
   });
+  if(epoch!==lifecycleEpoch||requestUserId!==activeUserId)return;
   if(error){
     console.error('Falha ao reconciliar pedido PADOKA',error);
     if(ambiguous(error)){
@@ -105,10 +141,13 @@ function detect(){
   detectAttempts+=1;
   const ready=typeof sb!=='undefined'&&sb&&user&&profile?.onboarding_completed;
   if(!ready){
+    if(typeof sb!=='undefined'&&sb)bindAuthLifecycle();
     enforceAutomaticPaymentOnly();
     if(detectAttempts<100)setTimeout(detect,120);
     return;
   }
+  bindAuthLifecycle();
+  activeUserId=user.id;
   if(enforceAutomaticPaymentOnly()){
     active=true;
     return;
