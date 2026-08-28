@@ -38,7 +38,7 @@ ok(sync.includes("rpc('padoka_adjust_inventory_once'"), 'operational-sync.js: aj
 ok(!sync.includes("rpc('padoka_adjust_inventory'"), 'operational-sync.js: ajuste manual ainda chama RPC legada sem idempotência');
 ok(sync.includes("const ADJUST_KEY='padoka_pending_inventory_adjustment_v1'"), 'operational-sync.js: tentativa pendente de ajuste não é persistida na sessão');
 ok(sync.includes('crypto.randomUUID()'), 'operational-sync.js: ajuste não gera request_id estável');
-ok(sync.includes('reconcilePendingAdjustment()'), 'operational-sync.js: tentativa pendente não é reconciliada após recarregar');
+ok(sync.includes('reconcilePendingAdjustment('), 'operational-sync.js: tentativa pendente não é reconciliada após recarregar');
 ok(sync.includes('Pressione Enter para repetir a mesma operação com segurança'), 'operational-sync.js: resposta ambígua não orienta retry com o mesmo request_id');
 
 ok(planningMigration.includes('public.padoka_upsert_production_plan'), 'migration 032: RPC de planejamento ausente');
@@ -50,6 +50,16 @@ ok(/revoke all on function public\.padoka_upsert_production_plan\(date, text, nu
 ok(/grant execute on function public\.padoka_upsert_production_plan\(date, text, numeric, text\) to authenticated/i.test(planningMigration), 'migration 032: authenticated não recebeu EXECUTE da RPC');
 ok(sync.includes("rpc('padoka_upsert_production_plan'"), 'operational-sync.js: planejamento não usa RPC server-authoritative');
 ok(!/from\('padoka_production_plans'\)\.upsert\(/.test(sync), 'operational-sync.js: ainda existe UPSERT direto em padoka_production_plans');
+
+ok(sync.includes('onAuthStateChange'), 'operational-sync.js: não acompanha logout/troca de conta do staff');
+ok(sync.includes('lifecycleEpoch'), 'operational-sync.js: respostas assíncronas antigas não são invalidadas por lifecycle');
+ok(sync.includes('activeUserId'), 'operational-sync.js: operações não ficam vinculadas à identidade ativa');
+ok(sync.includes("classList.contains('padoka-staff-pending')"), 'operational-sync.js: reativação não espera o guard global de staff');
+ok(sync.includes('sessionStillMatches'), 'operational-sync.js: resposta de RPC não reconfirma a mesma sessão');
+ok(sync.includes('sb.removeChannel(channel)'), 'operational-sync.js: canal Realtime anterior não é removido na troca de identidade');
+ok(sync.includes('sessionStorage.removeItem(ADJUST_KEY)'), 'operational-sync.js: tentativa de ajuste pode sobreviver à troca de funcionário');
+ok(sync.includes('identityChanged'), 'operational-sync.js: limpeza da tentativa pendente não está condicionada à mudança de identidade');
+ok(sync.includes("window.addEventListener('pagehide'"), 'operational-sync.js: lifecycle não encerra subscription/canal ao sair da página');
 
 if (failures.length) {
   console.error(`PADOKA inventory audit: ${failures.length} falha(s)`);
