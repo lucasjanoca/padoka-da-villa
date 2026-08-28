@@ -42,7 +42,8 @@ needFrontend(/batch\.plan_id===entry\.planId[\s\S]*batch\.quantity/,'reconcilia�
 needFrontend(/const epoch=lifecycleEpoch,userId=activeUserId/,'registro precisa capturar identidade e lifecycle antes da RPC');
 needFrontend(/epoch!==lifecycleEpoch\|\|userId!==activeUserId/,'resposta atrasada da RPC não pode continuar após troca de identidade');
 needFrontend(/onAuthStateChange/,'produção precisa reagir a logout e troca de conta');
-needFrontend(/nextUserId!==previousUserId\)clearIdentityPending\(previousUserId\)/,'troca de identidade deve remover retry pertencente ao funcionário anterior');
+needFrontend(/activeUserId=nextUserId;clearProduction\(\)/,'troca de identidade deve limpar somente o runtime da conta anterior');
+forbidFrontend(/clearIdentityPending/,'troca de identidade não pode apagar retry persistido da conta anterior');
 needFrontend(/clearPending\(plan\.id\)/,'tentativa só deve ser limpa após sucesso confirmado');
 needFrontend(/pending\?'Tentar novamente':'Registrar'/,'UI precisa indicar retry com a mesma operação');
 forbidFrontend(/from\('padoka_inventory'\)[\s\S]*\.(insert|update|upsert)\(/,'frontend de produção não pode escrever estoque diretamente');
