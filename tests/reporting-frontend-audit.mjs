@@ -15,6 +15,9 @@ must(js,"Relatórios consolidados financeiros são restritos à gerência.",'Fro
 must(js,"table:'padoka_sales'",'Relatório deve atualizar após mudanças de vendas');
 must(js,"table:'padoka_orders'",'Relatório deve atualizar após mudanças de pedidos');
 must(js,"new Set(['owner','manager'])",'Relatórios financeiros devem continuar restritos a owner/manager');
+must(js,"const REPORT_TZ='America/Sao_Paulo'",'Relatório deve fixar o dia operacional no fuso da padaria');
+must(js,"timeZone:REPORT_TZ",'Cálculo de hoje deve usar explicitamente America/Sao_Paulo');
+must(js,"formatToParts(new Date())",'Data operacional deve ser montada sem depender do timezone local do dispositivo');
 must(js,"sb.auth.onAuthStateChange",'Relatório deve reagir a logout e troca de conta');
 must(js,"clearReporting()",'Troca de sessão deve limpar imediatamente relatório e estado anterior');
 must(js,"sb.removeChannel(channel)",'Troca de sessão deve remover o canal Realtime do staff anterior');
