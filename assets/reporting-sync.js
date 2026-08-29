@@ -44,25 +44,25 @@
   }
   function schedule(){if(!enabled)return;clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{const to=$('reportTo')?.value;if(to===today())load()},350)}
   function subscribe(){if(channel||!enabled)return;channel=sb.channel('padoka-reporting-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_sales'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'padoka_orders'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'padoka_losses'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},schedule).on('postgres_changes',{event:'*',schema:'public',table:'padoka_inventory'},schedule).subscribe()}
-  async function waitForRole(expectedUserId){
+  async function waitForRole(expectedUserId,expectedEpoch){
     for(let n=0;n<100;n++){
+      if(expectedEpoch!==lifecycleEpoch)return '';
       const role=String(window.padokaStaffRole||'').toLowerCase();
       const pending=document.documentElement.classList.contains('padoka-staff-pending')||document.documentElement.classList.contains('padoka-role-pending');
       const {data:{session}}=await sb.auth.getSession();
-      if(session?.user?.id!==expectedUserId)return '';
+      if(expectedEpoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return '';
       if(!pending&&role)return role;
       await new Promise(r=>setTimeout(r,100));
     }
     return '';
   }
-  async function activate(expectedUserId){
-    const epoch=lifecycleEpoch;
-    if(!expectedUserId||!sb)return;
-    const role=await waitForRole(expectedUserId);
-    if(epoch!==lifecycleEpoch)return;
+  async function activate(expectedUserId,expectedEpoch=lifecycleEpoch){
+    if(expectedEpoch!==lifecycleEpoch||!expectedUserId||!sb)return;
+    const role=await waitForRole(expectedUserId,expectedEpoch);
+    if(expectedEpoch!==lifecycleEpoch)return;
     if(!allowedRoles.has(role))return;
     const {data:{session}}=await sb.auth.getSession();
-    if(epoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return;
+    if(expectedEpoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return;
     activeUserId=expectedUserId;enabled=true;ensureShell();await load();
   }
   function watchAuth(){
@@ -71,7 +71,8 @@
       const nextUserId=session?.user?.id||'';
       if(nextUserId===activeUserId&&event==='SIGNED_IN')return;
       activeUserId=nextUserId;clearReporting();
-      if(nextUserId)setTimeout(()=>activate(nextUserId),0);
+      const epoch=lifecycleEpoch;
+      if(nextUserId)setTimeout(()=>activate(nextUserId,epoch),0);
     });
     authSubscription=result?.data?.subscription||null;
   }
@@ -79,9 +80,11 @@
     for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));
     sb=window.padokaSupabase;if(!sb)return;
     watchAuth();
+    const epoch=lifecycleEpoch;
     const {data:{session}}=await sb.auth.getSession();
+    if(epoch!==lifecycleEpoch)return;
     activeUserId=session?.user?.id||'';
-    if(activeUserId)await activate(activeUserId);
+    if(activeUserId)await activate(activeUserId,epoch);
   }
   window.addEventListener('pagehide',()=>{clearReporting(false);try{authSubscription?.unsubscribe()}catch{}},{once:true});
   start();
