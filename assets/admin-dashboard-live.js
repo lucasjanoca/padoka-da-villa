@@ -135,23 +135,26 @@ function enableOperationalRealtime(epoch=currentEpoch(),userId=activeUserId){
   if(access.inventory&&!inventoryChannel)inventoryChannel=window.padokaSupabase.channel('padoka-admin-inventory-live').on('postgres_changes',{event:'*',schema:'public',table:'padoka_inventory'},scheduleOperational).subscribe();
   if(access.production&&!productionChannel)productionChannel=window.padokaSupabase.channel('padoka-admin-production-live').on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},scheduleOperational).subscribe();
 }
-async function waitForValidatedStaff(expectedUserId=''){
+async function waitForValidatedStaff(expectedUserId='',expectedEpoch=currentEpoch()){
   for(let i=0;i<80;i++){
+    if(expectedEpoch!==lifecycleEpoch)return '';
     if(!staffGuardPending()&&window.padokaStaffRole){
       const {data:{session}}=await window.padokaSupabase.auth.getSession();
+      if(expectedEpoch!==lifecycleEpoch)return '';
       if(session?.user?.id&&(!expectedUserId||session.user.id===expectedUserId))return session.user.id;
     }
     await new Promise(resolve=>setTimeout(resolve,100));
   }
   return '';
 }
-async function init(expectedUserId=''){
-  if(!window.padokaSupabase||get('panelView')?.classList.contains('hidden'))return setTimeout(()=>init(expectedUserId),180);
-  const userId=await waitForValidatedStaff(expectedUserId);
-  if(!userId)return;
+async function init(expectedUserId='',expectedEpoch=currentEpoch()){
+  if(expectedEpoch!==lifecycleEpoch)return;
+  if(!window.padokaSupabase||get('panelView')?.classList.contains('hidden'))return setTimeout(()=>init(expectedUserId,expectedEpoch),180);
+  const userId=await waitForValidatedStaff(expectedUserId,expectedEpoch);
+  if(expectedEpoch!==lifecycleEpoch||!userId)return;
   if(expectedUserId&&userId!==expectedUserId)return;
   activeUserId=userId;
-  const epoch=currentEpoch();
+  const epoch=expectedEpoch;
   await refreshOrders(epoch,userId);
   if(!lifecycleCurrent(epoch,userId))return;
   const operationalReady=await refreshOperational(epoch,userId);
@@ -170,10 +173,11 @@ async function watchAuth(){
     const nextUserId=session?.user?.id||'';
     if(nextUserId===activeUserId&&event==='SIGNED_IN')return;
     clearDashboardState();
-    if(nextUserId)setTimeout(()=>init(nextUserId),0);
+    const epoch=currentEpoch();
+    if(nextUserId)setTimeout(()=>init(nextUserId,epoch),0);
   });
 }
 window.addEventListener('pagehide',clearDashboardState,{once:true});
 watchAuth();
-setTimeout(()=>init(),0);
+setTimeout(()=>init('',currentEpoch()),0);
 })();
