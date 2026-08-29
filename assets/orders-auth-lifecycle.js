@@ -9,6 +9,7 @@
   style.id='padokaOrdersAuthLifecycleStyle';
   style.textContent='.padoka-orders-auth-transition body>main{visibility:hidden!important;pointer-events:none!important}';
   document.head.appendChild(style);
+  document.documentElement.classList.add('padoka-orders-auth-transition');
 
   const waitForClient=async()=>{
     for(let i=0;i<80;i++){
@@ -46,29 +47,37 @@
   };
 
   const start=async()=>{
-    const client=await waitForClient();
-    if(!client){
-      document.documentElement.classList.add('padoka-orders-auth-transition');
-      return;
-    }
-    const {data:{session}}=await client.auth.getSession();
-    activeUserId=session?.user?.id||'';
-    client.auth.onAuthStateChange((event,nextSession)=>{
-      if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
-      const nextUserId=nextSession?.user?.id||'';
-      if(event==='SIGNED_IN'&&nextUserId===activeUserId)return;
-      const previousUserId=activeUserId;
-      activeUserId=nextUserId;
-      if(nextUserId===previousUserId)return;
-      void lockOrdersUi(client).then(()=>{
-        const epoch=lifecycleEpoch;
-        if(!nextUserId){
-          if(epoch===lifecycleEpoch)location.replace('internal.html');
-          return;
-        }
-        setTimeout(()=>revalidateIdentity(client,nextUserId,epoch),0);
+    try{
+      const client=await waitForClient();
+      if(!client)return;
+      const {data:{session}}=await client.auth.getSession();
+      activeUserId=session?.user?.id||'';
+      client.auth.onAuthStateChange((event,nextSession)=>{
+        if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
+        const nextUserId=nextSession?.user?.id||'';
+        if(event==='SIGNED_IN'&&nextUserId===activeUserId)return;
+        const previousUserId=activeUserId;
+        activeUserId=nextUserId;
+        if(nextUserId===previousUserId)return;
+        void lockOrdersUi(client).then(()=>{
+          const epoch=lifecycleEpoch;
+          if(!nextUserId){
+            if(epoch===lifecycleEpoch)location.replace('internal.html');
+            return;
+          }
+          setTimeout(()=>revalidateIdentity(client,nextUserId,epoch),0);
+        });
       });
-    });
+      if(!activeUserId){
+        location.replace('internal.html');
+        return;
+      }
+      document.documentElement.classList.remove('padoka-orders-auth-transition');
+    }catch(error){
+      console.warn('PADOKA orders initial auth check:',error);
+      document.documentElement.classList.add('padoka-orders-auth-transition');
+      location.replace('internal.html');
+    }
   };
 
   void start();
