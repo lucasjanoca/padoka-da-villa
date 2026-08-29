@@ -38,6 +38,26 @@
     return epoch===lifecycleEpoch&&!!userId&&userId===activeUserId&&window.padokaStaffRole==='owner'&&!document.documentElement.classList.contains('padoka-staff-pending');
   }
 
+  async function safeSession(){
+    try{
+      const {data,error}=await client.auth.getSession();
+      if(error){
+        console.warn('PADOKA staff audit session unavailable:',error);
+        return null;
+      }
+      return data?.session||null;
+    }catch(error){
+      console.warn('PADOKA staff audit session unavailable:',error);
+      return null;
+    }
+  }
+
+  async function confirmSession(epoch,userId){
+    if(!sessionStillValid(epoch,userId))return false;
+    const session=await safeSession();
+    return !!session?.user?.id&&session.user.id===userId&&sessionStillValid(epoch,userId);
+  }
+
   function watchAuth(){
     if(!client)return;
     client.auth.onAuthStateChange((event,session)=>{
@@ -124,7 +144,11 @@
       if(list)list.innerHTML='<div class="notice">Não foi possível carregar o histórico agora. Verifique a conexão e tente novamente.</div>';
       return;
     }
-    if(!sessionStillValid(epoch,userId))return;
+    if(!await confirmSession(epoch,userId)){
+      loading=false;
+      clearTeamUi();
+      return;
+    }
     const {data,error}=result;
     loading=false;
     if(button){button.disabled=false;button.textContent='Atualizar'}
@@ -148,7 +172,7 @@
       console.warn('PADOKA staff audit capability unavailable:',error);
       return false;
     }
-    if(!sessionStillValid(epoch,userId))return false;
+    if(!await confirmSession(epoch,userId))return false;
     const {error}=result;
     if(!error)return true;
     return !missingRpc(error);
@@ -158,7 +182,7 @@
     const context=await waitForContext();
     if(!context||context.role!=='owner')return;
     client=context.client;
-    const {data:{session}}=await client.auth.getSession();
+    const session=await safeSession();
     if(!session?.user?.id||window.padokaStaffRole!=='owner')return;
     activeUserId=session.user.id;
     const epoch=++lifecycleEpoch,userId=activeUserId;
