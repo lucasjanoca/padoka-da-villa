@@ -4,7 +4,6 @@
 
   let activeUserId='';
   let lifecycleEpoch=0;
-  let transitioning=false;
 
   const style=document.createElement('style');
   style.id='padokaOrdersAuthLifecycleStyle';
@@ -20,7 +19,6 @@
   };
 
   const lockOrdersUi=async client=>{
-    transitioning=true;
     lifecycleEpoch+=1;
     document.documentElement.classList.add('padoka-orders-auth-transition');
     document.querySelectorAll('main button,main input,main select').forEach(el=>{el.disabled=true});
@@ -56,7 +54,7 @@
     const {data:{session}}=await client.auth.getSession();
     activeUserId=session?.user?.id||'';
     client.auth.onAuthStateChange((event,nextSession)=>{
-      if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'||transitioning)return;
+      if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
       const nextUserId=nextSession?.user?.id||'';
       if(event==='SIGNED_IN'&&nextUserId===activeUserId)return;
       const previousUserId=activeUserId;
@@ -65,7 +63,7 @@
       void lockOrdersUi(client).then(()=>{
         const epoch=lifecycleEpoch;
         if(!nextUserId){
-          location.replace('internal.html');
+          if(epoch===lifecycleEpoch)location.replace('internal.html');
           return;
         }
         setTimeout(()=>revalidateIdentity(client,nextUserId,epoch),0);
