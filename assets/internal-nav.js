@@ -98,6 +98,16 @@
     }
     return null;
   }
+  async function safeSession(client){
+    try{
+      const {data,error}=await client.auth.getSession();
+      if(error)throw error;
+      return data?.session||null;
+    }catch(error){
+      console.warn('PADOKA internal session check:',error);
+      return null;
+    }
+  }
   function clearResolvedStaff(){
     validatedStaffUserId='';
     delete window.padokaStaffRole;
@@ -114,12 +124,12 @@
     try{
       const client=await waitForClient();
       if(!client)throw new Error('staff client unavailable');
-      const {data:{session}}=await client.auth.getSession();
+      const session=await safeSession(client);
       if(!session)throw new Error('staff session unavailable');
       if(expectedUserId&&session.user.id!==expectedUserId)throw new Error('staff session changed');
       const {data:staff,error}=await client.from('padoka_staff_users').select('role,active').eq('user_id',session.user.id).maybeSingle();
       if(error||!staff?.active)throw new Error('staff permission unavailable');
-      const {data:{session:latestSession}}=await client.auth.getSession();
+      const latestSession=await safeSession(client);
       if(epoch!==staffValidationEpoch||latestSession?.user?.id!==session.user.id)return;
       const role=String(staff.role||'').toLowerCase();
       validatedStaffUserId=session.user.id;
