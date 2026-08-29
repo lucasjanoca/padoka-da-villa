@@ -22,6 +22,17 @@
   function resetForIdentityChange(){
     lifecycleEpoch+=1;pending=null;activeUserId='';blockCapability('Acesso interno sendo revalidado.');
   }
+  async function getSessionSafe(epoch,userId=''){
+    try{
+      const {data:{session}}=await sb.auth.getSession();
+      if(epoch!==lifecycleEpoch)return null;
+      if(userId&&session?.user?.id!==userId)return null;
+      return session||null;
+    }catch(error){
+      if(epoch===lifecycleEpoch){console.error('PADOKA loss auth session:',error);blockCapability('Não foi possível confirmar seu acesso agora. Tente novamente após reconectar.');}
+      return null;
+    }
+  }
   function applyPending(){if(!pending)return;const product=$('lossProduct'),qty=$('lossQty'),reason=$('lossReason'),note=$('lossNote');if(product)product.value=pending.productId;if(qty)qty.value=String(pending.quantity);if(reason)reason.value=pending.reason;if(note)note.value=pending.note||'';lockForm(true);toast('Há um registro pendente. Tente novamente para confirmar sem duplicar a perda.')}
   function currentOperation(userId){const productId=$('lossProduct')?.value,quantity=Number($('lossQty')?.value||0),reason=$('lossReason')?.value,note=$('lossNote')?.value?.trim()||null;if(!userId||!productId||!Number.isFinite(quantity)||quantity<=0)return null;return {requestId:uuid(),userId,productId,quantity,reason,note}}
   async function submit(){
@@ -38,8 +49,9 @@
       rpcError=error instanceof Error?error:new Error(String(error||'Falha de rede'));
     }
     if(epoch!==lifecycleEpoch)return;
-    const {data:{session:latestSession}}=await sb.auth.getSession();
-    if(epoch!==lifecycleEpoch||latestSession?.user?.id!==userId)return resetForIdentityChange();
+    const latestSession=await getSessionSafe(epoch,userId);
+    if(epoch!==lifecycleEpoch)return;
+    if(!latestSession)return resetForIdentityChange();
     if(rpcError){btn.disabled=false;if(networkish(rpcError)){lockForm(true);toast('Não foi possível confirmar a resposta. Tente novamente com os mesmos dados.');return}savePending(null,userId);lockForm(false);toast(friendly(rpcError));return}
     savePending(null,userId);lockForm(false);if($('lossNote'))$('lossNote').value='';toast('Perda registrada e estoque atualizado.');
   }
@@ -55,8 +67,8 @@
     for(let n=0;n<100;n++){
       if(epoch!==lifecycleEpoch)return false;
       if(!document.documentElement.classList.contains('padoka-staff-pending')&&window.padokaStaffRole&&window.padokaCanAccess){
-        const {data:{session}}=await sb.auth.getSession();
-        if(epoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return false;
+        const session=await getSessionSafe(epoch,expectedUserId);
+        if(!session)return false;
         return allowedRoles.has(String(window.padokaStaffRole||'').toLowerCase())&&window.padokaCanAccess('perdas');
       }
       await new Promise(r=>setTimeout(r,100));
@@ -66,10 +78,16 @@
   async function activateForUser(expectedUserId){
     const epoch=++lifecycleEpoch;blockCapability('Acesso interno sendo revalidado.');
     if(!expectedUserId||!await waitForStaffGuard(expectedUserId,epoch))return;
-    const probe=await sb.from('padoka_losses').select('request_id').limit(1);
+    let probe;
+    try{
+      probe=await sb.from('padoka_losses').select('request_id').limit(1);
+    }catch(error){
+      if(epoch===lifecycleEpoch){console.error('PADOKA loss capability transport:',error);blockCapability('Não foi possível confirmar o registro de perdas agora. Tente novamente após reconectar.');}
+      return;
+    }
     if(epoch!==lifecycleEpoch)return;
-    const {data:{session:latestSession}}=await sb.auth.getSession();
-    if(epoch!==lifecycleEpoch||latestSession?.user?.id!==expectedUserId)return resetForIdentityChange();
+    const latestSession=await getSessionSafe(epoch,expectedUserId);
+    if(!latestSession)return resetForIdentityChange();
     if(probe.error){if(!missing(probe.error))console.error('PADOKA loss capability:',probe.error);blockCapability();return}
     activeUserId=expectedUserId;enabled=true;detachLegacyHandler();restorePending(expectedUserId);
     if(pending)setTimeout(()=>{if(epoch===lifecycleEpoch&&activeUserId===expectedUserId)applyPending()},120);else lockForm(false);
@@ -85,7 +103,8 @@
   }
   async function start(){
     for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));sb=window.padokaSupabase;if(!sb)return blockCapability();
-    const {data:{session}}=await sb.auth.getSession();
+    const epoch=lifecycleEpoch;
+    const session=await getSessionSafe(epoch);
     if(!session)return blockCapability();
     watchAuth();
     activateForUser(session.user.id);
