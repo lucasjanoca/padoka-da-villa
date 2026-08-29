@@ -40,6 +40,7 @@ needFrontend(/p_request_id:operation\.requestId/,'RPC deve receber o request_id 
 needFrontend(/function reconcilePending\([\s\S]*x\?\.userId===activeUserId[\s\S]*padoka_production_batches/,'reconciliação deve considerar apenas tentativas da identidade atual');
 needFrontend(/batch\.plan_id===entry\.planId[\s\S]*batch\.quantity/,'reconciliação precisa validar plano e quantidade antes de limpar a tentativa');
 needFrontend(/const epoch=lifecycleEpoch,userId=activeUserId/,'registro precisa capturar identidade e lifecycle antes da RPC');
+needFrontend(/try\s*\{[\s\S]*await sb\.rpc\('padoka_record_production'[\s\S]*catch\(networkError\)\{error=networkError\}/,'rejeição de transporte da RPC precisa virar retry preservando a tentativa');
 needFrontend(/epoch!==lifecycleEpoch\|\|userId!==activeUserId/,'resposta atrasada da RPC não pode continuar após troca de identidade');
 needFrontend(/onAuthStateChange/,'produção precisa reagir a logout e troca de conta');
 needFrontend(/activeUserId=nextUserId;clearProduction\(\)/,'troca de identidade deve limpar somente o runtime da conta anterior');
