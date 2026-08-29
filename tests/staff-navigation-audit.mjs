@@ -34,8 +34,12 @@ expect(ordersLifecycle.includes('activeUserId')&&ordersLifecycle.includes('lifec
 expect(ordersLifecycle.includes("document.documentElement.classList.add('padoka-orders-auth-transition')"),'Troca de identidade deve esconder e bloquear a fila imediatamente.');
 expect(ordersLifecycle.includes("document.querySelectorAll('main button,main input,main select')"),'Controles da fila devem ser desabilitados durante revalidação.');
 expect(ordersLifecycle.includes('removeAllChannels'),'Canais Realtime da identidade anterior devem ser encerrados antes de reutilizar a página.');
+expect(!ordersLifecycle.includes('transitioning'),'Guard da fila não deve ignorar um segundo evento Auth enquanto uma transição anterior ainda está em andamento.');
+expect(ordersLifecycle.includes("if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;"),'Somente inicialização e refresh podem ser ignorados incondicionalmente no listener da fila.');
 expect(ordersLifecycle.includes("from('padoka_staff_users').select('active')"),'Nova identidade deve ser revalidada como staff ativo antes de reutilizar a fila.');
 expect(ordersLifecycle.includes('latestSession?.user?.id!==expectedUserId'),'Resposta de autorização só deve valer se a mesma conta continuar autenticada.');
+expect(ordersLifecycle.includes('epoch!==lifecycleEpoch'),'Cada nova troca de identidade deve invalidar revalidações assíncronas anteriores.');
+expect(ordersLifecycle.includes("if(epoch===lifecycleEpoch)location.replace('internal.html')"),'Logout deve redirecionar apenas se continuar sendo a transição Auth mais recente.');
 expect(ordersLifecycle.includes('location.reload()'),'Conta interna válida trocada deve reconstruir a fila do zero, sem estado da identidade anterior.');
 expect(!nav.includes('InfoTech.io')&&!ordersLifecycle.includes('InfoTech.io'),'Navegação PADOKA não deve referenciar InfoTech.io.');
 
