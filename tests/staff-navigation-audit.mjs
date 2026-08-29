@@ -45,7 +45,12 @@ expect(ordersLifecycle.includes('location.reload()'),'Conta interna válida troc
 expect(/const start=async\(\)=>\{\s*try\{[\s\S]*?auth\.getSession\(\)/.test(ordersLifecycle),'Leitura inicial da sessão deve capturar rejeições de transporte.');
 expect(ordersLifecycle.includes("console.warn('PADOKA orders initial auth check:'")&&ordersLifecycle.includes("location.replace('internal.html')"),'Falha na autenticação inicial deve permanecer fail-closed e voltar ao login interno.');
 expect(ordersLifecycle.includes("if(!activeUserId){\n        location.replace('internal.html')"),'Fila não pode ser revelada quando não existe sessão autenticada.');
-expect(ordersLifecycle.includes("document.documentElement.classList.remove('padoka-orders-auth-transition')"),'Fila só deve ser revelada depois que a sessão inicial for confirmada.');
+expect(ordersLifecycle.includes("const {data:initialStaff,error:initialStaffError}=await client.from('padoka_staff_users').select('active')"),'Carregamento inicial deve confirmar o cadastro ativo em padoka_staff_users antes de revelar a fila.');
+expect(ordersLifecycle.includes("const {data:{session:latestInitialSession}}=await client.auth.getSession()"),'Carregamento inicial deve reler a sessão depois da consulta de staff.');
+expect(ordersLifecycle.includes("latestInitialSession?.user?.id!==initialUserId||activeUserId!==initialUserId"),'Autorização inicial não pode ser aplicada se a identidade mudar durante a consulta de staff.');
+expect(ordersLifecycle.includes("if(initialStaffError||!initialStaff?.active){"),'Erro ou staff inativo no carregamento inicial deve permanecer fail-closed.');
+expect(ordersLifecycle.indexOf("if(initialStaffError||!initialStaff?.active){")<ordersLifecycle.indexOf("document.documentElement.classList.remove('padoka-orders-auth-transition')"),'Fila só pode ser revelada depois da validação inicial do staff ativo.');
+expect(ordersLifecycle.includes("document.documentElement.classList.remove('padoka-orders-auth-transition')"),'Fila só deve ser revelada depois que sessão e staff inicial forem confirmados.');
 expect(!nav.includes('InfoTech.io')&&!ordersLifecycle.includes('InfoTech.io'),'Navegação PADOKA não deve referenciar InfoTech.io.');
 
 console.log('staff-navigation-audit: ok');
