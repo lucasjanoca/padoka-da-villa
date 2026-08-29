@@ -22,6 +22,11 @@ need(ui,/PRODUCTION_ROLES=new Set\(\[['"]owner['"],['"]manager['"],['"]productio
 need(ui,/window\.padokaStaffRole/i,'dashboard precisa aguardar o papel interno validado antes de consultar módulos restritos');
 need(ui,/padoka-staff-pending/i,'dashboard precisa respeitar o guard de staff antes de renderizar dados');
 need(ui,/waitForValidatedStaff/i,'dashboard precisa esperar a identidade atual ser validada pelo guard interno');
+need(ui,/waitForValidatedStaff\(expectedUserId,expectedEpoch\)/i,'espera do guard precisa ficar vinculada ao epoch que iniciou a ativação');
+need(ui,/if\(expectedEpoch!==lifecycleEpoch\)return ['"]{2}/i,'espera de staff antiga precisa abortar assim que o lifecycle mudar');
+need(ui,/async function init\(expectedUserId=['"]{2},expectedEpoch=currentEpoch\(\)\)/i,'inicialização precisa capturar explicitamente o epoch da transição');
+need(ui,/if\(expectedEpoch!==lifecycleEpoch\|\|!userId\)return/i,'init antiga não pode ativar dashboard depois que outra identidade assumiu');
+need(ui,/const epoch=currentEpoch\(\);\s*if\(nextUserId\)setTimeout\(\(\)=>init\(nextUserId,epoch\),0\)/i,'cada evento Auth precisa encaminhar seu próprio epoch para a inicialização');
 need(ui,/onAuthStateChange/i,'dashboard precisa reagir a logout e troca de conta sem depender de reload');
 need(ui,/clearDashboardState/i,'dashboard precisa limpar dados e subscriptions da identidade anterior');
 need(ui,/lifecycleEpoch/i,'respostas assíncronas antigas precisam ser invalidadas por geração de sessão');
