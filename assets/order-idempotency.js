@@ -34,6 +34,20 @@ function disableCheckout(text='Sua sessão mudou. Entre novamente para continuar
   if(account)account.innerHTML='<div class="notice warn"><strong>Sessão encerrada ou alterada.</strong><br>Entre novamente na sua conta PADOKA antes de continuar.</div>';
   notice(text);
 }
+async function safeSession(){
+  try{
+    const {data,error}=await sb.auth.getSession();
+    if(error)return null;
+    return data?.session||null;
+  }catch{
+    return null;
+  }
+}
+async function identityStillCurrent(expectedUserId,epoch){
+  if(epoch!==lifecycleEpoch||expectedUserId!==activeUserId)return false;
+  const session=await safeSession();
+  return !!session?.user?.id&&session.user.id===expectedUserId&&epoch===lifecycleEpoch&&expectedUserId===activeUserId;
+}
 function bindAuthLifecycle(){
   if(authLifecycleBound||!sb?.auth?.onAuthStateChange)return;
   authLifecycleBound=true;
@@ -90,6 +104,11 @@ async function sendOnce(){
   const epoch=lifecycleEpoch;
   const requestUserId=user.id;
   if(activeUserId&&activeUserId!==requestUserId)return;
+  const session=await safeSession();
+  if(!session?.user?.id||session.user.id!==requestUserId||epoch!==lifecycleEpoch||requestUserId!==activeUserId){
+    disableCheckout('Não foi possível confirmar sua sessão. Entre novamente antes de enviar o pedido.');
+    return;
+  }
   const btn=el('sendOrder');
   const existing=parse(requestUserId);
   const pending=existing?.user_id===requestUserId?existing:{
@@ -102,15 +121,28 @@ async function sendOnce(){
   store(requestUserId,pending);
   if(btn){btn.disabled=true;btn.textContent='Enviando…';}
   const p=pending.payload;
-  const {data,error}=await sb.rpc('padoka_create_order_once',{
-    p_request_id:pending.request_id,
-    p_pickup_mode:p.mode,
-    p_pickup_date:p.date,
-    p_pickup_time:p.time,
-    p_pickup_name:p.name,
-    p_items:p.items
-  });
-  if(epoch!==lifecycleEpoch||requestUserId!==activeUserId)return;
+  let result;
+  try{
+    result=await sb.rpc('padoka_create_order_once',{
+      p_request_id:pending.request_id,
+      p_pickup_mode:p.mode,
+      p_pickup_date:p.date,
+      p_pickup_time:p.time,
+      p_pickup_name:p.name,
+      p_items:p.items
+    });
+  }catch(error){
+    if(epoch!==lifecycleEpoch||requestUserId!==activeUserId)return;
+    console.error('Falha de transporte ao reconciliar pedido PADOKA',error);
+    lockPending();
+    notice('A conexão foi interrompida durante o envio. Use “Tentar novamente”: a mesma tentativa será reconciliada sem criar outro pedido.');
+    return;
+  }
+  if(!(await identityStillCurrent(requestUserId,epoch))){
+    disableCheckout('Não foi possível confirmar sua sessão após o envio. Entre novamente para reconciliar a mesma tentativa com segurança.');
+    return;
+  }
+  const {data,error}=result||{};
   if(error){
     console.error('Falha ao reconciliar pedido PADOKA',error);
     if(ambiguous(error)){
