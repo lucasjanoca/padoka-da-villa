@@ -19,7 +19,15 @@
   async function load(){
     const epoch=lifecycleEpoch,userId=activeUserId;
     if(!userId||!active)return false;
-    const {data,error}=await sb.rpc('padoka_get_settings');
+    let response;
+    try{response=await sb.rpc('padoka_get_settings')}
+    catch(error){
+      if(!await identityStillCurrent(epoch,userId))return false;
+      console.error('PADOKA settings load transport:',error);
+      blockLegacyFallback('Não foi possível carregar as configurações do servidor. Verifique a conexão e tente novamente.');
+      return false
+    }
+    const {data,error}=response;
     if(!await identityStillCurrent(epoch,userId))return false;
     if(error){if(functionMissing(error)){blockLegacyFallback('Configurações do servidor ainda não estão disponíveis. O salvamento local foi bloqueado.');return false}console.error('PADOKA settings load:',error);blockLegacyFallback('Não foi possível carregar as configurações do servidor. O salvamento local foi bloqueado.');return false}
     fill(Array.isArray(data)?data[0]:data);setControlsEnabled(true);const btn=$('cfgSave');if(btn)btn.onclick=save;showState('Configurações sincronizadas com o servidor.',true);return true
@@ -30,7 +38,16 @@
     const btn=$('cfgSave'),open=$('cfgOpen')?.value,close=$('cfgClose')?.value,night=$('cfgNight')?.value||null,payment=paymentToDb[$('cfgPayment')?.value]||null,note=$('cfgNote')?.value?.trim()||null;
     if(!open||!close)return toast('Informe abertura e fechamento.');if(open>=close)return toast('O fechamento precisa ser depois da abertura.');
     if(btn)btn.disabled=true;
-    const {data,error}=await sb.rpc('padoka_update_settings',{p_open_time:open,p_close_time:close,p_night_time:night,p_payment_method:payment,p_note:note});
+    let response;
+    try{response=await sb.rpc('padoka_update_settings',{p_open_time:open,p_close_time:close,p_night_time:night,p_payment_method:payment,p_note:note})}
+    catch(error){
+      if(!await identityStillCurrent(epoch,userId))return;
+      if(btn)btn.disabled=false;
+      console.error('PADOKA settings save transport:',error);
+      toast('Falha de conexão. Tente salvar novamente.');
+      return
+    }
+    const {data,error}=response;
     if(!await identityStillCurrent(epoch,userId))return;
     if(btn)btn.disabled=false;
     if(error){const msg=error.message||'';if(/permission/i.test(msg))return toast('Somente responsáveis autorizados podem alterar configurações.');if(/opening hours/i.test(msg))return toast('Revise os horários informados.');return toast('Não foi possível salvar as configurações.')}
