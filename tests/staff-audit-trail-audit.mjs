@@ -34,4 +34,11 @@ expect(js.includes('sessionStillValid(epoch,userId)'),'Resultado da auditoria s�
 expect(js.includes("classList.contains('padoka-staff-pending')"),'Histórico não pode reativar enquanto o guard global de staff estiver pendente.');
 expect(!/onAuthStateChange\(async/.test(js),'Callback de onAuthStateChange não deve executar trabalho assíncrono diretamente.');
 
+expect(js.includes('async function safeSession()'),'Histórico deve centralizar a leitura segura da sessão.');
+expect(/safeSession\(\)[\s\S]*?try\s*\{[\s\S]*?client\.auth\.getSession\(\)[\s\S]*?catch\s*\(/.test(js),'Leitura da sessão deve capturar rejeição de transporte do Supabase Auth.');
+expect(js.includes('async function confirmSession(epoch,userId)'),'Histórico deve reconfirmar a sessão antes de aplicar respostas assíncronas.');
+expect(js.includes('if(!await confirmSession(epoch,userId))'),'RPCs do histórico devem falhar fechado quando a sessão não puder ser reconfirmada.');
+expect(js.includes('const session=await safeSession();'),'Inicialização não pode usar getSession sem tratamento fail-closed.');
+expect(!/const\s*\{\s*data\s*:\s*\{\s*session\s*\}\s*\}\s*=\s*await\s+client\.auth\.getSession\(\)/.test(js),'Inicialização não deve manter leitura direta de sessão fora do helper seguro.');
+
 console.log('staff-audit-trail-audit: ok');
