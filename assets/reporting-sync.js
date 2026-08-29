@@ -32,14 +32,30 @@
     if(channel&&sb){try{sb.removeChannel(channel)}catch{}}channel=null;
     if(removeUi)$('serverReport')?.remove();
   }
+  async function confirmedSession(expectedUserId,expectedEpoch){
+    try{
+      const {data:{session},error}=await sb.auth.getSession();
+      if(error||expectedEpoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return null;
+      return session;
+    }catch{return null}
+  }
   async function load(){
-    const epoch=lifecycleEpoch,from=$('reportFrom')?.value||today(),to=$('reportTo')?.value||today(),problem=validRange(from,to),state=$('reportState'),btn=$('reportLoad');if(problem){if(state){state.className='notice';state.textContent=problem}return}
-    if(!enabled||!sb)return;
+    const epoch=lifecycleEpoch,userId=activeUserId,from=$('reportFrom')?.value||today(),to=$('reportTo')?.value||today(),problem=validRange(from,to),state=$('reportState'),btn=$('reportLoad');if(problem){if(state){state.className='notice';state.textContent=problem}return}
+    if(!enabled||!sb||!userId)return;
     if(btn){btn.disabled=true;btn.textContent='Atualizando…'}
-    const {data,error}=await sb.rpc('padoka_report_summary',{p_from:from,p_to:to});
-    if(epoch!==lifecycleEpoch)return;
+    let result;
+    try{result=await sb.rpc('padoka_report_summary',{p_from:from,p_to:to})}catch{
+      if(epoch!==lifecycleEpoch||activeUserId!==userId)return;
+      if(btn){btn.disabled=false;btn.textContent='Atualizar relatório'}
+      if(state){state.className='notice';state.textContent='Não foi possível carregar o relatório agora. Verifique a conexão e tente novamente.'}
+      return;
+    }
+    if(epoch!==lifecycleEpoch||activeUserId!==userId)return;
+    const {data,error}=result||{};
     if(btn){btn.disabled=false;btn.textContent='Atualizar relatório'}
     if(error){if(missing(error)){clearReporting();return}if(state){state.className='notice';state.textContent=denied(error)?'Relatórios consolidados financeiros são restritos à gerência.':'Não foi possível carregar o relatório agora.'}return}
+    const session=await confirmedSession(userId,epoch);
+    if(!session)return;
     render(data||{});subscribe()
   }
   function schedule(){if(!enabled)return;clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{const to=$('reportTo')?.value;if(to===today())load()},350)}
@@ -49,8 +65,8 @@
       if(expectedEpoch!==lifecycleEpoch)return '';
       const role=String(window.padokaStaffRole||'').toLowerCase();
       const pending=document.documentElement.classList.contains('padoka-staff-pending')||document.documentElement.classList.contains('padoka-role-pending');
-      const {data:{session}}=await sb.auth.getSession();
-      if(expectedEpoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return '';
+      const session=await confirmedSession(expectedUserId,expectedEpoch);
+      if(!session)return '';
       if(!pending&&role)return role;
       await new Promise(r=>setTimeout(r,100));
     }
@@ -61,8 +77,8 @@
     const role=await waitForRole(expectedUserId,expectedEpoch);
     if(expectedEpoch!==lifecycleEpoch)return;
     if(!allowedRoles.has(role))return;
-    const {data:{session}}=await sb.auth.getSession();
-    if(expectedEpoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return;
+    const session=await confirmedSession(expectedUserId,expectedEpoch);
+    if(!session)return;
     activeUserId=expectedUserId;enabled=true;ensureShell();await load();
   }
   function watchAuth(){
@@ -81,7 +97,12 @@
     sb=window.padokaSupabase;if(!sb)return;
     watchAuth();
     const epoch=lifecycleEpoch;
-    const {data:{session}}=await sb.auth.getSession();
+    let session=null;
+    try{
+      const result=await sb.auth.getSession();
+      if(result?.error)return;
+      session=result?.data?.session||null;
+    }catch{return}
     if(epoch!==lifecycleEpoch)return;
     activeUserId=session?.user?.id||'';
     if(activeUserId)await activate(activeUserId,epoch);
