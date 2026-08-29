@@ -113,8 +113,19 @@
     loading=true;
     const button=document.getElementById('staffAuditRefresh');
     if(button){button.disabled=true;button.textContent='Atualizando…'}
-    const {data,error}=await client.rpc('padoka_list_staff_audit',{p_limit:30});
+    let result;
+    try{
+      result=await client.rpc('padoka_list_staff_audit',{p_limit:30});
+    }catch(error){
+      if(!sessionStillValid(epoch,userId))return;
+      loading=false;
+      if(button){button.disabled=false;button.textContent='Atualizar'}
+      const list=document.getElementById('staffAuditList');
+      if(list)list.innerHTML='<div class="notice">Não foi possível carregar o histórico agora. Verifique a conexão e tente novamente.</div>';
+      return;
+    }
     if(!sessionStillValid(epoch,userId))return;
+    const {data,error}=result;
     loading=false;
     if(button){button.disabled=false;button.textContent='Atualizar'}
     if(error){
@@ -129,8 +140,16 @@
   }
 
   async function probe(epoch,userId){
-    const {error}=await client.rpc('padoka_list_staff_audit',{p_limit:1});
+    let result;
+    try{
+      result=await client.rpc('padoka_list_staff_audit',{p_limit:1});
+    }catch(error){
+      if(!sessionStillValid(epoch,userId))return false;
+      console.warn('PADOKA staff audit capability unavailable:',error);
+      return false;
+    }
     if(!sessionStillValid(epoch,userId))return false;
+    const {error}=result;
     if(!error)return true;
     return !missingRpc(error);
   }
