@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 
 const sql=fs.readFileSync('supabase/014_staff_management_rpc.sql','utf8');
+const nav=fs.readFileSync('assets/internal-nav.js','utf8');
+const lifecycle=fs.readFileSync('assets/staff-management-lifecycle.js','utf8');
 const fail=message=>{throw new Error(message)};
 const expect=(condition,message)=>{if(!condition)fail(message)};
 const code=sql.replace(/^\s*--.*$/gm,'');
@@ -20,5 +22,15 @@ expect(/grant\s+execute\s+on\s+function\s+public\.padoka_update_staff\(uuid,text
 expect(!/grant[\s\S]{0,180}\bto\s+anon\b/i.test(code),'Migration de staff não pode conceder acesso ao anon.');
 expect(!/create\s+trigger[\s\S]{0,500}?\bon\s+auth\.users\b/i.test(code),'Migration de staff não pode criar trigger global em auth.users.');
 expect(!sql.includes('InfoTech.io')||sql.includes('NÃO aplicar no projeto InfoTech.io'),'InfoTech.io só pode aparecer na proibição explícita de aplicação.');
+
+expect(nav.includes("assets/staff-management-lifecycle.js"),'Gestão deve carregar o guard dedicado de lifecycle da equipe.');
+expect(nav.indexOf('assets/staff-management-lifecycle.js')<nav.indexOf('assets/staff-management.js'),'Guard de lifecycle deve ser carregado antes do módulo de gestão de equipe.');
+expect(lifecycle.includes('onAuthStateChange'),'Guard da equipe deve reagir a logout e troca de identidade.');
+expect(lifecycle.includes("document.documentElement.classList.add('padoka-staff-pending','padoka-role-pending')"),'Troca de identidade deve ocultar imediatamente a área interna em modo fail-closed.');
+expect(lifecycle.includes("document.querySelector('[data-panel=\"equipe\"]')?.remove()"),'Troca de identidade deve remover imediatamente os dados de equipe da identidade anterior.');
+expect(lifecycle.includes('padoka-staff-management-ui')&&lifecycle.includes('removeChannel'),'Guard deve encerrar o canal Realtime da gestão de equipe anterior.');
+expect(lifecycle.includes("location.replace('internal.html')"),'Logout deve sair da Gestão para o acesso administrativo.');
+expect(lifecycle.includes('location.replace(location.href)'),'Troca entre contas autenticadas deve remontar a Gestão sob nova validação de identidade.');
+expect(!lifecycle.includes('service_role'),'Guard de frontend nunca pode conter service_role.');
 
 console.log('staff-management-audit: ok');
