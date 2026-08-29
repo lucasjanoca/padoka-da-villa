@@ -14,7 +14,18 @@
   function blockLegacyFallback(message='Carregando configurações do servidor…'){active=false;setControlsEnabled(false);const btn=$('cfgSave');if(btn)btn.onclick=()=>toast('As configurações do servidor estão indisponíveis. Nada foi salvo apenas neste navegador.');showState(message)}
   async function clearChannel(){if(!channel||!sb)return;const current=channel;channel=null;try{await sb.removeChannel(current)}catch{}}
   function resetForIdentityChange(message='Revalidando permissões da conta interna…'){lifecycleEpoch+=1;activeUserId='';active=false;clearChannel();blockLegacyFallback(message)}
-  async function identityStillCurrent(epoch,userId){if(epoch!==lifecycleEpoch||!userId||activeUserId!==userId)return false;const {data:{session}}=await sb.auth.getSession();return epoch===lifecycleEpoch&&activeUserId===userId&&session?.user?.id===userId}
+  async function safeSession(context='session'){
+    if(!sb)return null;
+    try{
+      const {data:{session},error}=await sb.auth.getSession();
+      if(error){console.error(`PADOKA settings ${context}:`,error);return null}
+      return session||null
+    }catch(error){
+      console.error(`PADOKA settings ${context} transport:`,error);
+      return null
+    }
+  }
+  async function identityStillCurrent(epoch,userId){if(epoch!==lifecycleEpoch||!userId||activeUserId!==userId)return false;const session=await safeSession('identity check');return epoch===lifecycleEpoch&&activeUserId===userId&&session?.user?.id===userId}
   function fill(row){if(!row)return;if($('cfgOpen')&&row.open_time)$('cfgOpen').value=timeValue(row.open_time);if($('cfgClose')&&row.close_time)$('cfgClose').value=timeValue(row.close_time);if($('cfgNight')&&row.night_time)$('cfgNight').value=timeValue(row.night_time);if($('cfgPayment')&&row.payment_method&&paymentToUi[row.payment_method])$('cfgPayment').value=paymentToUi[row.payment_method];if($('cfgNote'))$('cfgNote').value=row.note||''}
   async function load(){
     const epoch=lifecycleEpoch,userId=activeUserId;
@@ -63,7 +74,7 @@
       if(epoch!==lifecycleEpoch)return '';
       const role=String(window.padokaStaffRole||'').toLowerCase();
       const pending=document.documentElement.classList.contains('padoka-staff-pending')||document.documentElement.classList.contains('padoka-role-pending');
-      const {data:{session}}=await sb.auth.getSession();
+      const session=await safeSession('role check');
       if(epoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return '';
       if(!pending&&role)return role;
       await new Promise(r=>setTimeout(r,100));
@@ -77,8 +88,8 @@
     const role=await waitForRole(expectedUserId,epoch);
     if(epoch!==lifecycleEpoch)return;
     if(!allowedRoles.has(role)){blockLegacyFallback('Somente responsáveis autorizados podem alterar configurações.');return}
-    const {data:{session}}=await sb.auth.getSession();
-    if(epoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return;
+    const session=await safeSession('activation');
+    if(epoch!==lifecycleEpoch||session?.user?.id!==expectedUserId){blockLegacyFallback('Não foi possível confirmar a sessão interna. Verifique a conexão e tente novamente.');return}
     activeUserId=expectedUserId;active=true;
     if(await load()&&epoch===lifecycleEpoch&&activeUserId===expectedUserId)subscribe()
   }
@@ -94,11 +105,12 @@
     authSubscription=result?.data?.subscription||null
   }
   async function start(){
+    blockLegacyFallback('Confirmando sessão e permissões internas…');
     for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));
     sb=window.padokaSupabase;if(!sb)return;
     watchAuth();
-    const {data:{session}}=await sb.auth.getSession();
-    if(session?.user?.id)await activateForUser(session.user.id);else resetForIdentityChange('Entre com uma conta interna autorizada para acessar configurações.')
+    const session=await safeSession('startup');
+    if(session?.user?.id)await activateForUser(session.user.id);else resetForIdentityChange('Não foi possível confirmar uma sessão interna autorizada. Verifique a conexão ou entre novamente.')
   }
   window.addEventListener('pagehide',()=>{resetForIdentityChange('Sessão interna encerrada.');try{authSubscription?.unsubscribe()}catch{}authSubscription=null},{once:true});
   start();
