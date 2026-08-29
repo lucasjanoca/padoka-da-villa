@@ -194,6 +194,13 @@
     document.head.appendChild(s);
   }
   if(isGestao){
+    if(!document.querySelector('script[data-padoka-staff-management-lifecycle]')){
+      const s=document.createElement('script');
+      s.src='assets/staff-management-lifecycle.js';
+      s.defer=true;
+      s.dataset.padokaStaffManagementLifecycle='1';
+      document.head.appendChild(s);
+    }
     if(!document.querySelector('script[data-padoka-ops]')){
       const s=document.createElement('script');
       s.src='assets/operational-sync.js';
