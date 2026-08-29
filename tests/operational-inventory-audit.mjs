@@ -22,6 +22,9 @@ ok(sync.includes('showUnavailable()'), 'operational-sync.js: estado indisponíve
 ok(sync.includes('salvar informações apenas neste navegador'), 'operational-sync.js: mensagem de bloqueio do fallback local ausente');
 ok(/if\(p\.error\)\{if\(relationMissing\(p\.error\)\)return false/.test(sync), 'operational-sync.js: produção não falha fechada quando a relação está ausente');
 ok(/if\(l\.error\)\{if\(relationMissing\(l\.error\)\)return false/.test(sync), 'operational-sync.js: perdas não falham fechadas quando a relação está ausente');
+ok(/async function saveMeta[\s\S]*?try\s*\{[\s\S]*?rpc\('padoka_update_inventory_metadata'/.test(sync), 'operational-sync.js: rejeição de transporte nos metadados do estoque não é capturada');
+ok(/inventory metadata network failure/.test(sync), 'operational-sync.js: falha de rede nos metadados não é normalizada para recuperação segura');
+ok(/Falha de conexão ao salvar o estoque/.test(sync), 'operational-sync.js: falha de rede nos metadados não oferece feedback amigável');
 
 ok(adjustmentMigration.includes('public.padoka_adjust_inventory_once'), 'migration 035: RPC idempotente de ajuste ausente');
 ok(adjustmentMigration.includes("padoka_staff_has_role(array['owner','manager','stock'])"), 'migration 035: ajuste idempotente não limita função interna');
@@ -62,6 +65,9 @@ ok(/revoke all on function public\.padoka_upsert_production_plan\(date, text, nu
 ok(/grant execute on function public\.padoka_upsert_production_plan\(date, text, numeric, text\) to authenticated/i.test(planningMigration), 'migration 032: authenticated não recebeu EXECUTE da RPC');
 ok(sync.includes("rpc('padoka_upsert_production_plan'"), 'operational-sync.js: planejamento não usa RPC server-authoritative');
 ok(!/from\('padoka_production_plans'\)\.upsert\(/.test(sync), 'operational-sync.js: ainda existe UPSERT direto em padoka_production_plans');
+ok(/async function savePlan[\s\S]*?try\s*\{[\s\S]*?rpc\('padoka_upsert_production_plan'/.test(sync), 'operational-sync.js: rejeição de transporte no planejamento não é capturada');
+ok(/production planning network failure/.test(sync), 'operational-sync.js: falha de rede no planejamento não é normalizada para recuperação segura');
+ok(/Falha de conexão ao salvar o planejamento/.test(sync), 'operational-sync.js: falha de rede no planejamento não oferece feedback amigável');
 
 ok(sync.includes('onAuthStateChange'), 'operational-sync.js: não acompanha logout/troca de conta do staff');
 ok(sync.includes('lifecycleEpoch'), 'operational-sync.js: respostas assíncronas antigas não são invalidadas por lifecycle');
