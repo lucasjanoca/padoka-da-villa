@@ -45,7 +45,13 @@ assert.match(js,/location\.href='acompanhamento\.html\?code='/,'confirmed order 
 assert.match(js,/onAuthStateChange/,'checkout must react to logout/account changes after page initialization');
 assert.match(js,/activeUserId/,'checkout retries must remain bound to the authenticated identity');
 assert.match(js,/lifecycleEpoch/,'stale async checkout responses must be invalidated after auth lifecycle changes');
-assert.match(js,/if\(epoch!==lifecycleEpoch\|\|requestUserId!==activeUserId\)return/,'RPC responses from an old identity must never update checkout state');
+assert.match(js,/async function safeSession\(\)[\s\S]*sb\.auth\.getSession\(\)[\s\S]*catch\{[\s\S]*return null/,'checkout must fail closed when session confirmation rejects on transport');
+assert.match(js,/async function identityStillCurrent\(expectedUserId,epoch\)/,'checkout must have an explicit post-RPC identity revalidation helper');
+assert.match(js,/const session=await safeSession\(\);[\s\S]*session\.user\.id!==requestUserId/,'checkout must confirm the real auth session before creating or reconciling an order');
+assert.match(js,/try\{[\s\S]*result=await sb\.rpc\('padoka_create_order_once'/,'checkout must catch RPC transport rejection while keeping the same pending request');
+assert.match(js,/catch\(error\)\{[\s\S]*lockPending\(\);[\s\S]*mesma tentativa será reconciliada/,'RPC transport rejection must preserve an idempotent retry instead of generating a new attempt');
+assert.match(js,/if\(!\(await identityStillCurrent\(requestUserId,epoch\)\)\)/,'checkout must revalidate the authenticated identity after the RPC before applying its response');
+assert.match(js,/Não foi possível confirmar sua sessão após o envio/,'post-RPC session failure must present a fail-closed recovery state');
 assert.match(js,/const KEY_PREFIX='padoka_pending_order_v2:'/,'pending checkout retries must use a per-customer key namespace');
 assert.match(js,/const keyFor=userId=>userId\?KEY_PREFIX\+userId:''/,'pending checkout storage key must be derived from user_id');
 assert.match(js,/store\(requestUserId,pending\)/,'pending order must be persisted under the requesting customer identity');
