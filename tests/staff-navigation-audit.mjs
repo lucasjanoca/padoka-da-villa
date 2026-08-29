@@ -21,6 +21,12 @@ expect(nav.includes('.padoka-role-pending #app')&&nav.includes('.padoka-role-pen
 expect(nav.includes('.padoka-staff-pending #app')&&nav.includes('.padoka-staff-pending body>main'),'Toda área interna deve esconder #app e a fila de pedidos body>main enquanto qualquer sessão de staff estiver sendo validada.');
 expect(nav.includes("document.documentElement.classList.add('padoka-staff-pending')"),'Guard global de staff deve ser ativado antes da validação inicial e em invalidações.');
 expect(nav.includes("document.documentElement.classList.remove('padoka-staff-pending')"),'Guard global só deve ser removido depois que a mesma sessão continuar autorizada.');
+expect(nav.includes('async function safeSession(client)'),'Navegação deve centralizar a leitura segura da sessão.');
+expect(/safeSession\(client\)[\s\S]*?catch\(error\)/.test(nav),'Leitura da sessão deve capturar rejeições de transporte.');
+expect(nav.includes('if(error)throw error;')&&nav.includes('return data?.session||null;'),'Erros retornados pelo Supabase Auth também devem manter a navegação fail-closed.');
+expect(nav.includes("console.warn('PADOKA internal session check:'")&&nav.includes('return null;'),'Falha de sessão deve retornar estado não autenticado sem liberar a interface.');
+expect(nav.includes('const session=await safeSession(client);'),'Validação inicial de staff deve usar a leitura segura da sessão.');
+expect(nav.includes('const latestSession=await safeSession(client);'),'Revalidação posterior à consulta de staff deve usar a mesma leitura segura.');
 expect(nav.includes('auth.onAuthStateChange'),'Navegação interna deve reagir a mudanças de autenticação sem depender de reload manual.');
 expect(nav.includes("event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'"),'Eventos de inicialização/refresh não devem provocar revalidação desnecessária.');
 expect(nav.includes('clearResolvedStaff()'),'Troca/logout de sessão deve limpar imediatamente papel e permissões resolvidos anteriormente.');
