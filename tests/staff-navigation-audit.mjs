@@ -32,6 +32,7 @@ expect(nav.includes("const isOrders=location.pathname.endsWith('/pedidos.html')"
 expect(ordersLifecycle.includes('auth.onAuthStateChange'),'Fila de pedidos deve observar troca/logout de staff.');
 expect(ordersLifecycle.includes('activeUserId')&&ordersLifecycle.includes('lifecycleEpoch'),'Guard da fila deve vincular o runtime à identidade e invalidar operações antigas.');
 expect(ordersLifecycle.includes("document.documentElement.classList.add('padoka-orders-auth-transition')"),'Troca de identidade deve esconder e bloquear a fila imediatamente.');
+expect(ordersLifecycle.indexOf("document.documentElement.classList.add('padoka-orders-auth-transition')")<ordersLifecycle.indexOf('const start=async()=>'),'Fila deve nascer fail-closed antes da leitura inicial da sessão.');
 expect(ordersLifecycle.includes("document.querySelectorAll('main button,main input,main select')"),'Controles da fila devem ser desabilitados durante revalidação.');
 expect(ordersLifecycle.includes('removeAllChannels'),'Canais Realtime da identidade anterior devem ser encerrados antes de reutilizar a página.');
 expect(!ordersLifecycle.includes('transitioning'),'Guard da fila não deve ignorar um segundo evento Auth enquanto uma transição anterior ainda está em andamento.');
@@ -41,6 +42,10 @@ expect(ordersLifecycle.includes('latestSession?.user?.id!==expectedUserId'),'Res
 expect(ordersLifecycle.includes('epoch!==lifecycleEpoch'),'Cada nova troca de identidade deve invalidar revalidações assíncronas anteriores.');
 expect(ordersLifecycle.includes("if(epoch===lifecycleEpoch)location.replace('internal.html')"),'Logout deve redirecionar apenas se continuar sendo a transição Auth mais recente.');
 expect(ordersLifecycle.includes('location.reload()'),'Conta interna válida trocada deve reconstruir a fila do zero, sem estado da identidade anterior.');
+expect(/const start=async\(\)=>\{\s*try\{[\s\S]*?auth\.getSession\(\)/.test(ordersLifecycle),'Leitura inicial da sessão deve capturar rejeições de transporte.');
+expect(ordersLifecycle.includes("console.warn('PADOKA orders initial auth check:'")&&ordersLifecycle.includes("location.replace('internal.html')"),'Falha na autenticação inicial deve permanecer fail-closed e voltar ao login interno.');
+expect(ordersLifecycle.includes("if(!activeUserId){\n        location.replace('internal.html')"),'Fila não pode ser revelada quando não existe sessão autenticada.');
+expect(ordersLifecycle.includes("document.documentElement.classList.remove('padoka-orders-auth-transition')"),'Fila só deve ser revelada depois que a sessão inicial for confirmada.');
 expect(!nav.includes('InfoTech.io')&&!ordersLifecycle.includes('InfoTech.io'),'Navegação PADOKA não deve referenciar InfoTech.io.');
 
 console.log('staff-navigation-audit: ok');
