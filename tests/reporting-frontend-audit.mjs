@@ -22,9 +22,15 @@ must(js,"sb.auth.onAuthStateChange",'Relatório deve reagir a logout e troca de 
 must(js,"clearReporting()",'Troca de sessão deve limpar imediatamente relatório e estado anterior');
 must(js,"sb.removeChannel(channel)",'Troca de sessão deve remover o canal Realtime do staff anterior');
 must(js,"lifecycleEpoch",'Respostas assíncronas antigas devem ser invalidadas após troca de sessão');
+must(js,"async function waitForRole(expectedUserId,expectedEpoch)",'Espera pelo papel do staff deve estar vinculada ao epoch da identidade esperada');
+must(js,"if(expectedEpoch!==lifecycleEpoch)return ''",'Espera pelo papel deve abortar imediatamente quando o lifecycle mudar');
+must(js,"expectedEpoch!==lifecycleEpoch||session?.user?.id!==expectedUserId",'Validação de sessão do relatório deve exigir epoch e identidade atuais');
+must(js,"async function activate(expectedUserId,expectedEpoch=lifecycleEpoch)",'Ativação do relatório deve carregar explicitamente o epoch esperado');
+must(js,"waitForRole(expectedUserId,expectedEpoch)",'Ativação deve propagar o epoch para a espera do papel');
+must(js,"const epoch=lifecycleEpoch;\n      if(nextUserId)setTimeout(()=>activate(nextUserId,epoch),0)",'Callback de Auth deve capturar o novo epoch antes de agendar a reativação');
+must(js,"watchAuth();\n    const epoch=lifecycleEpoch;\n    const {data:{session}}=await sb.auth.getSession();\n    if(epoch!==lifecycleEpoch)return;",'Inicialização deve abortar se a sessão mudar enquanto getSession estiver pendente');
 must(js,"document.documentElement.classList.contains('padoka-staff-pending')",'Relatório deve aguardar a revalidação global do staff antes de reativar');
-must(js,"session?.user?.id!==expectedUserId",'Relatório deve confirmar que a sessão ainda pertence ao usuário esperado');
-must(js,"setTimeout(()=>activate(nextUserId),0)",'Callback de Auth não deve executar chamadas Supabase assíncronas diretamente');
+must(js,"setTimeout(()=>activate(nextUserId,epoch),0)",'Callback de Auth não deve executar chamadas Supabase assíncronas diretamente');
 mustNot(js,".from('padoka_sales')",'Frontend não deve recalcular vendas lendo tabelas diretamente');
 mustNot(js,".from('padoka_sale_items')",'Frontend não deve recalcular ranking diretamente no navegador');
 mustNot(js,"localStorage",'Relatório consolidado não deve depender de localStorage');
