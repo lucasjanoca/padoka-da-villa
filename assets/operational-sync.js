@@ -110,7 +110,13 @@
     const pending=existing||{product_id:id,target_quantity:next,delta,reason:'Ajuste pela gestão',request_id:crypto.randomUUID()};
     if(!existing&&!writePendingAdjustment(pending,userId))return;
     input.disabled=true;
-    const {error}=await sb.rpc('padoka_adjust_inventory_once',{p_product_id:pending.product_id,p_delta:Number(pending.delta),p_reason:pending.reason,p_request_id:pending.request_id});
+    let error=null;
+    try{
+      const result=await sb.rpc('padoka_adjust_inventory_once',{p_product_id:pending.product_id,p_delta:Number(pending.delta),p_reason:pending.reason,p_request_id:pending.request_id});
+      error=result?.error||null;
+    }catch(requestError){
+      error=requestError instanceof Error?requestError:new Error('inventory adjustment network failure');
+    }
     if(!await sessionStillMatches(userId,epoch))return;
     input.disabled=false;
     if(error){
