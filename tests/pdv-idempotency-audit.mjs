@@ -47,6 +47,13 @@ need(ui,/Finalização segura indisponível/i,'falha de capability precisa ser f
 need(ui,/btn\.disabled=true/i,'botão de finalização precisa permanecer bloqueado sem capability idempotente');
 need(ui,/onAuthStateChange\(\(event,session\)=>/i,'PDV precisa reagir a logout/troca de conta na mesma aba');
 forbid(ui,/onAuthStateChange\(async/i,'callback de auth não deve executar fluxo async diretamente');
+need(ui,/async function safeSession\(\)[\s\S]*try[\s\S]*sb\.auth\.getSession\(\)[\s\S]*catch/i,'leituras de sessão do Caixa precisam capturar rejeição de transporte');
+need(ui,/if\(error\)[\s\S]*return null/i,'safeSession precisa falhar fechado quando o Auth retorna erro');
+need(ui,/const latestSession=await safeSession\(\)/i,'reconciliação da venda precisa confirmar sessão via helper seguro');
+need(ui,/if\(!latestSession\)[\s\S]*savePending\(op\)[\s\S]*disableLegacyFinish/i,'falha ao confirmar sessão após RPC precisa preservar o request_id e bloquear nova venda');
+need(ui,/const session=await safeSession\(\)[\s\S]*session\?\.user\?\.id!==expectedUserId/i,'guard do staff precisa usar confirmação de sessão fail-closed');
+need(ui,/let error=null;try\{\(\{error\}=await sb\.from\('padoka_sales'\)/i,'probe da capability do PDV precisa capturar falha de transporte');
+need(ui,/activateForUser\(nextUserId\)\.catch/i,'reativação assíncrona do Caixa não pode gerar rejeição não tratada');
 need(ui,/user_id:userId/i,'tentativa pendente precisa ficar vinculada ao operador que iniciou a venda');
 need(ui,/v\.user_id===expectedUserId/i,'retry salvo precisa ser recusado quando não pertence à identidade atual');
 need(ui,/function resetForIdentityChange\(\)[\s\S]*pending=null/i,'troca de identidade precisa limpar o retry apenas da memória ativa');
@@ -56,8 +63,8 @@ need(ui,/pending=loadPending\(expectedUserId\)/i,'reativação precisa restaurar
 need(ui,/padoka-staff-pending/i,'reativação precisa esperar o guard interno concluir');
 need(ui,/allowedRoles\.has\(String\(window\.padokaStaffRole/i,'PDV precisa confirmar papel permitido após revalidação');
 need(ui,/window\.padokaCanAccess\('pdv'\)/i,'PDV precisa confirmar capability do módulo após revalidação');
-need(ui,/latestSession\?\.user\?\.id!==userId/i,'resposta da venda precisa ser descartada se a sessão mudar durante a RPC');
-need(ui,/setTimeout\(\(\)=>activateForUser\(nextUserId\),0\)/i,'reativação após evento de auth deve ocorrer fora do callback');
+need(ui,/latestSession\.user\?\.id!==userId/i,'resposta da venda precisa ser descartada se a sessão mudar durante a RPC');
+need(ui,/setTimeout\(\(\)=>\{activateForUser\(nextUserId\)\.catch/i,'reativação após evento de auth deve ocorrer fora do callback e capturar falhas');
 forbid(ui,/localStorage/i,'tentativa idempotente não deve virar venda local persistida');
 forbid(ui,/from\(['"]padoka_inventory['"]\).*\.(update|insert|delete)/is,'frontend não pode alterar estoque diretamente');
 
