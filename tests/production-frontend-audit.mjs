@@ -25,6 +25,10 @@ const checks=[
   ['espera o guard interno resolver o papel atual',/padoka-staff-pending/.test(src)&&/padoka-role-pending/.test(src)&&/waitForRole/.test(src)],
   ['restringe ativação aos papéis de produção',/allowedRoles=new Set\(\['owner','manager','production'\]\)/.test(src)&&/allowedRoles\.has\(role\)/.test(src)],
   ['confirma a mesma identidade antes de ativar',/session\?\.user\?\.id!==expectedUserId/.test(src)&&/activeUserId=expectedUserId/.test(src)],
+  ['captura falha de transporte ao confirmar sessão',/async function confirmedSession\(\).*?try\{.*?auth\.getSession\(\).*?catch\{return null\}/s.test(src)],
+  ['falha fechada quando sessão não pode ser confirmada',/const session=await confirmedSession\(\);.*?session\?\.user\?\.id!==expectedUserId/s.test(src)&&/start\(\)\.catch\(\(\)=>clearProduction\(\)\)/.test(src)],
+  ['revalida identidade após RPC de produção',/await sb\.rpc\('padoka_record_production'.*?const session=await confirmedSession\(\).*?session\?\.user\?\.id!==userId/s.test(src)],
+  ['captura falha de transporte no probe da capability',/try\{probe=await sb\.from\('padoka_production_batches'\).*?catch\(error\).*?return/s.test(src)],
   ['encerra subscription no pagehide',/pagehide/.test(src)&&/authSubscription\?\.unsubscribe/.test(src)],
   ['carregamento interno inclui módulo',/production-completion\.js/.test(fs.readFileSync('assets/internal-nav.js','utf8'))]
 ];
