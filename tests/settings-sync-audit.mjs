@@ -29,7 +29,7 @@ const checks=[
   [frontend.includes("let sb=null,active=false,channel=null,lifecycleEpoch=0,activeUserId=''"), 'settings sync must bind async work to an auth lifecycle epoch and active user'],
   [frontend.includes('function resetForIdentityChange('), 'settings sync must fail closed immediately on identity changes'],
   [frontend.includes('async function identityStillCurrent(epoch,userId)'), 'settings sync must revalidate delayed async responses against the active identity'],
-  [(frontend.match(/identityStillCurrent\(epoch,userId\)/g)||[]).length>=3, 'settings load/save flows must reject stale responses from a previous identity'],
+  [(frontend.match(/identityStillCurrent\(epoch,userId\)/g)||[]).length>=5, 'settings load/save and transport recovery must reject stale responses from a previous identity'],
   [frontend.includes('const epoch=lifecycleEpoch,userId=activeUserId;'), 'settings async operations must capture the current identity before RPC work'],
   [frontend.includes('session?.user?.id!==expectedUserId'), 'settings activation must verify the Supabase session still belongs to the expected staff user'],
   [frontend.includes("document.documentElement.classList.contains('padoka-staff-pending')"), 'settings activation must wait for the staff guard before trusting role state'],
@@ -39,6 +39,10 @@ const checks=[
   [frontend.includes('if(epoch===lifecycleEpoch&&activeUserId===userId)load()'), 'settings realtime callbacks must be scoped to the identity that created the channel'],
   [frontend.includes("resetForIdentityChange();"), 'auth changes must invalidate stale settings runtime immediately'],
   [frontend.includes("if(!allowedRoles.has(role)){blockLegacyFallback('Somente responsáveis autorizados podem alterar configurações.')"), 'settings controls must stay blocked after a switch to an unauthorized staff role'],
+  [frontend.includes("catch(error){\n      if(!await identityStillCurrent(epoch,userId))return false;"), 'settings load must recover from a transport rejection without reviving a stale identity'],
+  [frontend.includes("console.error('PADOKA settings load transport:',error)"), 'settings load transport failures must be handled explicitly'],
+  [frontend.includes("catch(error){\n      if(!await identityStillCurrent(epoch,userId))return;\n      if(btn)btn.disabled=false;"), 'settings save must restore the retry control after a transport rejection for the same identity'],
+  [frontend.includes("toast('Falha de conexão. Tente salvar novamente.')"), 'settings save transport failures must provide a safe retry message'],
   [nav.includes("s.src='assets/settings-sync.js'"), 'management navigation must load settings sync'],
   [nav.includes('if(isGestao)'), 'settings sync must only be loaded in internal management']
 ];
