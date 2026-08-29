@@ -32,6 +32,9 @@ forbid(js,/globalThis\.staffRole/i,'staffRole declarado com let não deve ser li
 need(js,/from\('padoka_sales'\)\.select\('id,void_reason'\)/i,'frontend só deve ativar quando a migration 012 estiver disponível');
 need(js,/rpc\('padoka_void_sale'/i,'frontend deve usar a RPC transacional de estorno');
 need(js,/from\('padoka_sale_items'\)\.select/i,'detalhes da venda devem vir da tabela protegida de itens');
+need(js,/async function itemsFor\(id,detail\)[\s\S]*try\{\(\{data,error\}=await sb\.from\('padoka_sale_items'\)[\s\S]*catch\(fetchError\)/i,'detalhes da venda precisam tratar rejeição de transporte sem ficar presos em carregamento');
+need(js,/async function load\(\)[\s\S]*try\{\(\{data,error\}=await sb\.from\('padoka_sales'\)[\s\S]*catch\(fetchError\)/i,'histórico de vendas precisa tratar rejeição de transporte sem ficar preso em atualização');
+need(js,/Use Atualizar para tentar novamente/i,'falha de rede no histórico precisa oferecer recuperação explícita ao operador');
 need(js,/postgres_changes[\s\S]*padoka_sales/i,'histórico de vendas deve atualizar por Realtime');
 need(js,/reason\.length<3\|\|reason\.length>160/i,'frontend deve validar o motivo antes da RPC');
 need(js,/async function reconcileVoid\(id,epoch,userId\)/i,'frontend precisa reconciliar resposta ambígua vinculada à sessão atual');
