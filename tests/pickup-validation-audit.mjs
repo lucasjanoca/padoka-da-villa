@@ -12,7 +12,7 @@ assert.match(catalog,/document\.getElementById\('pickup'\)/,'guard must only loa
 assert.match(guard,/America\/Sao_Paulo/,'client validation must use the padaria timezone');
 assert.match(guard,/dateInput\.min=current\.date/,'date input must reject dates before today');
 assert.match(guard,/date<current\.date/,'past pickup dates must be blocked client-side');
-assert.match(guard,/date===current\.date&&time&&time<current\.time/,'same-day past pickup times must be blocked client-side after a time is selected');
+assert.match(guard,/date===current\.date&&time&&time<=current\.time/,'same-day pickup times at or before the current minute must be blocked client-side');
 assert.match(guard,/setCustomValidity/,'invalid pickup selections must use native input validity');
 assert.match(guard,/stopImmediatePropagation\(\)/,'invalid pickup selection must not reach the existing continue handler');
 assert.match(guard,/visibilitychange/,'validation must refresh after the page returns from background');
