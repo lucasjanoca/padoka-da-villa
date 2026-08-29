@@ -50,6 +50,8 @@ ok(sync.includes('readPendingAdjustment(expectedUserId)'), 'operational-sync.js:
 ok(sync.includes('clearPendingAdjustment(pending.request_id,expectedUserId)'), 'operational-sync.js: reconciliação pode limpar retry de outra identidade');
 ok(sync.includes('writePendingAdjustment(pending,userId)'), 'operational-sync.js: novo ajuste não é persistido sob a identidade atual');
 ok(sync.includes('Pressione Enter para repetir a mesma operação com segurança'), 'operational-sync.js: resposta ambígua não orienta retry com o mesmo request_id');
+ok(/try\s*\{[\s\S]*?await sb\.rpc\('padoka_adjust_inventory_once'/.test(sync), 'operational-sync.js: rejeição de transporte no ajuste não é capturada');
+ok(/catch\(requestError\)[\s\S]*?error=requestError/.test(sync), 'operational-sync.js: falha de transporte não é preservada como erro ambíguo para retry');
 
 ok(planningMigration.includes('public.padoka_upsert_production_plan'), 'migration 032: RPC de planejamento ausente');
 ok(planningMigration.includes("padoka_staff_has_role(array['owner','manager','production'])"), 'migration 032: RPC de planejamento não restringe função interna');
