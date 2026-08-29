@@ -93,10 +93,16 @@
     const epoch=lifecycleEpoch,userId=activeUserId,current=inventory.find(x=>x.product_id===id)||{};
     const barcode=Object.prototype.hasOwnProperty.call(patch,'barcode')?patch.barcode:(current.barcode||null);
     const minQuantity=Object.prototype.hasOwnProperty.call(patch,'min_quantity')?Math.max(0,Number(patch.min_quantity||0)):Math.max(0,Number(current.min_quantity||0));
-    const {error}=await sb.rpc('padoka_update_inventory_metadata',{p_product_id:id,p_barcode:barcode,p_min_quantity:minQuantity});
+    let error=null;
+    try{
+      const result=await sb.rpc('padoka_update_inventory_metadata',{p_product_id:id,p_barcode:barcode,p_min_quantity:minQuantity});
+      error=result?.error||null;
+    }catch(requestError){
+      error=requestError instanceof Error?requestError:new Error('inventory metadata network failure');
+    }
     if(!await sessionStillMatches(userId,epoch))return;
-    if(error){toast(error.message?.includes('permission')?'Sem permissão para alterar o estoque.':'Não foi possível salvar os dados do estoque.');await loadAll(epoch,userId);return}
-    toast('Estoque atualizado');await loadAll(epoch,userId)
+    if(error){toast(error.message?.includes('permission')?'Sem permissão para alterar o estoque.':!error.code?'Falha de conexão ao salvar o estoque. Confira a rede e tente novamente.':'Não foi possível salvar os dados do estoque.');try{await loadAll(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}return}
+    toast('Estoque atualizado');try{await loadAll(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}
   }
   async function adjustQty(input){
     if(!active||!activeUserId)return;
@@ -137,9 +143,17 @@
   async function savePlan(input){
     if(!active||!activeUserId)return;
     const epoch=lifecycleEpoch,userId=activeUserId,quantity=Math.max(0,Number(input.value||0));input.disabled=true;
-    const {error}=await sb.rpc('padoka_upsert_production_plan',{p_plan_date:today(),p_product_id:input.dataset.plan,p_planned_quantity:quantity,p_note:null});
+    let error=null;
+    try{
+      const result=await sb.rpc('padoka_upsert_production_plan',{p_plan_date:today(),p_product_id:input.dataset.plan,p_planned_quantity:quantity,p_note:null});
+      error=result?.error||null;
+    }catch(requestError){
+      error=requestError instanceof Error?requestError:new Error('production planning network failure');
+    }
     if(!await sessionStillMatches(userId,epoch))return;
-    input.disabled=false;if(error){toast(error.message?.includes('permission')?'Sem permissão para planejar produção.':'Não foi possível salvar o planejamento.');await loadAll(epoch,userId);return}toast('Planejamento atualizado');await loadAll(epoch,userId)
+    input.disabled=false;
+    if(error){toast(error.message?.includes('permission')?'Sem permissão para planejar produção.':!error.code?'Falha de conexão ao salvar o planejamento. Confira a rede e tente novamente.':'Não foi possível salvar o planejamento.');try{await loadAll(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}return}
+    toast('Planejamento atualizado');try{await loadAll(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}
   }
   function renderLosses(){
     const select=$('lossProduct');if(select)select.innerHTML=catalog.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
