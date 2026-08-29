@@ -16,7 +16,7 @@ function validate(showMessage=false){
   const time=timeInput.value;
   let message='';
   if(date&&date<current.date)message='Escolha uma data de retirada a partir de hoje.';
-  else if(date===current.date&&time&&time<current.time)message='Escolha um horário de retirada que ainda não passou.';
+  else if(date===current.date&&time&&time<=current.time)message='Escolha um horário de retirada que ainda não passou.';
   dateInput.setCustomValidity(message&&date<current.date?message:'');
   timeInput.setCustomValidity(message&&date===current.date?message:'');
   if(showMessage&&message)notify(message);
