@@ -4,7 +4,7 @@ const INVENTORY_ROLES=new Set(['owner','manager','stock']);
 const PRODUCTION_ROLES=new Set(['owner','manager','production']);
 let orderChannel=null,inventoryChannel=null,productionChannel=null,orderBusy=false,opsBusy=false,orderTimer=null,opsTimer=null,orderInterval=null,opsInterval=null,lifecycleEpoch=0,activeUserId='';
 const get=id=>document.getElementById(id);
-const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const qty=v=>Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:3});
 const labels={received:'Recebido',seen:'Visto',confirmed:'Confirmado',preparing:'Em preparo',ready:'Pronto',completed:'Concluído',cancelled:'Cancelado'};
@@ -139,9 +139,15 @@ async function waitForValidatedStaff(expectedUserId='',expectedEpoch=currentEpoc
   for(let i=0;i<80;i++){
     if(expectedEpoch!==lifecycleEpoch)return '';
     if(!staffGuardPending()&&window.padokaStaffRole){
-      const {data:{session}}=await window.padokaSupabase.auth.getSession();
-      if(expectedEpoch!==lifecycleEpoch)return '';
-      if(session?.user?.id&&(!expectedUserId||session.user.id===expectedUserId))return session.user.id;
+      try{
+        const {data:{session},error}=await window.padokaSupabase.auth.getSession();
+        if(expectedEpoch!==lifecycleEpoch)return '';
+        if(error){console.error('Falha ao confirmar sessão do dashboard PADOKA',error);return ''}
+        if(session?.user?.id&&(!expectedUserId||session.user.id===expectedUserId))return session.user.id;
+      }catch(error){
+        if(expectedEpoch===lifecycleEpoch)console.error('Falha de rede ao confirmar sessão do dashboard PADOKA',error);
+        return '';
+      }
     }
     await new Promise(resolve=>setTimeout(resolve,100));
   }
