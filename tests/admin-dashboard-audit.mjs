@@ -24,6 +24,10 @@ need(ui,/padoka-staff-pending/i,'dashboard precisa respeitar o guard de staff an
 need(ui,/waitForValidatedStaff/i,'dashboard precisa esperar a identidade atual ser validada pelo guard interno');
 need(ui,/waitForValidatedStaff\(expectedUserId,expectedEpoch\)/i,'espera do guard precisa ficar vinculada ao epoch que iniciou a ativação');
 need(ui,/if\(expectedEpoch!==lifecycleEpoch\)return ['"]{2}/i,'espera de staff antiga precisa abortar assim que o lifecycle mudar');
+need(ui,/try\s*\{[\s\S]*?auth\.getSession\(\)[\s\S]*?\}catch\(error\)/i,'revalidação de sessão do dashboard precisa capturar rejeição real de transporte');
+need(ui,/const \{data:\{session\},error\}=await window\.padokaSupabase\.auth\.getSession\(\)/i,'dashboard precisa inspecionar erro retornado ao confirmar a sessão');
+need(ui,/if\(error\)\{console\.error\(['"]Falha ao confirmar sessão do dashboard PADOKA['"],error\);return ['"]{2}\}/i,'erro de sessão precisa manter o dashboard fail-closed');
+need(ui,/Falha de rede ao confirmar sessão do dashboard PADOKA/i,'rejeição de transporte precisa terminar a ativação sem liberar dados');
 need(ui,/async function init\(expectedUserId=['"]{2},expectedEpoch=currentEpoch\(\)\)/i,'inicialização precisa capturar explicitamente o epoch da transição');
 need(ui,/if\(expectedEpoch!==lifecycleEpoch\|\|!userId\)return/i,'init antiga não pode ativar dashboard depois que outra identidade assumiu');
 need(ui,/const epoch=currentEpoch\(\);\s*if\(nextUserId\)setTimeout\(\(\)=>init\(nextUserId,epoch\),0\)/i,'cada evento Auth precisa encaminhar seu próprio epoch para a inicialização');
