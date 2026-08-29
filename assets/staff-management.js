@@ -25,6 +25,26 @@
     return null;
   }
 
+  async function safeSession(){
+    try{
+      const {data,error}=await client.auth.getSession();
+      if(error){
+        console.warn('PADOKA staff management session:',error);
+        return null;
+      }
+      return data?.session||null;
+    }catch(error){
+      console.warn('PADOKA staff management session transport:',error);
+      return null;
+    }
+  }
+
+  async function identityStillCurrent(expectedUserId=currentUserId){
+    if(!expectedUserId)return false;
+    const session=await safeSession();
+    return session?.user?.id===expectedUserId&&window.padokaStaffRole==='owner';
+  }
+
   function addStyles(){
     if(document.getElementById('padokaStaffManagementStyle'))return;
     const style=document.createElement('style');
@@ -103,30 +123,59 @@
   }
 
   async function load(){
-    const {data,error}=await client.rpc('padoka_list_staff');
+    const expectedUserId=currentUserId;
+    let result;
+    try{
+      result=await client.rpc('padoka_list_staff');
+    }catch(error){
+      console.warn('PADOKA staff list transport:',error);
+      return false;
+    }
+    const {data,error}=result||{};
     if(error)throw error;
+    if(!(await identityStillCurrent(expectedUserId)))return false;
     staff=(data||[]).map(x=>({
       user_id:String(x.user_id||''),display_name:String(x.display_name||''),email:String(x.email||''),role:String(x.role||''),active:!!x.active,created_at:x.created_at
     }));
     render();
+    return true;
   }
 
   async function probeEnrollment(){
-    const {error}=await client.rpc('padoka_add_staff_by_email',{p_email:'',p_role:'attendant'});
-    if(!error)return true;
-    if(missingEnrollmentRpc(error))return false;
-    return true;
+    try{
+      const {error}=await client.rpc('padoka_add_staff_by_email',{p_email:'',p_role:'attendant'});
+      if(!error)return true;
+      if(missingEnrollmentRpc(error))return false;
+      return true;
+    }catch(error){
+      console.warn('PADOKA staff enrollment probe transport:',error);
+      return false;
+    }
   }
 
   async function addStaff(event){
     event.preventDefault();
     if(enrolling||!enrollmentAvailable)return;
+    const expectedUserId=currentUserId;
+    if(!(await identityStillCurrent(expectedUserId)))return;
     const emailInput=document.getElementById('staffEnrollEmail'),roleInput=document.getElementById('staffEnrollRole');
     const email=String(emailInput?.value||'').trim().toLowerCase(),role=String(roleInput?.value||'');
     if(!emailInput?.checkValidity()){renderEnrollment('Informe um e-mail válido.','error');return}
     if(!roles.some(([value])=>value===role)){renderEnrollment('Selecione uma função válida.','error');return}
     enrolling=true;renderEnrollment();
-    const {error}=await client.rpc('padoka_add_staff_by_email',{p_email:email,p_role:role});
+    let result;
+    try{
+      result=await client.rpc('padoka_add_staff_by_email',{p_email:email,p_role:role});
+    }catch(error){
+      console.warn('PADOKA staff enrollment transport:',error);
+      if(await identityStillCurrent(expectedUserId)){
+        enrolling=false;
+        renderEnrollment('Não foi possível confirmar a inclusão agora. Verifique a conexão e atualize a equipe antes de tentar novamente.','error');
+      }
+      return;
+    }
+    if(!(await identityStillCurrent(expectedUserId)))return;
+    const {error}=result||{};
     enrolling=false;
     if(error){
       const msg=String(error.message||'');
@@ -139,15 +188,29 @@
       return;
     }
     await load().catch(()=>{});
-    renderEnrollment('Funcionário adicionado à equipe.','ok');
+    if(await identityStillCurrent(expectedUserId))renderEnrollment('Funcionário adicionado à equipe.','ok');
   }
 
   async function saveRow(row){
     if(!row)return;
+    const expectedUserId=currentUserId;
+    if(!(await identityStillCurrent(expectedUserId)))return;
     const id=row.dataset.staffRow,role=row.querySelector('[data-role]')?.value,active=!!row.querySelector('[data-active]')?.checked,button=row.querySelector('[data-save]');
     if(!id||!button||!roles.some(([value])=>value===role))return;
     button.disabled=true;button.textContent='Salvando…';
-    const {error}=await client.rpc('padoka_update_staff',{p_user_id:id,p_role:role,p_active:active});
+    let result;
+    try{
+      result=await client.rpc('padoka_update_staff',{p_user_id:id,p_role:role,p_active:active});
+    }catch(error){
+      console.warn('PADOKA staff update transport:',error);
+      if(await identityStillCurrent(expectedUserId)){
+        alert('Não foi possível confirmar a atualização. Verifique a conexão e recarregue a equipe antes de tentar novamente.');
+        await load().catch(()=>{});
+      }
+      return;
+    }
+    if(!(await identityStillCurrent(expectedUserId)))return;
+    const {error}=result||{};
     if(error){
       console.warn('PADOKA staff update:',error);
       alert(/last active owner|último owner/i.test(String(error.message||''))?'A PADOKA precisa manter pelo menos um proprietário ativo.':'Não foi possível atualizar esse acesso.');
@@ -164,10 +227,18 @@
       return;
     }
     client=context.client;
-    const {data:{session}}=await client.auth.getSession();
+    const session=await safeSession();
     currentUserId=session?.user?.id||'';
+    if(!currentUserId||window.padokaStaffRole!=='owner')return;
     try{
-      const {data,error}=await client.rpc('padoka_list_staff');
+      let listResult;
+      try{
+        listResult=await client.rpc('padoka_list_staff');
+      }catch(error){
+        console.warn('PADOKA staff management list transport:',error);
+        return;
+      }
+      const {data,error}=listResult||{};
       if(error){
         if(missingListRpc(error)){
           if(currentTab()==='equipe')location.replace('gestao.html?tab=configuracoes');
@@ -175,8 +246,10 @@
         }
         throw error;
       }
+      if(!(await identityStillCurrent(currentUserId)))return;
       staff=(data||[]).map(x=>({user_id:String(x.user_id||''),display_name:String(x.display_name||''),email:String(x.email||''),role:String(x.role||''),active:!!x.active,created_at:x.created_at}));
       enrollmentAvailable=await probeEnrollment();
+      if(!(await identityStillCurrent(currentUserId)))return;
       ensureUI();render();
       channel=client.channel('padoka-staff-management-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_staff_users'},()=>load().catch(()=>{})).subscribe();
     }catch(error){console.warn('PADOKA staff management:',error)}
