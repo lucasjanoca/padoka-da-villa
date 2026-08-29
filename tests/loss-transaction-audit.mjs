@@ -27,6 +27,9 @@ const checks=[
   ['chave legada compartilhada é descartada',/LEGACY_KEY='padoka_pending_loss_v1'/.test(frontend)&&/sessionStorage\.removeItem\(LEGACY_KEY\)/.test(frontend)],
   ['resposta ambígua não libera formulário',/networkish\(rpcError\)[\s\S]*lockForm\(true\)/.test(frontend)],
   ['rejeição de transporte é capturada sem perder request_id',/try\s*\{[\s\S]*await sb\.rpc\('padoka_register_loss_once'[\s\S]*\}catch\(error\)\{[\s\S]*rpcError=/.test(frontend)&&/if\(networkish\(rpcError\)\)[\s\S]*Tente novamente com os mesmos dados/.test(frontend)],
+  ['releitura de sessão usa helper fail-closed',/async function getSessionSafe\(epoch,userId=''\)[\s\S]*try\s*\{[\s\S]*await sb\.auth\.getSession\(\)[\s\S]*catch\(error\)[\s\S]*blockCapability/.test(frontend)&&/const latestSession=await getSessionSafe\(epoch,userId\)/.test(frontend)],
+  ['probe de capability captura rejeição de transporte',/try\s*\{[\s\S]*probe=await sb\.from\('padoka_losses'\)\.select\('request_id'\)\.limit\(1\)[\s\S]*\}catch\(error\)[\s\S]*blockCapability/.test(frontend)],
+  ['inicialização não revela perdas sem sessão confirmada',/const session=await getSessionSafe\(epoch\);[\s\S]*if\(!session\)return blockCapability\(\)/.test(frontend)],
   ['clique é interceptado mesmo sem capability',/function intercept\(e\)[\s\S]*if\(!btn\)return;[\s\S]*preventDefault\(\)[\s\S]*if\(!enabled\)/.test(frontend)],
   ['capability ausente mantém formulário bloqueado',/function blockCapability[\s\S]*btn\.disabled=true[\s\S]*Registro indisponível/.test(frontend)&&/if\(probe\.error\)[\s\S]*blockCapability\(\)/.test(frontend)],
   ['handler legado é neutralizado por defesa em profundidade',/function detachLegacyHandler\(\)[\s\S]*btn\.onclick=null/.test(frontend)&&/enabled=true;detachLegacyHandler\(\)/.test(frontend)],
@@ -36,7 +39,7 @@ const checks=[
   ['lifecycle acompanha Supabase Auth',/onAuthStateChange/.test(frontend)&&/INITIAL_SESSION/.test(frontend)&&/TOKEN_REFRESHED/.test(frontend)],
   ['troca de identidade invalida somente estado em memória',/function resetForIdentityChange\(\)[\s\S]*lifecycleEpoch\+=1;pending=null;activeUserId=''[\s\S]*blockCapability/.test(frontend)],
   ['papel interno é revalidado antes de reativar perdas',/allowedRoles=new Set\(\['owner','manager','stock','production'\]\)/.test(frontend)&&/padokaStaffRole/.test(frontend)&&/padokaCanAccess\('perdas'\)/.test(frontend)],
-  ['resposta assíncrona antiga é invalidada pela identidade capturada',/const epoch=lifecycleEpoch,userId=activeUserId/.test(frontend)&&/epoch!==lifecycleEpoch/.test(frontend)&&/latestSession\?\.user\?\.id!==userId/.test(frontend)],
+  ['resposta assíncrona antiga é invalidada pela identidade capturada',/const epoch=lifecycleEpoch,userId=activeUserId/.test(frontend)&&/epoch!==lifecycleEpoch/.test(frontend)&&/getSessionSafe\(epoch,userId\)/.test(frontend)],
   ['operação pendente nunca cruza identidade',/if\(op\.userId!==userId\)\{resetForIdentityChange\(\);return\}/.test(frontend)],
   ['nova sessão só reativa fora do callback de auth',/setTimeout\(\(\)=>activateForUser\(nextUserId\),0\)/.test(frontend)]
 ];
