@@ -67,7 +67,11 @@
     const operation=stored||savePending(plan.id,quantity,btn.dataset.requestId||crypto.randomUUID());
     btn.dataset.requestId=operation.requestId;btn.dataset.requestQuantity=String(operation.quantity);
     btn.disabled=true;input.disabled=true;btn.textContent='Registrando…';
-    const {error}=await sb.rpc('padoka_record_production',{p_plan_id:plan.id,p_quantity:Number(operation.quantity),p_request_id:operation.requestId});
+    let error=null;
+    try{
+      const result=await sb.rpc('padoka_record_production',{p_plan_id:plan.id,p_quantity:Number(operation.quantity),p_request_id:operation.requestId});
+      error=result?.error||null;
+    }catch(networkError){error=networkError}
     if(epoch!==lifecycleEpoch||userId!==activeUserId)return;
     if(error){btn.disabled=false;input.disabled=true;input.value=String(operation.quantity);btn.textContent='Tentar novamente';toast(friendly(error));return}
     clearPending(plan.id);delete btn.dataset.requestId;delete btn.dataset.requestQuantity;toast('Produção registrada e estoque atualizado.');await refresh()
