@@ -72,6 +72,17 @@
         location.replace('internal.html');
         return;
       }
+      const initialUserId=activeUserId;
+      const {data:initialStaff,error:initialStaffError}=await client.from('padoka_staff_users').select('active').eq('user_id',initialUserId).maybeSingle();
+      const {data:{session:latestInitialSession}}=await client.auth.getSession();
+      if(latestInitialSession?.user?.id!==initialUserId||activeUserId!==initialUserId){
+        document.documentElement.classList.add('padoka-orders-auth-transition');
+        return;
+      }
+      if(initialStaffError||!initialStaff?.active){
+        location.replace('internal.html');
+        return;
+      }
       document.documentElement.classList.remove('padoka-orders-auth-transition');
     }catch(error){
       console.warn('PADOKA orders initial auth check:',error);
