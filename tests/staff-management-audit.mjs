@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const sql=fs.readFileSync('supabase/014_staff_management_rpc.sql','utf8');
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 const lifecycle=fs.readFileSync('assets/staff-management-lifecycle.js','utf8');
+const staffAudit=fs.readFileSync('assets/staff-audit.js','utf8');
 const fail=message=>{throw new Error(message)};
 const expect=(condition,message)=>{if(!condition)fail(message)};
 const code=sql.replace(/^\s*--.*$/gm,'');
@@ -32,5 +33,13 @@ expect(lifecycle.includes('padoka-staff-management-ui')&&lifecycle.includes('rem
 expect(lifecycle.includes("location.replace('internal.html')"),'Logout deve sair da Gestão para o acesso administrativo.');
 expect(lifecycle.includes('location.replace(location.href)'),'Troca entre contas autenticadas deve remontar a Gestão sob nova validação de identidade.');
 expect(!lifecycle.includes('service_role'),'Guard de frontend nunca pode conter service_role.');
+
+expect(staffAudit.includes("client.rpc('padoka_list_staff_audit',{p_limit:30})"),'Histórico de equipe deve carregar pela RPC server-authoritative.');
+expect(staffAudit.includes("client.rpc('padoka_list_staff_audit',{p_limit:1})"),'Probe do histórico deve validar capability pela RPC server-authoritative.');
+expect((staffAudit.match(/try\s*\{/g)||[]).length>=2&&(staffAudit.match(/catch\s*\(error\)/g)||[]).length>=2,'Carga e probe do histórico devem capturar rejeições reais de transporte.');
+expect(staffAudit.includes('if(!sessionStillValid(epoch,userId))return;'),'Falha de transporte da listagem deve revalidar epoch e identidade antes de alterar a interface.');
+expect(staffAudit.includes("button.disabled=false;button.textContent='Atualizar'"),'Falha de transporte deve devolver o botão de atualização ao estado utilizável.');
+expect(staffAudit.includes('Verifique a conexão e tente novamente.'),'Histórico deve exibir recuperação amigável quando houver falha de rede.');
+expect(!staffAudit.includes('service_role'),'Histórico de equipe nunca pode conter service_role.');
 
 console.log('staff-management-audit: ok');
