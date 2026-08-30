@@ -84,6 +84,11 @@
         return;
       }
       const initialUserId=activeUserId;
+      const initialPreflightSession=await safeSession(client);
+      if(initialPreflightSession?.user?.id!==initialUserId||activeUserId!==initialUserId){
+        document.documentElement.classList.add('padoka-orders-auth-transition');
+        return;
+      }
       const {data:initialStaff,error:initialStaffError}=await client.from('padoka_staff_users').select('active').eq('user_id',initialUserId).maybeSingle();
       const latestInitialSession=await safeSession(client);
       if(latestInitialSession?.user?.id!==initialUserId||activeUserId!==initialUserId){
