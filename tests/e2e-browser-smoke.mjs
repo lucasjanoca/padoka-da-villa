@@ -39,6 +39,13 @@ page.on('response',response=>{
 await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:30000});
 await page.waitForFunction(()=>window.PADOKA_CATALOG_READY===true,{timeout:30000});
 await page.locator('[data-add]').first().waitFor({state:'visible',timeout:15000});
+const productImages=page.locator('#grid .photo img');
+for(let i=0;i<await productImages.count();i++){
+  const img=productImages.nth(i);
+  await img.scrollIntoViewIfNeeded();
+  await img.evaluate(el=>el.complete||new Promise(resolve=>{el.addEventListener('load',resolve,{once:true});el.addEventListener('error',resolve,{once:true})}));
+  if(await img.getAttribute('data-padoka-fallback-applied')==='1') fail('Imagem de produto caiu no fallback: '+(await img.getAttribute('alt')));
+}
 
 const csp=await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
 if(!csp||/script-src[^;]*https?:\/\//i.test(csp)||/script-src[^;]*'unsafe-inline'/i.test(csp)) fail('CSP de script regressou');
@@ -66,6 +73,11 @@ if(!(await page.locator('#productName').textContent())?.trim()) fail('Produto se
 const manifest=await (await context.request.get(base+'/manifest.webmanifest')).json();
 if(!manifest.icons?.some(i=>i.src==='assets/icon-192.png')) fail('Manifest sem ícone 192');
 if(!manifest.icons?.some(i=>i.src==='assets/icon-512.png')) fail('Manifest sem ícone 512');
+
+for(const privatePath of ['/supabase/','/tests/','/SECURITY.md','/.github/']){
+  const r=await context.request.get(base+privatePath);
+  if(r.status()!==404) fail('Artefato técnico ficou público: '+privatePath+' HTTP '+r.status());
+}
 
 for(const path of [
   '/vendor/supabase-js-2.112.4.js',
