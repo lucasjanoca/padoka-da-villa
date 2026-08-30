@@ -10,7 +10,7 @@
     ['production','Produção'],
     ['stock','Estoque']
   ];
-  const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+  const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt',"'":'&#39;','"':'&quot;'}[ch]));
   const missingListRpc=error=>['PGRST202','42883'].includes(String(error?.code||''))||/padoka_list_staff|function .* does not exist|schema cache/i.test(String(error?.message||''));
   const missingEnrollmentRpc=error=>['PGRST202','42883'].includes(String(error?.code||''))||/padoka_add_staff_by_email|function .* does not exist|schema cache/i.test(String(error?.message||''));
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -124,6 +124,7 @@
 
   async function load(){
     const expectedUserId=currentUserId;
+    if(!(await identityStillCurrent(expectedUserId)))return false;
     let result;
     try{
       result=await client.rpc('padoka_list_staff');
@@ -141,9 +142,11 @@
     return true;
   }
 
-  async function probeEnrollment(){
+  async function probeEnrollment(expectedUserId=currentUserId){
+    if(!(await identityStillCurrent(expectedUserId)))return false;
     try{
       const {error}=await client.rpc('padoka_add_staff_by_email',{p_email:'',p_role:'attendant'});
+      if(!(await identityStillCurrent(expectedUserId)))return false;
       if(!error)return true;
       if(missingEnrollmentRpc(error))return false;
       return true;
@@ -230,6 +233,7 @@
     const session=await safeSession();
     currentUserId=session?.user?.id||'';
     if(!currentUserId||window.padokaStaffRole!=='owner')return;
+    if(!(await identityStillCurrent(currentUserId)))return;
     try{
       let listResult;
       try{
@@ -248,7 +252,7 @@
       }
       if(!(await identityStillCurrent(currentUserId)))return;
       staff=(data||[]).map(x=>({user_id:String(x.user_id||''),display_name:String(x.display_name||''),email:String(x.email||''),role:String(x.role||''),active:!!x.active,created_at:x.created_at}));
-      enrollmentAvailable=await probeEnrollment();
+      enrollmentAvailable=await probeEnrollment(currentUserId);
       if(!(await identityStillCurrent(currentUserId)))return;
       ensureUI();render();
       channel=client.channel('padoka-staff-management-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_staff_users'},()=>load().catch(()=>{})).subscribe();
