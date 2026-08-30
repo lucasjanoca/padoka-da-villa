@@ -1,0 +1,72 @@
+name: PADOKA Dependency Security
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * 2'
+  push:
+    paths:
+      - '.github/workflows/dependency-security.yml'
+      - 'vendor/SHA256SUMS'
+      - '.github/workflows/vendor-browser-dependencies.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: padoka-dependency-security
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify exact dependency security
+        id: dependency_audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          cd "$work"
+          npm init -y >/dev/null
+          npm install --ignore-scripts --no-save @supabase/supabase-js@2.112.4 html5-qrcode@2.3.8
+          npm audit --omit=dev --audit-level=high
+          npm audit signatures
+
+      - name: Open dependency security incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          title="PADOKA alerta de segurança em dependências"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [ -z "$existing" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY"               --title "$title"               --body "A verificação automática de vulnerabilidades/assinaturas das dependências do navegador falhou. Revise o workflow **PADOKA Dependency Security** antes de atualizar os arquivos vendorizados."
+          else
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "A verificação semanal de dependências continua falhando."
+          fi
+
+      - name: Close recovered dependency incident
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          title="PADOKA alerta de segurança em dependências"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "✅ Dependências voltaram a passar na auditoria de vulnerabilidades e assinaturas."
+            gh issue close "$existing" --repo "$GITHUB_REPOSITORY"
+          fi
