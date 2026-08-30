@@ -51,3 +51,24 @@ Funções que precisam de `SECURITY DEFINER` devem permanecer fora do schema pú
 O Pix automático permanece fail-closed até existir um provedor real configurado. Nenhum comprovante, flag `paid`, valor, txid ou total enviado pelo navegador é autoridade de pagamento.
 
 A Edge Function `padoka-pix-checkout` exige JWT, valida o dono do pedido, usa o total armazenado no servidor e bloqueia o fluxo quando o provedor não está configurado.
+
+
+## Hardening gratuito adicional — 30/08/2026
+
+- CSP de JavaScript usa hashes SHA-256 e não permite `unsafe-inline` em `script-src`.
+- CSS embutido das páginas também é autorizado por hashes SHA-256; atributos `style=""` ficam bloqueados nas superfícies normais.
+- O PDV possui uma exceção **somente para `style-src-attr`**, necessária ao `html5-qrcode@2.3.8`, que cria estilos de layout da câmera em runtime. O script permanece fixado por versão e protegido por SRI SHA-512.
+- Estilos criados dinamicamente pelos módulos próprios foram movidos para `assets/runtime-security.css`.
+- Código QR legado não utilizado foi removido.
+- A criação de pedidos possui limitador server-side: até 10 novos pedidos por 10 minutos e 30 por hora por cliente, preservando retries com o mesmo `request_id`.
+- O Web Push limita payloads POST a 16 KiB e mantém no máximo cinco dispositivos ativos por conta.
+- O cron `padoka-housekeeping-daily` remove apenas telemetria antiga, incidentes resolvidos antigos e inscrições Push abandonadas; pedidos, clientes, vendas e trilhas de auditoria de negócio não são apagados.
+- Teste ofensivo de RLS executado como cliente não-staff confirmou zero acesso a perfis, pedidos, notificações, fidelidade e solicitações de privacidade pertencentes a outras contas.
+- As 32 tabelas `padoka_*` permanecem com RLS habilitado.
+- Nenhuma função pública `padoka_*` marcada como `SECURITY DEFINER` está executável pelo papel `authenticated`.
+- `anon` e `authenticated` não podem criar objetos no schema `public`.
+- O monitor de produção verifica disponibilidade e regressões de CSP, SRI, PWA, Push e arquivos de segurança.
+
+### Limite conhecido do plano
+
+A organização Supabase está no plano Free. A proteção de senhas vazadas (Have I Been Pwned) do Supabase Auth exige plano Pro ou superior. O frontend exige senha forte para novas contas, mas isso não substitui a checagem de senha vazada do serviço pago.
