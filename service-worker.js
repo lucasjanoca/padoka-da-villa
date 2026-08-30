@@ -5,7 +5,7 @@ const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
   './assets/logo-padoka.svg',
-  './assets/padoka-pwa.js'
+  './assets/padoka-pwa.js?v=2'
 ];
 
 const PUBLIC_CACHE_PATHS = new Set([
