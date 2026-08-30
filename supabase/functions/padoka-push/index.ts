@@ -80,9 +80,22 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" }, origin);
 
+  const contentType = (req.headers.get("content-type") || "").toLowerCase();
+  if (!contentType.includes("application/json")) {
+    return json(415, { error: "content_type_required" }, origin);
+  }
+
+  let rawBody = "";
+  try {
+    rawBody = await req.text();
+  } catch {
+    return json(400, { error: "invalid_body" }, origin);
+  }
+  if (rawBody.length > 16_384) return json(413, { error: "payload_too_large" }, origin);
+
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    body = JSON.parse(rawBody);
   } catch {
     return json(400, { error: "invalid_json" }, origin);
   }
@@ -120,6 +133,26 @@ Deno.serve(async (req: Request) => {
     const authKey = safeText(subscription?.keys?.auth, 1024);
     if (!endpoint.startsWith("https://") || !p256dh || !authKey) {
       return json(400, { error: "invalid_subscription" }, origin);
+    }
+
+    const { data: currentSubscriptions, error: subscriptionListError } = await admin
+      .from("padoka_push_subscriptions")
+      .select("id,endpoint,last_seen_at")
+      .eq("user_id", user.id)
+      .order("last_seen_at", { ascending: false, nullsFirst: false });
+
+    if (subscriptionListError) return json(500, { error: "subscription_lookup_failed" }, origin);
+
+    const existingEndpoint = (currentSubscriptions || []).some((row) => row.endpoint === endpoint);
+    const keepBeforeUpsert = existingEndpoint ? 5 : 4;
+    const staleIds = (currentSubscriptions || []).slice(keepBeforeUpsert).map((row) => row.id);
+    if (staleIds.length) {
+      const { error: pruneError } = await admin
+        .from("padoka_push_subscriptions")
+        .delete()
+        .eq("user_id", user.id)
+        .in("id", staleIds);
+      if (pruneError) return json(500, { error: "subscription_prune_failed" }, origin);
     }
 
     const now = new Date().toISOString();
