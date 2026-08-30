@@ -38,7 +38,7 @@ assert.match(js,/padoka_create_order_once/,'frontend must use idempotent RPC whe
 assert.doesNotMatch(js,/\.rpc\(['"]padoka_create_order['"]/,'idempotency layer must never call the legacy checkout RPC');
 assert.match(js,/p_request_id\s*:/,'request_id must be sent to RPC');
 assert.match(js,/Tentar novamente/,'ambiguous result must offer safe retry');
-assert.match(js,/pointerEvents='none'/,'editing must be locked while an ambiguous request is pending');
+assert.match(js,/padoka-edit-disabled/,'editing must be locked while an ambiguous request is pending');
 assert.match(js,/localStorage\.removeItem\(CART_KEY\)/,'cart must be cleared only after confirmed success');
 assert.match(js,/location\.href='acompanhamento\.html\?code='/,'confirmed order must continue to tracking');
 
