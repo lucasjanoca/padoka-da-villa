@@ -48,10 +48,6 @@
   let staffValidationEpoch=0;
   let validatedStaffUserId='';
 
-  const guardStyle=document.createElement('style');
-  guardStyle.id='padokaStaffGuardStyle';
-  guardStyle.textContent='.padoka-staff-pending #app,.padoka-staff-pending body>main{visibility:hidden!important}.padoka-role-pending #app,.padoka-role-pending body>main{visibility:hidden!important}';
-  document.head.appendChild(guardStyle);
   document.documentElement.classList.add('padoka-staff-pending');
   if(targetNeedsRole)document.documentElement.classList.add('padoka-role-pending');
 
@@ -66,7 +62,7 @@
     overlay.classList.toggle('open',open);
     drawer.setAttribute('aria-hidden',String(!open));
     openBtn.setAttribute('aria-expanded',String(open));
-    document.body.style.overflow=open?'hidden':'';
+    document.body.classList.toggle('padoka-body-lock',open);
   }
   openBtn.onclick=()=>set(true);
   closeBtn.onclick=()=>set(false);
