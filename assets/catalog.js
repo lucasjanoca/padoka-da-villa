@@ -71,7 +71,7 @@ async function load(){
     if(!configResponse.ok)throw new Error('public config unavailable');
     const cfg=await configResponse.json();
     const endpoint=`${cfg.url}/rest/v1/padoka_products?select=id,name,category,price,is_demo,sort_order&active=eq.true&order=sort_order.asc`;
-    const response=await fetch(endpoint,{cache:'no-store',headers:{apikey:cfg.publishableKey,Authorization:`Bearer ${cfg.publishableKey}`}});
+    const response=await fetch(endpoint,{cache:'no-store',headers:{apikey:cfg.publishableKey}});
     if(!response.ok)throw new Error('catalog unavailable');
     const rows=await response.json();
     const merged=(Array.isArray(rows)?rows:[]).map(row=>{
