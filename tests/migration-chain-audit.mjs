@@ -106,7 +106,10 @@ for (const file of files.filter(name => name !== '002_server_authoritative_test_
     const allowedPublicFlagRead =
       file === '041_enterprise_observability.sql' &&
       /grant\s+select\s+on\s+table\s+public\.padoka_feature_flags\s+to\s+anon\s*,\s*authenticated/i.test(grant);
-    if (!allowedPublicFlagRead) fail(`${file}: grant para anon fora da superfície pública explicitamente auditada`);
+    const allowedSchemaUsage =
+      file === '053_future_default_privileges_hardening.sql' &&
+      /grant\s+usage\s+on\s+schema\s+public\s+to\s+anon\s*,\s*authenticated/i.test(grant);
+    if (!allowedPublicFlagRead && !allowedSchemaUsage) fail(`${file}: grant para anon fora da superfície pública explicitamente auditada`);
     if (/\b(insert|update|delete|truncate|references|trigger|execute)\b/i.test(grant)) {
       fail(`${file}: anon nunca pode receber privilégio mutável/EXECUTE`);
     }
