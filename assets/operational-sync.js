@@ -34,16 +34,26 @@
     const badge=$('staffBadge');if(badge)badge.textContent=badge.textContent.replace('SERVIDOR PENDENTE','SERVIDOR INDISPONÍVEL');
   }
   function unlockLossForm(){document.querySelectorAll('[data-panel="perdas"] input,[data-panel="perdas"] select,[data-panel="perdas"] button').forEach(el=>el.disabled=false)}
+  async function safeSession(){
+    try{
+      const {data,error}=await sb.auth.getSession();
+      if(error){console.error('Falha ao confirmar sessão operacional PADOKA',error);return null}
+      return data?.session||null;
+    }catch(error){
+      console.error('Falha de rede ao confirmar sessão operacional PADOKA',error);
+      return null;
+    }
+  }
   async function sessionStillMatches(expectedUserId,epoch=lifecycleEpoch){
     if(epoch!==lifecycleEpoch||!expectedUserId)return false;
-    const {data:{session}}=await sb.auth.getSession();
+    const session=await safeSession();
     return epoch===lifecycleEpoch&&session?.user?.id===expectedUserId;
   }
   async function waitForStaffGuard(expectedUserId){
     for(let n=0;n<100;n++){
       const pending=document.documentElement.classList.contains('padoka-staff-pending')||document.documentElement.classList.contains('padoka-role-pending');
       const role=String(window.padokaStaffRole||'').toLowerCase();
-      const {data:{session}}=await sb.auth.getSession();
+      const session=await safeSession();
       if(session?.user?.id!==expectedUserId)return false;
       if(!pending&&role)return true;
       await new Promise(r=>setTimeout(r,100));
@@ -202,10 +212,10 @@
     sb=window.padokaSupabase;if(!sb)return;
     sessionStorage.removeItem(LEGACY_ADJUST_KEY);
     watchAuth();
-    const {data:{session}}=await sb.auth.getSession();activeUserId=session?.user?.id||'';
+    const session=await safeSession();activeUserId=session?.user?.id||'';
     if(activeUserId)await activate(activeUserId);else clearOperationalState('Entre com uma conta interna autorizada para acessar os dados operacionais.');
   }
   window.addEventListener('padoka:catalog-updated',()=>{if(active)render()});
   window.addEventListener('pagehide',()=>{clearOperationalState('Encerrando sessão operacional…');try{authSubscription?.unsubscribe()}catch{}},{once:true});
-  start();
+  start().catch(error=>{console.error('Falha ao iniciar sincronização operacional PADOKA',error);clearOperationalState('Não foi possível confirmar a sessão interna. Tente novamente quando a conexão estiver estável.')});
 })();
