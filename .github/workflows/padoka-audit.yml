@@ -1,6 +1,7 @@
 name: PADOKA Static Audit
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -22,36 +23,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Check audit scripts syntax
+      - name: Check all audit scripts syntax
+        shell: bash
         run: |
-          node --check tests/static-audit.mjs
-          node --check tests/backend-isolation-audit.mjs
-          node --check tests/customer-orders-audit.mjs
-          node --check tests/operational-inventory-audit.mjs
-          node --check tests/operational-fail-closed-audit.mjs
-          node --check tests/production-transaction-audit.mjs
-          node --check tests/production-frontend-audit.mjs
-          node --check tests/loss-transaction-audit.mjs
-          node --check tests/reporting-rpc-audit.mjs
-          node --check tests/reporting-frontend-audit.mjs
-          node --check tests/settings-sync-audit.mjs
-          node --check tests/pdv-idempotency-audit.mjs
-          node --check tests/pdv-hardware-scanner-audit.mjs
-          node --check tests/admin-dashboard-audit.mjs
-          node --check tests/order-idempotency-audit.mjs
-          node --check tests/pickup-validation-audit.mjs
-          node --check tests/pdv-sale-void-audit.mjs
-          node --check tests/migration-chain-audit.mjs
-          node --check tests/profile-onboarding-audit.mjs
-          node --check tests/checkout-rendering-audit.mjs
-          node --check tests/staff-navigation-audit.mjs
-          node --check tests/staff-management-audit.mjs
-          node --check tests/staff-management-frontend-audit.mjs
-          node --check tests/staff-enrollment-audit.mjs
-          node --check tests/staff-audit-trail-audit.mjs
-          node --check tests/product-management-audit.mjs
-          node --check tests/product-audit-trail-audit.mjs
-          node --check tests/pix-edge-security-audit.mjs
+          set -euo pipefail
+          for file in tests/*.mjs; do
+            echo "Syntax: $file"
+            node --check "$file"
+          done
 
       - name: Check internal extension syntax
         run: |
@@ -61,86 +40,12 @@ jobs:
           node --check assets/pdv-scanner-fix.js
           node --check assets/orders-auth-lifecycle.js
 
-      - name: Run PADOKA static audit
-        run: node tests/static-audit.mjs
-
-      - name: Run backend isolation audit
-        run: node tests/backend-isolation-audit.mjs
-
-      - name: Run customer orders audit
-        run: node tests/customer-orders-audit.mjs
-
-      - name: Run migration chain audit
-        run: node tests/migration-chain-audit.mjs
-
-      - name: Run profile onboarding audit
-        run: node tests/profile-onboarding-audit.mjs
-
-      - name: Run checkout rendering audit
-        run: node tests/checkout-rendering-audit.mjs
-
-      - name: Run staff navigation audit
-        run: node tests/staff-navigation-audit.mjs
-
-      - name: Run staff management audit
-        run: node tests/staff-management-audit.mjs
-
-      - name: Run staff management frontend audit
-        run: node tests/staff-management-frontend-audit.mjs
-
-      - name: Run staff enrollment audit
-        run: node tests/staff-enrollment-audit.mjs
-
-      - name: Run staff audit trail audit
-        run: node tests/staff-audit-trail-audit.mjs
-
-      - name: Run product management audit
-        run: node tests/product-management-audit.mjs
-
-      - name: Run product audit trail audit
-        run: node tests/product-audit-trail-audit.mjs
-
-      - name: Run inventory metadata audit
-        run: node tests/operational-inventory-audit.mjs
-
-      - name: Run operational fail-closed audit
-        run: node tests/operational-fail-closed-audit.mjs
-
-      - name: Run production transaction audit
-        run: node tests/production-transaction-audit.mjs
-
-      - name: Run production frontend audit
-        run: node tests/production-frontend-audit.mjs
-
-      - name: Run loss transaction audit
-        run: node tests/loss-transaction-audit.mjs
-
-      - name: Run reporting RPC audit
-        run: node tests/reporting-rpc-audit.mjs
-
-      - name: Run reporting frontend audit
-        run: node tests/reporting-frontend-audit.mjs
-
-      - name: Run settings sync audit
-        run: node tests/settings-sync-audit.mjs
-
-      - name: Run PDV idempotency audit
-        run: node tests/pdv-idempotency-audit.mjs
-
-      - name: Run hardware scanner audit
-        run: node tests/pdv-hardware-scanner-audit.mjs
-
-      - name: Run admin dashboard audit
-        run: node tests/admin-dashboard-audit.mjs
-
-      - name: Run checkout idempotency audit
-        run: node tests/order-idempotency-audit.mjs
-
-      - name: Run pickup validation audit
-        run: node tests/pickup-validation-audit.mjs
-
-      - name: Run PDV sale void audit
-        run: node tests/pdv-sale-void-audit.mjs
-
-      - name: Run PIX Edge security audit
-        run: node tests/pix-edge-security-audit.mjs
+      - name: Run every PADOKA audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in tests/*.mjs; do
+            echo ""
+            echo "=== Running $file ==="
+            node "$file"
+          done
