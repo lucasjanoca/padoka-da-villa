@@ -12,8 +12,9 @@ for(const page of pages){
         fail(`${page}: Supabase JS sem versão exata aprovada: ${src}`);
       }
     }
-    if(src.includes('html5-qrcode')&&src!=='https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js'){
-      fail(`${page}: html5-qrcode sem versão exata aprovada: ${src}`);
+    if(src.includes('html5-qrcode')){
+      if(src!=='https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.js') fail(`${page}: html5-qrcode sem versão exata aprovada: ${src}`);
+      if(!match[0].includes('integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg=="')) fail(`${page}: html5-qrcode sem SRI aprovado`);
     }
   }
   if(/@supabase\/supabase-js@2(?:["'\/]|$)/.test(source) && !/@supabase\/supabase-js@2\.112\.4/.test(source)){
