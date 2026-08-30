@@ -8,8 +8,8 @@
   function toast(t){const el=$('toast');if(!el)return;el.textContent=t;el.classList.remove('hidden');clearTimeout(window.__padokaSettingsToast);window.__padokaSettingsToast=setTimeout(()=>el.classList.add('hidden'),1800)}
   function functionMissing(error){return ['PGRST202','42883'].includes(error?.code)||/function .* does not exist|schema cache/i.test(error?.message||'')}
   function timeValue(v){return v?String(v).slice(0,5):''}
-  function ensureState(){let el=$('cfgServerState');if(el)return el;const panel=document.querySelector('[data-panel="configuracoes"] .card');if(!panel)return null;el=document.createElement('div');el.id='cfgServerState';el.className='notice';el.style.marginTop='10px';panel.appendChild(el);return el}
-  function showState(t,ok=false){const el=ensureState();if(!el)return;el.textContent=t;if(ok){el.style.background='#e7f3eb';el.style.borderColor='#cde5d5';el.style.color='#27593c'}}
+  function ensureState(){let el=$('cfgServerState');if(el)return el;const panel=document.querySelector('[data-panel="configuracoes"] .card');if(!panel)return null;el=document.createElement('div');el.id='cfgServerState';el.className='notice padoka-mt-10';panel.appendChild(el);return el}
+  function showState(t,ok=false){const el=ensureState();if(!el)return;el.textContent=t;el.classList.toggle('padoka-notice-ok',ok)}
   function setControlsEnabled(enabled){for(const id of ['cfgOpen','cfgClose','cfgNight','cfgPayment','cfgNote','cfgSave'])if($(id))$(id).disabled=!enabled}
   function blockLegacyFallback(message='Carregando configurações do servidor…'){active=false;setControlsEnabled(false);const btn=$('cfgSave');if(btn)btn.onclick=()=>toast('As configurações do servidor estão indisponíveis. Nada foi salvo apenas neste navegador.');showState(message)}
   async function clearChannel(){if(!channel||!sb)return;const current=channel;channel=null;try{await sb.removeChannel(current)}catch{}}
