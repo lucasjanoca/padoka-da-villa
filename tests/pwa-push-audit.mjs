@@ -19,12 +19,14 @@ need(!pwa.includes('installDismissedRecently'), 'PWA: cooldown de instalação r
 need(pwa.includes('pushManager.subscribe'), 'PWA: assinatura Web Push ausente');
 need(pwa.includes("Notification.requestPermission()"), 'PWA: pedido explícito de permissão push ausente');
 
-need(sw.includes("const CACHE_NAME = 'padoka-pwa-v2'"), 'Service Worker: versão de cache atual ausente');
+need(sw.includes("const CACHE_NAME = 'padoka-pwa-v3'"), 'Service Worker: versão de cache atual ausente');
 need(sw.includes("addEventListener('push'"), 'Service Worker: listener push ausente');
 need(sw.includes("addEventListener('notificationclick'"), 'Service Worker: clique em notificação ausente');
 
 need(manifest.display === 'standalone', 'Manifest: display standalone ausente');
 need(Array.isArray(manifest.shortcuts) && manifest.shortcuts.length >= 3, 'Manifest: atalhos do app ausentes');
+need(manifest.orientation === 'portrait-primary', 'Manifest: orientação mobile profissional ausente');
+need(manifest.launch_handler?.client_mode?.includes('navigate-existing'), 'Manifest: reaproveitamento da janela instalada ausente');
 
 for (const page of pages) {
   const source = read(page);
