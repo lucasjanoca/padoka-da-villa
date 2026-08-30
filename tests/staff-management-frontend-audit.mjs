@@ -14,6 +14,20 @@ expect(ui.includes("context.role!=='owner'"),'Frontend deve recusar funções di
 expect(ui.includes('async function safeSession()')&&ui.includes("client.auth.getSession()")&&ui.includes("staff management session transport"),'Gestão de equipe deve capturar falhas retornadas e rejeições de transporte ao confirmar a sessão.');
 expect(ui.includes('async function identityStillCurrent')&&ui.includes("window.padokaStaffRole==='owner'"),'Gestão de equipe deve reconfirmar identidade e papel owner após operações assíncronas.');
 expect(ui.includes("if(!(await identityStillCurrent(currentUserId)))return;") ,'Inicialização deve falhar fechada se a identidade mudar antes da montagem da interface.');
+
+const loadStart=ui.indexOf('async function load(){');
+const loadRpc=ui.indexOf("client.rpc('padoka_list_staff')",loadStart);
+const loadPreflight=ui.indexOf('if(!(await identityStillCurrent(expectedUserId)))return false;',loadStart);
+expect(loadStart>=0&&loadPreflight>loadStart&&loadPreflight<loadRpc,'Listagem de equipe deve reconfirmar o mesmo owner antes de chamar padoka_list_staff.');
+const probeStart=ui.indexOf('async function probeEnrollment');
+const probeRpc=ui.indexOf("client.rpc('padoka_add_staff_by_email'",probeStart);
+const probePreflight=ui.indexOf('if(!(await identityStillCurrent(expectedUserId)))return false;',probeStart);
+expect(probeStart>=0&&probePreflight>probeStart&&probePreflight<probeRpc,'Probe de inclusão deve reconfirmar o mesmo owner antes da RPC de enrollment.');
+const initStart=ui.indexOf('async function init(){');
+const initRpc=ui.indexOf("client.rpc('padoka_list_staff')",initStart);
+const initPreflight=ui.indexOf('if(!(await identityStillCurrent(currentUserId)))return;',initStart);
+expect(initStart>=0&&initPreflight>initStart&&initPreflight<initRpc,'Bootstrap da Equipe deve reconfirmar o owner imediatamente antes da primeira RPC de listagem.');
+
 expect(ui.includes("client.rpc('padoka_list_staff')"),'Frontend deve listar equipe somente pela RPC protegida.');
 expect(ui.includes("client.rpc('padoka_update_staff'"),'Frontend deve alterar função/estado somente pela RPC protegida.');
 expect(ui.includes("client.rpc('padoka_add_staff_by_email'"),'Frontend deve incluir funcionário somente pela RPC owner-only da migration 015.');
