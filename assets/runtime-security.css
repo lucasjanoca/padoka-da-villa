@@ -1,3 +1,4 @@
+.padoka-framed body{display:none!important}
 .padoka-pwa-card{position:fixed;left:12px;right:12px;bottom:88px;z-index:96;max-width:460px;margin:auto;background:#fffdf9;color:#17130f;border:1px solid #dfd1c3;border-radius:19px;box-shadow:0 18px 50px rgba(30,20,12,.22);padding:14px;display:grid;grid-template-columns:44px 1fr auto;gap:11px;align-items:center;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 .padoka-pwa-card[hidden]{display:none!important}
 .padoka-pwa-icon{width:44px;height:44px;border-radius:13px;background:#15120f;display:grid;place-items:center;overflow:hidden}
