@@ -91,7 +91,7 @@ function unlock(){
 function payloadFromPage(){
   const mode=pickup?.mode==='noturna'?'night':'store';
   const items=buildItems().map(i=>({product_id:i.product_id,quantity:i.quantity}));
-  return {mode,date:pickup?.date,time:pickup?.time,name:pickup?.name,items};
+  return {mode,date:pickup?.date,time:pickup?.time,name:pickup?.name,items,coupon_code:String(window.PADOKA_CHECKOUT_COUPON||'').trim().toUpperCase()||null};
 }
 function ambiguous(error){
   const code=String(error?.code||'');
@@ -123,14 +123,26 @@ async function sendOnce(){
   const p=pending.payload;
   let result;
   try{
-    result=await sb.rpc('padoka_create_order_once',{
-      p_request_id:pending.request_id,
-      p_pickup_mode:p.mode,
-      p_pickup_date:p.date,
-      p_pickup_time:p.time,
-      p_pickup_name:p.name,
-      p_items:p.items
-    });
+    if(p.coupon_code){
+      result=await sb.rpc('padoka_create_order_once_v2',{
+        p_request_id:pending.request_id,
+        p_pickup_mode:p.mode,
+        p_pickup_date:p.date,
+        p_pickup_time:p.time,
+        p_pickup_name:p.name,
+        p_items:p.items,
+        p_coupon_code:p.coupon_code
+      });
+    }else{
+      result=await sb.rpc('padoka_create_order_once',{
+        p_request_id:pending.request_id,
+        p_pickup_mode:p.mode,
+        p_pickup_date:p.date,
+        p_pickup_time:p.time,
+        p_pickup_name:p.name,
+        p_items:p.items
+      });
+    }
   }catch(error){
     if(epoch!==lifecycleEpoch||requestUserId!==activeUserId)return;
     console.error('Falha de transporte ao reconciliar pedido PADOKA',error);
@@ -164,7 +176,7 @@ async function sendOnce(){
   clear(requestUserId);
   localStorage.removeItem(CART_KEY);
   localStorage.removeItem(PICKUP_KEY);
-  location.href='acompanhamento.html?code='+encodeURIComponent(order.code);
+  window.PADOKA_TELEMETRY?.track('checkout_success',{order_stage:'order_created'});\n  location.href='acompanhamento.html?code='+encodeURIComponent(order.code);
 }
 function detect(){
   if(active)return;
