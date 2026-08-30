@@ -41,6 +41,9 @@
     const epoch=lifecycleEpoch,userId=activeUserId,btn=$('lossSave');if(!btn||!enabled||!userId)return;
     const op=pending||currentOperation(userId);if(!op)return toast('Informe produto e quantidade válida.');
     if(op.userId!==userId){resetForIdentityChange();return}
+    const sessionBeforeRpc=await getSessionSafe(epoch,userId);
+    if(epoch!==lifecycleEpoch)return;
+    if(!sessionBeforeRpc)return resetForIdentityChange();
     if(!pending)savePending(op,userId);
     lockForm(true);btn.disabled=true;btn.textContent='Registrando…';
     let rpcError=null;
@@ -80,6 +83,8 @@
   async function activateForUser(expectedUserId){
     const epoch=++lifecycleEpoch;blockCapability('Acesso interno sendo revalidado.');
     if(!expectedUserId||!await waitForStaffGuard(expectedUserId,epoch))return;
+    const sessionBeforeProbe=await getSessionSafe(epoch,expectedUserId);
+    if(!sessionBeforeProbe)return resetForIdentityChange();
     let probe;
     try{
       probe=await sb.from('padoka_losses').select('request_id').limit(1);
