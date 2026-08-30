@@ -79,11 +79,7 @@ jobs:
             echo "OK: Push exige autenticação"
           fi
 
-          payload="$(python3 - <<'PY'
-import json
-print(json.dumps({"action":"subscribe","pad":"x"*17000}))
-PY
-)"
+          payload="$(python3 -c 'import json; print(json.dumps({"action":"subscribe","pad":"x"*17000}))')"
           code="$(curl --silent --show-error --max-time 20 -o /tmp/push-size.json -w '%{http_code}' \
             -X POST -H 'content-type: application/json' --data "$payload" "$PUSH")"
           if [ "$code" != "413" ]; then
