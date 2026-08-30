@@ -1,25 +1,31 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 
 const pages=['conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html','mfa.html','enterprise.html'];
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
+const sha256=path=>crypto.createHash('sha256').update(fs.readFileSync(path)).digest('hex');
+
+const expectedSupabase='f8ce7fab799af1916019cbd0b485b39bb80dbdbc6dc062909a751c9e5198e04c';
+const expectedQr='84313e033c6365d29923c6bf5a1490f76f893c0a1e156bbd2bb3f8a96a3523d7';
+const supabasePath='vendor/supabase-js-2.112.4.js';
+const qrPath='vendor/html5-qrcode-2.3.8.js';
+const lock=fs.readFileSync('vendor/SHA256SUMS','utf8');
+
+if(sha256(supabasePath)!==expectedSupabase)fail('Vendor: hash do Supabase JS mudou');
+if(sha256(qrPath)!==expectedQr)fail('Vendor: hash do html5-qrcode mudou');
+if(!lock.includes(expectedSupabase+'  '+supabasePath))fail('Vendor lock: Supabase JS não corresponde');
+if(!lock.includes(expectedQr+'  '+qrPath))fail('Vendor lock: html5-qrcode não corresponde');
 
 for(const page of pages){
   const source=fs.readFileSync(page,'utf8');
-  const supabase=[...source.matchAll(/<script\b[^>]+src=["']([^"']*supabase-js[^"']*)["'][^>]*>/gi)];
-  for(const match of supabase){
-    if(!match[1].includes('@2.112.4'))fail(page+': Supabase JS não está fixado em 2.112.4');
-    if(/@2(?:["'\/]|$)/.test(match[1]))fail(page+': versão flutuante do Supabase detectada');
-    if(!/referrerpolicy=["']no-referrer["']/i.test(match[0]))fail(page+': Supabase externo sem referrerpolicy');
-  }
+  if(/<script\b[^>]+src=["']https?:\/\//i.test(source))fail(page+': JavaScript remoto detectado');
+  if(source.includes('cdn.jsdelivr.net'))fail(page+': referência a jsDelivr detectada');
+  if(!source.includes('src="vendor/supabase-js-2.112.4.js"'))fail(page+': Supabase JS local ausente');
+  if(!source.includes('integrity="sha256-+M5/q3ma8ZFgGcvQtIWzm7gNvbxtwGKQmnUcnlGY4Ew="'))fail(page+': SRI local do Supabase ausente');
 }
 
 const pdv=fs.readFileSync('pdv.html','utf8');
-const qr=pdv.match(/<script\b[^>]+src=["']https:\/\/cdn\.jsdelivr\.net\/npm\/html5-qrcode@2\.3\.8\/html5-qrcode\.js["'][^>]*>/i);
-if(!qr)fail('PDV: html5-qrcode fixado em 2.3.8 ausente');
-else{
-  if(!qr[0].includes('integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg=="'))fail('PDV: SRI do html5-qrcode ausente ou alterado');
-  if(!/crossorigin=["']anonymous["']/i.test(qr[0]))fail('PDV: html5-qrcode sem crossorigin anonymous');
-  if(!/referrerpolicy=["']no-referrer["']/i.test(qr[0]))fail('PDV: html5-qrcode sem referrerpolicy');
-}
+if(!pdv.includes('src="vendor/html5-qrcode-2.3.8.js"'))fail('PDV: scanner local fixado ausente');
+if(!pdv.includes('integrity="sha256-hDE+AzxjZdKZI8a/WhSQ92+JPAoeFWu9K7P4qWo1I9c="'))fail('PDV: SRI local do scanner ausente');
 
-if(!process.exitCode)console.log('External dependency supply-chain audit: OK');
+if(!process.exitCode)console.log('External dependency supply-chain audit: OK (zero remote scripts + vendored hashes verified)');
