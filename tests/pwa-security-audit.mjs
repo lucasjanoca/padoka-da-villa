@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 
 const source = fs.readFileSync(new URL('../service-worker.js', import.meta.url), 'utf8');
 
-assert.match(source, /const CACHE_NAME = 'padoka-pwa-v5'/, 'PWA cache version must be bumped after security-policy changes');
+assert.match(source, /const CACHE_NAME = 'padoka-pwa-v6'/, 'PWA cache version must be bumped after security-policy changes');
 assert.match(source, /const PUBLIC_CACHE_PATHS = new Set\(/, 'PWA must use an explicit public cache allowlist');
+assert.match(source, /assets\/runtime-security\.css/, 'critical runtime security CSS must remain cacheable offline');
+assert.match(source, /assets\/frame-guard\.js/, 'frame guard must remain cacheable offline');
 for (const page of ['conta.html','acompanhamento.html','pagamento.html']) assert.doesNotMatch(source.split('const PUBLIC_CACHE_PATHS = new Set([')[1].split(']);')[0], new RegExp(`'${page.replace('.', '\\.')}'`), `${page} must not be cached as public shell`);
 assert.match(source, /const PRIVATE_PATHS = new Set\(/, 'PWA must keep an explicit internal-path denylist as defense in depth');
 for (const page of ['internal.html', 'pedidos.html', 'pdv.html', 'gestao.html', 'mfa.html', 'enterprise.html']) {
