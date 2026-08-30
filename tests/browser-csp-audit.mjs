@@ -18,6 +18,7 @@ for(const page of pages){
   const scriptDirective=(policy.match(/(?:^|;\s*)script-src\s+([^;]+)/)||[])[1]||'';
   const styleDirective=(policy.match(/(?:^|;\s*)style-src\s+([^;]+)/)||[])[1]||'';
   if(scriptDirective.includes("'unsafe-inline'"))fail(page+': script-src ainda permite unsafe-inline');
+  if(/https?:\/\//i.test(scriptDirective))fail(page+': script-src ainda permite origem remota');
   if(styleDirective.includes("'unsafe-inline'"))fail(page+': style-src ainda permite unsafe-inline');
   if(page==='pdv.html'){
     if(!/style-src-attr 'unsafe-inline'/.test(policy))fail(page+': scanner precisa da exceção style-src-attr controlada');
@@ -52,6 +53,7 @@ const headers=fs.readFileSync('_headers','utf8');
 const headerScript=(headers.match(/script-src\s+([^;]+)/)||[])[1]||'';
 const headerStyle=(headers.match(/style-src\s+([^;]+)/)||[])[1]||'';
 if(headerScript.includes("'unsafe-inline'"))fail('_headers: script-src ainda permite unsafe-inline');
+if(/https?:\/\//i.test(headerScript))fail('_headers: script-src ainda permite origem remota');
 if(headerStyle.includes("'unsafe-inline'"))fail('_headers: style-src ainda permite unsafe-inline');
 if(!/style-src-attr 'unsafe-inline'/.test(headers))fail('_headers: exceção de compatibilidade do scanner ausente');
 for(const page of pages){
