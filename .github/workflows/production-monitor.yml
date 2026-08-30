@@ -46,10 +46,15 @@ jobs:
           check "$BASE/conta.html" "customer-notifications.js" "Conta"
           check "$BASE/acompanhamento.html" "customer-notifications.js" "Acompanhamento"
           check "$BASE/pagamento.html" "PADOKA" "Pagamento"
-          check "$BASE/pdv.html" "vendor/html5-qrcode-2.3.8.js" "PDV scanner local"\n          check "$BASE/vendor/supabase-js-2.112.4.js" "var supabase=" "Supabase JS local"\n          check "$BASE/vendor/html5-qrcode-2.3.8.js" "Html5Qrcode" "Scanner local"\n          check "$BASE/vendor/SHA256SUMS" "f8ce7fab799af1916019cbd0b485b39bb80dbdbc6dc062909a751c9e5198e04c" "Vendor lock"
+          check "$BASE/pdv.html" "vendor/html5-qrcode-2.3.8.js" "PDV scanner local"
+          check "$BASE/vendor/supabase-js-2.112.4.js" "var supabase=" "Supabase JS local"
+          check "$BASE/vendor/html5-qrcode-2.3.8.js" "Html5Qrcode" "Scanner local"
+          check "$BASE/vendor/SHA256SUMS" "f8ce7fab799af1916019cbd0b485b39bb80dbdbc6dc062909a751c9e5198e04c" "Vendor lock"
+          check "$BASE/assets/icon-192.png" "PNG" "PWA icon 192" || true
+          check "$BASE/assets/icon-512.png" "PNG" "PWA icon 512" || true
           check "$BASE/assets/runtime-security.css" ".padoka-orders-auth-transition" "CSS de segurança"
           check "$BASE/manifest.webmanifest" "\"display\": \"standalone\"" "Manifest PWA"
-          check "$BASE/service-worker.js" "padoka-pwa-v4" "Service Worker"
+          check "$BASE/service-worker.js" "padoka-pwa-v5" "Service Worker"
           check "$BASE/.well-known/security.txt" "security/advisories/new" "security.txt"
           check "https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config" "publishableKey" "Config pública"
           check "$PUSH?action=config" "publicKey" "Push config"
