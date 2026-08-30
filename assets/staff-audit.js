@@ -133,6 +133,11 @@
     loading=true;
     const button=document.getElementById('staffAuditRefresh');
     if(button){button.disabled=true;button.textContent='Atualizando…'}
+    if(!await confirmSession(epoch,userId)){
+      loading=false;
+      clearTeamUi();
+      return;
+    }
     let result;
     try{
       result=await client.rpc('padoka_list_staff_audit',{p_limit:30});
@@ -164,6 +169,7 @@
   }
 
   async function probe(epoch,userId){
+    if(!await confirmSession(epoch,userId))return false;
     let result;
     try{
       result=await client.rpc('padoka_list_staff_audit',{p_limit:1});
