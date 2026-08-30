@@ -16,9 +16,21 @@
     return null;
   }
 
+  async function safeSession(){
+    if(!client)return null;
+    try{
+      const {data,error}=await client.auth.getSession();
+      if(error)throw error;
+      return data?.session||null;
+    }catch(error){
+      console.warn('PADOKA product session check:',error);
+      return null;
+    }
+  }
+
   async function sessionStillMatches(expectedUserId,expectedEpoch){
     if(!client||expectedEpoch!==lifecycleEpoch||!expectedUserId)return false;
-    const {data:{session}}=await client.auth.getSession();
+    const session=await safeSession();
     return expectedEpoch===lifecycleEpoch&&session?.user?.id===expectedUserId;
   }
 
@@ -160,7 +172,7 @@
     if(!context||!['owner','manager'].includes(context.role)||initEpoch!==lifecycleEpoch)return;
     client=context.client;role=context.role;
     bindAuthLifecycle();
-    const {data:{session}}=await client.auth.getSession();
+    const session=await safeSession();
     if(!session||initEpoch!==lifecycleEpoch)return;
     activeUserId=session.user.id;
     const loaded=await load(initEpoch,activeUserId).catch(error=>{
