@@ -36,6 +36,10 @@ requireJs(/data-field="active"/, 'frontend permite desativar sem apagar históri
 requireJs(/onAuthStateChange/, 'gestão de catálogo acompanha logout e troca de conta');
 requireJs(/lifecycleEpoch/, 'gestão de catálogo invalida operações assíncronas antigas por epoch');
 requireJs(/activeUserId/, 'gestão de catálogo vincula o estado à identidade autenticada atual');
+requireJs(/async function safeSession\(\)[\s\S]*?const \{data,error\}=await client\.auth\.getSession\(\);[\s\S]*?if\(error\)throw error;[\s\S]*?return data\?\.session\|\|null;[\s\S]*?catch\(error\)[\s\S]*?return null;/, 'leitura de sessão do catálogo trata erro do Auth e falha de transporte');
+requireJs(/sessionStillMatches\(expectedUserId,expectedEpoch\)[\s\S]*?const session=await safeSession\(\);/, 'revalidação de identidade usa exclusivamente a leitura segura de sessão');
+requireJs(/const session=await safeSession\(\);[\s\S]*?if\(!session\|\|initEpoch!==lifecycleEpoch\)return;/, 'bootstrap do catálogo permanece fail-closed sem sessão confirmada');
+if (/client\.auth\.getSession\(\)/.test(js.replace(/async function safeSession\(\)[\s\S]*?\n  }\n\n  async function sessionStillMatches/, ''))) fail('getSession não pode ser usado fora de safeSession no catálogo'); else ok('getSession centralizado em safeSession no catálogo');
 requireJs(/sessionStillMatches\(expectedUserId,expectedEpoch\)/, 'listagens e gravações revalidam sessão e identidade');
 requireJs(/resetForAuthChange\(\)[\s\S]*?padokaProductAdmin['"]\)\?\.remove\(\)/, 'troca de identidade remove imediatamente controles e estado do catálogo anterior');
 requireJs(/if\(!await sessionStillMatches\(operationUserId,operationEpoch\)\)return;/, 'resposta de gravação antiga não continua após troca de funcionário');
