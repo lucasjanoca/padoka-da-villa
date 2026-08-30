@@ -1,0 +1,21 @@
+import fs from 'node:fs';
+const css=fs.readFileSync('assets/accessibility.css','utf8');
+const js=fs.readFileSync('assets/accessibility.js','utf8');
+const product=fs.readFileSync('produto.html','utf8');
+const robots=fs.readFileSync('robots.txt','utf8');
+const sitemap=fs.readFileSync('sitemap.xml','utf8');
+const manifest=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8'));
+const pages=['index.html','produto.html','acompanhamento.html','conta.html','gestao.html','internal.html','mfa.html','pagamento.html','pdv.html','pedidos.html','enterprise.html'];
+const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
+for(const page of pages){const s=fs.readFileSync(page,'utf8');if(!s.includes('assets/accessibility.css'))fail(page+': CSS de acessibilidade ausente');if(!s.includes('assets/accessibility.js'))fail(page+': JS de acessibilidade ausente')}
+if(!/:focus-visible/.test(css))fail('foco visível ausente');
+if(!/prefers-reduced-motion/.test(css))fail('reduced motion ausente');
+if(!/Pular para o conteúdo/.test(js))fail('skip link ausente');
+if(!/aria-live/.test(js))fail('aria-live de feedback ausente');
+if(!/application\/ld\+json/.test(product)||!/'@type':'Product'/.test(product))fail('Product structured data ausente');
+if(!/if\(p\.is_demo\).*noindex/.test(product.replace(/\n/g,'')))fail('produto demo não permanece noindex');
+if(!/Disallow: \/enterprise\.html/.test(robots))fail('robots não bloqueia Centro de Operações');
+if(!/Disallow: \/supabase\//.test(robots))fail('robots não bloqueia backend');
+if(!/lucasjanoca\.github\.io\/padoka-da-villa/.test(sitemap))fail('sitemap sem host oficial atual');
+if(manifest.display!=='standalone'||!manifest.start_url)fail('manifest PWA incompleto');
+if(!process.exitCode)console.log('Accessibility/SEO audit: OK');
