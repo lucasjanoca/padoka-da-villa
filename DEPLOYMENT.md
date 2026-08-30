@@ -36,25 +36,15 @@ Contas de outros sistemas do Supabase compartilhado não devem receber perfil PA
 
 ## Ordem de aplicação
 
-Aplicar **uma migration por vez**, nesta ordem:
+Depois da base 001/002, aplicar **todos os arquivos numerados em ordem crescente, sem pular números**, do `003_*.sql` até a migration mais recente existente no repositório.
 
-1. `003_operational_inventory_production_losses.sql`
-2. `004_pdv_sales_transaction.sql`
-3. `005_order_status_transition_rpc.sql`
-4. `006_production_completion_transaction.sql`
-5. `007_loss_idempotency.sql`
-6. `008_staff_reporting_rpc.sql`
-7. `009_internal_settings.sql`
-8. `010_pdv_sale_idempotency.sql`
-9. `011_checkout_order_idempotency.sql`
-10. `012_pdv_sale_void_transaction.sql`
-11. `013_customer_profile_rpc.sql`
-12. `014_staff_management_rpc.sql`
-13. `015_staff_enrollment_rpc.sql`
-14. `016_staff_audit_trail.sql`
-15. `017_product_catalog_management.sql`
+No estado auditado em 30/08/2026, a cadeia está contínua até:
 
-Não pular números. As migrations posteriores dependem do estado consolidado pelas anteriores, mesmo quando um módulo específico não usa todas as tabelas criadas antes.
+- `038_privileged_mfa_hardening.sql` — exige AAL2/MFA para mutações privilegiadas de `owner/manager` e remove execução direta de funções exclusivas de trigger;
+- `039_private_security_helpers.sql` — move helpers privilegiados para `padoka_private` e mantém wrappers públicos `SECURITY INVOKER`;
+- `040_private_rpc_implementations.sql` — move as implementações das RPCs privilegiadas restantes para `padoka_private`, preservando as assinaturas públicas consumidas pelo frontend.
+
+Não pular números. As migrations posteriores dependem do estado consolidado pelas anteriores.
 
 ## Validação após cada migration
 
@@ -198,9 +188,25 @@ Validar a gestão autoritativa do catálogo em **Produtos**:
 - produto novo sem metadados visuais próprios pode usar a logo temporária, mas não deve receber foto/unidade inventadas;
 - alterações refletem no cardápio após recarga/sincronização e continuam server-authoritative.
 
+### Depois da 038
+
+- validar que `owner/manager` em AAL1 não conseguem executar mutações administrativas protegidas;
+- validar que a mesma operação funciona após MFA/AAL2;
+- confirmar que funções de trigger não são executáveis diretamente por `anon`/`authenticated`.
+
+### Depois da 039 + 040
+
+- confirmar que o schema `padoka_private` não é exposto como API pública;
+- confirmar que as RPCs públicas esperadas continuam com os mesmos nomes/argumentos;
+- confirmar que wrappers públicos são `SECURITY INVOKER`;
+- executar o Security Advisor e exigir **zero avisos relacionados à PADOKA**;
+- executar o workflow completo `PADOKA Static Audit`.
+
 ## Critérios para chamar a camada operacional de pronta
 
 - migrations aplicadas no projeto correto e sem warnings de segurança PADOKA pendentes;
+- owner/manager protegidos por MFA/AAL2 também no banco;
+- implementações privilegiadas fora do schema público, com wrappers SECURITY INVOKER;
 - RLS testado com cliente, staff e usuário de outro sistema do mesmo Supabase;
 - nenhuma área interna acessível pelo site público;
 - checkout e PDV idempotentes;
