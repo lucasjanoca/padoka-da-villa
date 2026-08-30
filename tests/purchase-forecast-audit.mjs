@@ -1,0 +1,18 @@
+import fs from 'node:fs';
+const sql=fs.readFileSync('supabase/043_suppliers_purchases_forecast.sql','utf8');
+const page=fs.readFileSync('enterprise.html','utf8');
+const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
+const need=(s,r,m)=>{if(!r.test(s))fail(m)};
+for(const table of ['padoka_suppliers','padoka_purchase_orders','padoka_purchase_order_items'])need(sql,new RegExp('create table if not exists public\\.'+table,'i'),table+' ausente');
+need(sql,/padoka_create_purchase_order/i,'RPC de ordem de compra ausente');
+need(sql,/padoka_receive_purchase_order/i,'RPC de recebimento ausente');
+need(sql,/source,'purchase'/i,'recebimento não registra movimento purchase');
+need(sql,/quantity=public\.padoka_inventory\.quantity\+excluded\.quantity/i,'recebimento não atualiza estoque transacionalmente');
+need(sql,/status='completed' and o\.payment_status in \('paid','paid_late'\) and not o\.is_test/i,'forecast inclui pedido não-real');
+need(sql,/s\.status='completed' and not s\.is_test/i,'forecast inclui PDV de teste');
+need(sql,/extract\(isodow/i,'forecast não considera dia da semana');
+need(page,/padoka_save_supplier/,'Centro de Operações sem cadastro de fornecedor');
+need(page,/padoka_create_purchase_order/,'Centro de Operações sem compra');
+need(page,/padoka_receive_purchase_order/,'Centro de Operações sem recebimento');
+need(page,/padoka_forecast_production/,'Centro de Operações sem previsão');
+if(!process.exitCode)console.log('Purchase/forecast audit: OK');
