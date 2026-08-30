@@ -19,7 +19,7 @@ function notice(text,type='warn'){
     box=document.createElement('div');
     box.id='orderRetryNotice';
     box.className=`notice ${type}`;
-    box.style.marginTop='10px';
+    box.classList.add('padoka-mt-10');
     el('accountCard')?.appendChild(box);
   }
   box.className=`notice ${type}`;
@@ -80,13 +80,13 @@ function lockPending(){
   const btn=el('sendOrder');
   if(btn){btn.disabled=false;btn.textContent='Tentar novamente';}
   const edit=document.querySelector('.actions a[href="index.html#cardapio"]');
-  if(edit){edit.setAttribute('aria-disabled','true');edit.style.pointerEvents='none';edit.style.opacity='.45';}
+  if(edit){edit.setAttribute('aria-disabled','true');edit.classList.add('padoka-edit-disabled');}
 }
 function unlock(){
   const btn=el('sendOrder');
   if(btn){btn.disabled=false;btn.textContent='Enviar pedido';}
   const edit=document.querySelector('.actions a[href="index.html#cardapio"]');
-  if(edit){edit.removeAttribute('aria-disabled');edit.style.pointerEvents='';edit.style.opacity='';}
+  if(edit){edit.removeAttribute('aria-disabled');edit.classList.remove('padoka-edit-disabled');}
 }
 function payloadFromPage(){
   const mode=pickup?.mode==='noturna'?'night':'store';
