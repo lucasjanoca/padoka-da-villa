@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Reportar vulnerabilidade em privado
+    url: https://github.com/lucasjanoca/padoka-da-villa/security/advisories/new
+    about: Use o GitHub Security Advisory para não expor detalhes de segurança publicamente.
