@@ -57,6 +57,20 @@
     return epoch===scannerLifecycleEpoch&&!!userId&&userId===scannerUserId&&!staffGuardPending();
   }
 
+  async function safeSession(){
+    try{
+      const {data,error}=await sb.auth.getSession();
+      if(error){
+        console.warn('PADOKA scanner session:',error);
+        return null;
+      }
+      return data?.session||null;
+    }catch(error){
+      console.warn('PADOKA scanner session transport:',error);
+      return null;
+    }
+  }
+
   function rejectOversizedRead(){
     resetInputBurst();
     resetHardwareBuffer();
@@ -192,7 +206,7 @@
       const {data,error}=await sb.rpc('padoka_list_product_barcodes');
       if(error)throw error;
       if(!scannerContextCurrent(expectedEpoch,expectedUserId))return false;
-      const {data:{session}}=await sb.auth.getSession();
+      const session=await safeSession();
       if(!scannerContextCurrent(expectedEpoch,expectedUserId)||session?.user?.id!==expectedUserId)return false;
       if(Array.isArray(data))rows=data;
     }catch(error){
@@ -218,7 +232,7 @@
     for(let i=0;i<80;i++){
       if(epoch!==scannerLifecycleEpoch)return false;
       if(!staffGuardPending()&&window.padokaStaffRole&&window.padokaCanAccess){
-        const {data:{session}}=await sb.auth.getSession();
+        const session=await safeSession();
         if(epoch!==scannerLifecycleEpoch||session?.user?.id!==expectedUserId)return false;
         if(!window.padokaCanAccess('pdv'))return false;
         scannerUserId=expectedUserId;
@@ -238,7 +252,10 @@
       const nextUserId=session?.user?.id||'';
       if(nextUserId===scannerUserId&&event==='SIGNED_IN')return;
       resetScannerForIdentityChange();
-      if(nextUserId)setTimeout(()=>activateScannerForUser(nextUserId),0);
+      if(nextUserId)setTimeout(()=>activateScannerForUser(nextUserId).catch(error=>{
+        console.warn('PADOKA scanner auth revalidation:',error);
+        resetScannerForIdentityChange('Não foi possível revalidar o leitor. Verifique a conexão e tente novamente.');
+      }),0);
     });
     authSubscription=result?.data?.subscription||null;
   }
@@ -319,13 +336,13 @@
     attempts+=1;
     if(sb&&Array.isArray(products)&&products.length){
       clearInterval(timer);
-      const {data:{session}}=await sb.auth.getSession();
+      const session=await safeSession();
       const userId=session?.user?.id||'';
       if(userId){
         watchScannerAuth();
         await activateScannerForUser(userId);
       }else{
-        resetScannerForIdentityChange('Entre novamente com uma conta interna autorizada para usar o leitor.');
+        resetScannerForIdentityChange('Não foi possível confirmar uma sessão interna autorizada para usar o leitor.');
       }
       return;
     }
