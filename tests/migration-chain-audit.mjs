@@ -53,8 +53,7 @@ for (const file of files) {
     const name = match[1];
     if (/security\s+definer/i.test(block)) {
       const pinnedPublic=/set\s+search_path\s*(?:=|to)\s*['"]?public['"]?/i.test(block);
-      const pinnedEmpty=/set\s+search_path\s*(?:=|to)\s*['"]{0,2}\s*['"]{0,2}/i.test(block)
-        || /set\s+search_path\s*=\s*''/i.test(block);
+      const pinnedEmpty=/set\s+search_path\s*(?:=|to)\s*(?:''|"")/i.test(block);
       if (!pinnedPublic && !pinnedEmpty) {
         fail(`${file}: SECURITY DEFINER ${name} sem search_path explícito e fixo`);
       }
