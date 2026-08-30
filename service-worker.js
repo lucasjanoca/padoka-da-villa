@@ -1,12 +1,61 @@
 'use strict';
 
-const CACHE_NAME = 'padoka-pwa-v1';
+const CACHE_NAME = 'padoka-pwa-v2';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
   './assets/logo-padoka.svg',
   './assets/padoka-pwa.js'
 ];
+
+const PUBLIC_CACHE_PATHS = new Set([
+  'index.html',
+  'conta.html',
+  'acompanhamento.html',
+  'manifest.webmanifest',
+  'assets/logo-padoka.svg',
+  'assets/padoka-pwa.js'
+]);
+
+const PRIVATE_PATHS = new Set([
+  'internal.html',
+  'pedidos.html',
+  'pdv.html',
+  'gestao.html',
+  'mfa.html'
+]);
+
+const NOTIFICATION_TARGETS = new Set([
+  'index.html',
+  'conta.html',
+  'acompanhamento.html'
+]);
+
+function scopeRelativePath(url) {
+  const scopeUrl = new URL(self.registration.scope);
+  if (url.origin !== scopeUrl.origin || !url.pathname.startsWith(scopeUrl.pathname)) return null;
+  return decodeURIComponent(url.pathname.slice(scopeUrl.pathname.length)).replace(/^\/+/, '') || 'index.html';
+}
+
+function isCacheableRequest(request, url) {
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return false;
+  const path = scopeRelativePath(url);
+  if (!path || PRIVATE_PATHS.has(path)) return false;
+  return PUBLIC_CACHE_PATHS.has(path);
+}
+
+function notificationTarget(candidate) {
+  try {
+    const url = new URL(candidate || 'acompanhamento.html', self.registration.scope);
+    const path = scopeRelativePath(url);
+    if (!path || !NOTIFICATION_TARGETS.has(path)) {
+      return new URL('acompanhamento.html', self.registration.scope).href;
+    }
+    return url.href;
+  } catch {
+    return new URL('acompanhamento.html', self.registration.scope).href;
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -33,17 +82,22 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     try {
       const response = await fetch(request);
-      if (response && response.ok) {
+      if (response && response.ok && isCacheableRequest(request, url)) {
         const cache = await caches.open(CACHE_NAME);
         cache.put(request, response.clone()).catch(() => {});
       }
       return response;
     } catch {
-      const cached = await caches.match(request);
-      if (cached) return cached;
+      if (isCacheableRequest(request, url)) {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+      }
       if (request.mode === 'navigate') {
-        const fallback = await caches.match('./index.html');
-        if (fallback) return fallback;
+        const path = scopeRelativePath(url);
+        if (path && NOTIFICATION_TARGETS.has(path)) {
+          const fallback = await caches.match('./index.html');
+          if (fallback) return fallback;
+        }
       }
       return Response.error();
     }
@@ -60,11 +114,11 @@ self.addEventListener('push', (event) => {
 
   const title = payload.title || 'PADOKA DA VILLA';
   const body = payload.body || 'Seu pedido recebeu uma atualização.';
-  const url = payload.url || 'acompanhamento.html';
+  const url = notificationTarget(payload.url);
 
   event.waitUntil(self.registration.showNotification(title, {
     body,
-    icon: payload.icon || './assets/logo-padoka.svg',
+    icon: './assets/logo-padoka.svg',
     badge: './assets/logo-padoka.svg',
     tag: payload.tag || 'padoka-order-update',
     renotify: true,
@@ -74,10 +128,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const relativeUrl = event.notification.data && event.notification.data.url
-    ? event.notification.data.url
-    : 'acompanhamento.html';
-  const target = new URL(relativeUrl, self.registration.scope).href;
+  const target = notificationTarget(event.notification.data && event.notification.data.url);
 
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
