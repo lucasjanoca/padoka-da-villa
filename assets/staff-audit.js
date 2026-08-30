@@ -71,24 +71,7 @@
     });
   }
 
-  function addStyles(){
-    if(document.getElementById('padokaStaffAuditStyle'))return;
-    const style=document.createElement('style');
-    style.id='padokaStaffAuditStyle';
-    style.textContent=`
-      .staff-audit{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
-      .staff-audit-head{display:flex;align-items:end;justify-content:space-between;gap:10px;margin-bottom:8px}
-      .staff-audit-head h3{margin:0;font-size:13px}.staff-audit-head p{margin:3px 0 0;color:var(--muted);font-size:9px;line-height:1.4}
-      .staff-audit-refresh{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 9px;font-size:8.5px;font-weight:900}
-      .staff-audit-list{display:grid;gap:7px}.staff-audit-row{border:1px solid var(--line);border-radius:13px;padding:10px;background:#faf8f5}
-      .staff-audit-row strong{font-size:9.5px}.staff-audit-row p{margin:4px 0 0;color:var(--muted);font-size:8.5px;line-height:1.45}.staff-audit-row time{display:block;margin-top:5px;color:var(--muted);font-size:8px}
-      @media(max-width:520px){.staff-audit-head{align-items:start;flex-direction:column}.staff-audit-refresh{width:100%}}
-    `;
-    document.head.appendChild(style);
-  }
-
   function ensureMount(panel){
-    addStyles();
     let mount=document.getElementById('staffAudit');
     if(mount)return mount;
     mount=document.createElement('section');
