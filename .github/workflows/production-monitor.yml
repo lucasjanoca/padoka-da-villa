@@ -19,19 +19,20 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Check production surfaces
-        id: smoke
         shell: bash
         run: |
           set +e
           BASE="https://lucasjanoca.github.io/padoka-da-villa"
+          PUSH="https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-push"
           FAILED=0
 
           check() {
             local url="$1"
             local marker="$2"
             local name="$3"
+            local body
             body="$(curl --location --silent --show-error --fail --max-time 20 "$url")"
-            rc=$?
+            local rc=$?
             if [ "$rc" -ne 0 ] || ! printf '%s' "$body" | grep -Fq "$marker"; then
               echo "::error::$name falhou: $url"
               FAILED=1
@@ -45,29 +46,54 @@ jobs:
           check "$BASE/conta.html" "customer-notifications.js" "Conta"
           check "$BASE/acompanhamento.html" "customer-notifications.js" "Acompanhamento"
           check "$BASE/pagamento.html" "PADOKA" "Pagamento"
+          check "$BASE/pdv.html" "sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg==" "PDV scanner SRI"
+          check "$BASE/assets/runtime-security.css" ".padoka-orders-auth-transition" "CSS de segurança"
           check "$BASE/manifest.webmanifest" "\"display\": \"standalone\"" "Manifest PWA"
           check "$BASE/service-worker.js" "padoka-pwa-v4" "Service Worker"
+          check "$BASE/.well-known/security.txt" "security/advisories/new" "security.txt"
           check "https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config" "publishableKey" "Config pública"
-          check "https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-push?action=config" "publicKey" "Push config"
+          check "$PUSH?action=config" "publicKey" "Push config"
 
           HOME="$(curl --location --silent --show-error --fail --max-time 20 "$BASE/")"
           if printf '%s' "$HOME" | grep -Eq "script-src[^;]*'unsafe-inline'"; then
-            echo "::error::CSP de produção voltou a permitir unsafe-inline em script-src"
+            echo "::error::CSP voltou a permitir unsafe-inline em script-src"
             FAILED=1
           else
-            echo "OK: CSP sem script unsafe-inline"
+            echo "OK: script-src sem unsafe-inline"
+          fi
+          if ! printf '%s' "$HOME" | grep -Fq "style-src-attr 'none'"; then
+            echo "::error::Home perdeu bloqueio de style attributes"
+            FAILED=1
+          else
+            echo "OK: style-src-attr bloqueado na Home"
           fi
 
-          code="$(curl --silent --show-error --max-time 20 -o /tmp/padoka-push-guard.json -w '%{http_code}'             -X POST             -H 'content-type: application/json'             --data '{"action":"subscribe","subscription":{}}'             'https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-push')"
+          code="$(curl --silent --show-error --max-time 20 -o /tmp/push-auth.json -w '%{http_code}' \
+            -X POST -H 'content-type: application/json' \
+            --data '{"action":"subscribe","subscription":{}}' "$PUSH")"
           if [ "$code" != "401" ]; then
-            echo "::error::Push subscribe sem sessão retornou HTTP $code; esperado 401"
-            cat /tmp/padoka-push-guard.json || true
+            echo "::error::Push sem sessão retornou HTTP $code; esperado 401"
+            cat /tmp/push-auth.json || true
             FAILED=1
           else
             echo "OK: Push exige autenticação"
           fi
 
-          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+          payload="$(python3 - <<'PY'
+import json
+print(json.dumps({"action":"subscribe","pad":"x"*17000}))
+PY
+)"
+          code="$(curl --silent --show-error --max-time 20 -o /tmp/push-size.json -w '%{http_code}' \
+            -X POST -H 'content-type: application/json' --data "$payload" "$PUSH")"
+          if [ "$code" != "413" ]; then
+            echo "::error::Push payload grande retornou HTTP $code; esperado 413"
+            cat /tmp/push-size.json || true
+            FAILED=1
+          else
+            echo "OK: Push limita payload"
+          fi
+
           exit "$FAILED"
 
       - name: Open production incident
@@ -79,7 +105,9 @@ jobs:
           title="PADOKA produção indisponível"
           existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
           if [ -z "$existing" ]; then
-            gh issue create --repo "$GITHUB_REPOSITORY"               --title "$title"               --body "O monitor automático detectou uma falha em produção. Consulte a execução do workflow **PADOKA Production Monitor** para identificar a superfície afetada."
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "$title" \
+              --body "O monitor automático detectou uma falha de disponibilidade ou segurança em produção. Consulte a execução do workflow **PADOKA Production Monitor**."
           else
             gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "A falha continua presente em uma nova verificação automática."
           fi
