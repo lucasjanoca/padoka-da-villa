@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#15120f">
+  <title>Verificação em duas etapas • PADOKA DA VILLA</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4"></script>
+  <style>
+    :root{--bg:#f4eee7;--paper:#fffdf9;--ink:#191511;--muted:#776e66;--line:#e5d9cd;--dark:#17130f;--brand:#a46a39;--ok:#286345;--danger:#99473c}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#eee4da,#f6f1eb 260px,#f4eee7);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;place-items:center;padding:22px}.card{width:min(460px,100%);background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:0 18px 50px #321f1118}.brand{display:flex;align-items:center;gap:10px}.brand img{width:48px;height:48px}.brand strong{display:block}.brand small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.eyebrow{display:block;margin-top:22px;font-size:9px;font-weight:950;letter-spacing:.12em;color:var(--brand)}h1{font-size:28px;line-height:1.05;margin:7px 0 8px}p{color:var(--muted);font-size:11px;line-height:1.5}.qr{display:grid;place-items:center;margin:18px 0}.qr img{width:210px;max-width:70vw;background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px}.secret{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px;word-break:break-all;background:#f4eee7;border-radius:12px;padding:10px;margin:10px 0}.field{width:100%;border:1px solid var(--line);border-radius:13px;padding:13px;background:#fff;font:inherit;font-size:15px;letter-spacing:.18em;text-align:center}.btn{width:100%;border:0;border-radius:13px;min-height:46px;padding:10px 12px;font:inherit;font-weight:900;margin-top:10px;cursor:pointer}.btn.dark{background:var(--dark);color:#fff}.btn.soft{background:#eee5dc;color:var(--ink)}.status{margin-top:12px;border-radius:13px;padding:10px 11px;font-size:10px;line-height:1.45;background:#fbf2e9;border:1px solid #ead6c3;color:#775f4d}.status.ok{background:#eaf5ed;border-color:#cde3d5;color:#285a3d}.status.error{background:#fbefec;border-color:#e6c6c0;color:#873f35}.hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand"><img src="assets/logo-padoka.svg" alt="PADOKA DA VILLA"><div><strong>PADOKA DA VILLA</strong><small>SEGURANÇA ADMINISTRATIVA</small></div></div>
+    <span class="eyebrow">VERIFICAÇÃO EM DUAS ETAPAS</span>
+    <h1>Proteja o acesso interno.</h1>
+    <p id="intro">Proprietários e gerentes precisam confirmar um segundo fator antes de acessar funções sensíveis.</p>
+    <section id="setup" class="hidden">
+      <p>Escaneie o QR Code no seu aplicativo autenticador. Depois digite o código de 6 dígitos.</p>
+      <div class="qr"><img id="qr" alt="QR Code para configurar autenticação em duas etapas"></div>
+      <div class="secret" id="secret"></div>
+    </section>
+    <section id="verify" class="hidden">
+      <input class="field" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" aria-label="Código de 6 dígitos">
+      <button class="btn dark" id="verifyBtn" type="button">Confirmar código</button>
+    </section>
+    <div class="status" id="status">Validando sua sessão…</div>
+    <button class="btn soft" id="logout" type="button">Sair da conta</button>
+  </main>
+<script>
+const CONFIG_URL='https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config',$=id=>document.getElementById(id);let sb=null,factorId='',returnTo='internal.html';
+function setStatus(text,type=''){const el=$('status');el.textContent=text;el.className='status'+(type?' '+type:'')}
+function safeReturn(){const raw=new URLSearchParams(location.search).get('return')||'internal.html';try{const u=new URL(raw,location.href),name=u.pathname.split('/').pop(),allowed=new Set(['internal.html','pedidos.html','pdv.html','gestao.html']);if(u.origin===location.origin&&allowed.has(name))return name+(name==='gestao.html'?u.search:'')}catch{}return 'internal.html'}
+async function currentAal(){const {data,error}=await sb.auth.mfa.getAuthenticatorAssuranceLevel();if(error)throw error;return data}
+async function start(){returnTo=safeReturn();try{const r=await fetch(CONFIG_URL,{cache:'no-store'});if(!r.ok)throw new Error('config');const cfg=await r.json();sb=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true}});const {data:{session},error:sErr}=await sb.auth.getSession();if(sErr||!session){location.replace('internal.html');return}const {data:staff,error}=await sb.from('padoka_staff_users').select('role,active').eq('user_id',session.user.id).maybeSingle();if(error||!staff?.active){await sb.auth.signOut();location.replace('internal.html');return}const role=String(staff.role||'').toLowerCase();if(!['owner','manager'].includes(role)){location.replace(returnTo);return}const aal=await currentAal();if(aal?.currentLevel==='aal2'){location.replace(returnTo);return}const {data:factors,error:fErr}=await sb.auth.mfa.listFactors();if(fErr)throw fErr;const verified=(factors?.totp||[]).find(f=>f.status==='verified');if(verified){factorId=verified.id;$('verify').classList.remove('hidden');setStatus('Abra seu aplicativo autenticador e informe o código atual.');return}for(const f of factors?.totp||[]){if(f.status!=='verified')try{await sb.auth.mfa.unenroll({factorId:f.id})}catch{}}
+const {data:enroll,error:eErr}=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'PADOKA Admin'});if(eErr)throw eErr;factorId=enroll.id;$('qr').src=enroll.totp.qr_code;$('secret').textContent='Chave manual: '+enroll.totp.secret;$('setup').classList.remove('hidden');$('verify').classList.remove('hidden');setStatus('Configure o autenticador e confirme o primeiro código.');
+}catch(error){console.error(error);setStatus('Não foi possível iniciar a verificação em duas etapas. Saia e tente novamente.','error')}}
+$('verifyBtn').onclick=async()=>{const code=$('code').value.replace(/\D/g,'').slice(0,6);if(code.length!==6)return setStatus('Digite os 6 números exibidos no autenticador.','error');const btn=$('verifyBtn');btn.disabled=true;try{setStatus('Confirmando…');const {data:challenge,error:cErr}=await sb.auth.mfa.challenge({factorId});if(cErr)throw cErr;const {error:vErr}=await sb.auth.mfa.verify({factorId,challengeId:challenge.id,code});if(vErr)throw vErr;const aal=await currentAal();if(aal?.currentLevel!=='aal2')throw new Error('aal2 not reached');setStatus('Verificação concluída. Abrindo o painel…','ok');location.replace(returnTo)}catch(error){console.error(error);setStatus('Código inválido ou expirado. Confira o autenticador e tente novamente.','error')}finally{btn.disabled=false}};
+$('code').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,6)});
+$('code').addEventListener('keydown',e=>{if(e.key==='Enter')$('verifyBtn').click()});
+$('logout').onclick=async()=>{try{if(sb)await sb.auth.signOut()}finally{location.replace('internal.html')}};
+start();
+</script>
+</body>
+</html>
