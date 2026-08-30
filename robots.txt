@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /internal.html
+Disallow: /gestao.html
+Disallow: /enterprise.html
+Disallow: /pedidos.html
+Disallow: /pdv.html
+Disallow: /mfa.html
+Disallow: /pagamento.html
+Disallow: /conta.html
+Disallow: /acompanhamento.html
+Disallow: /supabase/
+Disallow: /tests/
+Sitemap: https://lucasjanoca.github.io/padoka-da-villa/sitemap.xml
