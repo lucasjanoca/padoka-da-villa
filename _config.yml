@@ -3,8 +3,6 @@ description: Plataforma web da PADOKA DA VILLA
 encoding: utf-8
 include:
   - .well-known
-  - vendor
-
 # GitHub Pages deve publicar somente a aplicação web.
 # Código de backend, migrations, testes e documentação técnica ficam no repositório,
 # mas não fazem parte do artefato público servido pelo Pages.
