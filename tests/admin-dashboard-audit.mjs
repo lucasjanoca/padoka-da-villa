@@ -31,7 +31,11 @@ need(ui,/catch\(error\)\{[\s\S]*?Falha de rede ao confirmar sessão do dashboard
 need(ui,/async function sessionStillCurrent\(epoch,userId\)/i,'dashboard precisa revalidar a identidade antes de consultas periódicas');
 need(ui,/const session=await safeSession\(\);\s*return lifecycleCurrent\(epoch,userId\)&&session\?\.user\?\.id===userId/i,'revalidação precisa exigir o mesmo user_id e lifecycle antes de continuar');
 need(ui,/async function refreshOrders[\s\S]*?if\(!await sessionStillCurrent\(epoch,userId\)\)[\s\S]*?\.from\(['"]padoka_orders['"]\)/i,'pedidos só podem ser consultados depois de reconfirmar a sessão atual');
+need(ui,/\.from\(['"]padoka_orders['"]\)[\s\S]*?if\(!await sessionStillCurrent\(epoch,userId\)\)[\s\S]*?render\(/i,'resposta de pedidos só pode renderizar após nova confirmação da mesma sessão');
 need(ui,/async function refreshOperational[\s\S]*?if\(!await sessionStillCurrent\(epoch,userId\)\)[\s\S]*?const access=operationalAccess\(\)/i,'dados operacionais só podem ser consultados depois de reconfirmar a sessão atual');
+need(ui,/\.from\(['"]padoka_inventory['"]\)[\s\S]*?if\(!await sessionStillCurrent\(epoch,userId\)\)[\s\S]*?inventory=result\.data/i,'resposta de estoque só pode ser aceita após nova confirmação da mesma sessão');
+need(ui,/\.from\(['"]padoka_production_plans['"]\)[\s\S]*?if\(!await sessionStillCurrent\(epoch,userId\)\)[\s\S]*?plans=result\.data/i,'resposta de produção só pode ser aceita após nova confirmação da mesma sessão');
+need(ui,/plans=result\.data\|\|\[\];[\s\S]*?if\(!await sessionStillCurrent\(epoch,userId\)\)[\s\S]*?renderOperational\(/i,'render operacional final precisa reconfirmar a sessão depois das leituras');
 need(ui,/failClosedAndRetry/i,'falha de confirmação periódica precisa limpar os dados e tentar revalidar sem reutilizar estado antigo');
 need(ui,/clearDashboardState\(\);\s*const epoch=currentEpoch\(\);\s*setTimeout\(\(\)=>init\(userId,epoch\),1200\)/i,'retry após falha de sessão precisa usar um novo epoch fail-closed');
 need(ui,/async function init\(expectedUserId=['"]{2},expectedEpoch=currentEpoch\(\)\)/i,'inicialização precisa capturar explicitamente o epoch da transição');
