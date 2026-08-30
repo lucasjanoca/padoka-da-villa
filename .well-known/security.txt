@@ -1,0 +1,5 @@
+Contact: https://github.com/lucasjanoca/padoka-da-villa/security/advisories/new
+Canonical: https://lucasjanoca.github.io/padoka-da-villa/.well-known/security.txt
+Policy: https://github.com/lucasjanoca/padoka-da-villa/blob/main/SECURITY.md
+Preferred-Languages: pt-BR, en
+Expires: 2027-08-30T23:59:59Z
