@@ -23,6 +23,7 @@ ok(sync.includes('salvar informações apenas neste navegador'), 'operational-sy
 ok(/if\(p\.error\)\{if\(relationMissing\(p\.error\)\)return false/.test(sync), 'operational-sync.js: produção não falha fechada quando a relação está ausente');
 ok(/if\(l\.error\)\{if\(relationMissing\(l\.error\)\)return false/.test(sync), 'operational-sync.js: perdas não falham fechadas quando a relação está ausente');
 ok(/async function saveMeta[\s\S]*?try\s*\{[\s\S]*?rpc\('padoka_update_inventory_metadata'/.test(sync), 'operational-sync.js: rejeição de transporte nos metadados do estoque não é capturada');
+ok(/async function saveMeta[\s\S]*?sessionStillMatches\(userId,epoch\)[\s\S]*?rpc\('padoka_update_inventory_metadata'/.test(sync), 'operational-sync.js: metadados do estoque devem reconfirmar a sessão antes da RPC');
 ok(/inventory metadata network failure/.test(sync), 'operational-sync.js: falha de rede nos metadados não é normalizada para recuperação segura');
 ok(/Falha de conexão ao salvar o estoque/.test(sync), 'operational-sync.js: falha de rede nos metadados não oferece feedback amigável');
 
@@ -52,6 +53,7 @@ ok(sync.includes('reconcilePendingAdjustment('), 'operational-sync.js: tentativa
 ok(sync.includes('readPendingAdjustment(expectedUserId)'), 'operational-sync.js: reconciliação não está vinculada ao funcionário esperado');
 ok(sync.includes('clearPendingAdjustment(pending.request_id,expectedUserId)'), 'operational-sync.js: reconciliação pode limpar retry de outra identidade');
 ok(sync.includes('writePendingAdjustment(pending,userId)'), 'operational-sync.js: novo ajuste não é persistido sob a identidade atual');
+ok(/async function adjustQty[\s\S]*?sessionStillMatches\(userId,epoch\)[\s\S]*?writePendingAdjustment\(pending,userId\)[\s\S]*?rpc\('padoka_adjust_inventory_once'/.test(sync), 'operational-sync.js: ajuste deve confirmar a sessão antes de persistir retry e antes da RPC');
 ok(sync.includes('Pressione Enter para repetir a mesma operação com segurança'), 'operational-sync.js: resposta ambígua não orienta retry com o mesmo request_id');
 ok(/try\s*\{[\s\S]*?await sb\.rpc\('padoka_adjust_inventory_once'/.test(sync), 'operational-sync.js: rejeição de transporte no ajuste não é capturada');
 ok(/catch\(requestError\)[\s\S]*?error=requestError/.test(sync), 'operational-sync.js: falha de transporte não é preservada como erro ambíguo para retry');
@@ -66,6 +68,7 @@ ok(/grant execute on function public\.padoka_upsert_production_plan\(date, text,
 ok(sync.includes("rpc('padoka_upsert_production_plan'"), 'operational-sync.js: planejamento não usa RPC server-authoritative');
 ok(!/from\('padoka_production_plans'\)\.upsert\(/.test(sync), 'operational-sync.js: ainda existe UPSERT direto em padoka_production_plans');
 ok(/async function savePlan[\s\S]*?try\s*\{[\s\S]*?rpc\('padoka_upsert_production_plan'/.test(sync), 'operational-sync.js: rejeição de transporte no planejamento não é capturada');
+ok(/async function savePlan[\s\S]*?sessionStillMatches\(userId,epoch\)[\s\S]*?rpc\('padoka_upsert_production_plan'/.test(sync), 'operational-sync.js: planejamento deve reconfirmar a sessão antes da RPC');
 ok(/production planning network failure/.test(sync), 'operational-sync.js: falha de rede no planejamento não é normalizada para recuperação segura');
 ok(/Falha de conexão ao salvar o planejamento/.test(sync), 'operational-sync.js: falha de rede no planejamento não oferece feedback amigável');
 
