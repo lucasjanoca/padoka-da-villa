@@ -1,6 +1,6 @@
 # PADOKA — Estado das contas e autenticação
 
-Atualizado em 28/08/2026.
+Atualizado em 30/08/2026.
 
 ## O que está ativo
 
@@ -41,6 +41,15 @@ O projeto Supabase é compartilhado por mais de um sistema, portanto `auth.users
 6. Objetos exclusivos da PADOKA continuam com prefixo `padoka_`.
 
 Isso evita mistura operacional com objetos `rass_*`, `emp_*`, `plexo_*` e demais sistemas existentes no projeto compartilhado.
+
+## MFA e hardening administrativo
+
+- `owner` e `manager` precisam de Supabase MFA/TOTP e AAL2 antes de abrir funcionalidades internas privilegiadas.
+- O frontend redireciona para `mfa.html` quando uma sessão privilegiada ainda está em AAL1.
+- A proteção também existe no PostgreSQL: mutações administrativas protegidas rejeitam `owner/manager` em AAL1.
+- RPCs públicas consumidas pelo frontend são wrappers `SECURITY INVOKER`; implementações que precisam de privilégios elevados ficam em `padoka_private`.
+- O Security Advisor do Supabase foi reexecutado após as migrations 038–040 e não retornou aviso relacionado à PADOKA.
+- Funções exclusivas de trigger não são executáveis diretamente por `anon` ou `authenticated`.
 
 ## Pedidos e área interna
 
@@ -84,3 +93,4 @@ Nunca colocar Client Secret, `service_role` ou outra chave administrativa em HTM
 - Funções sensíveis devem validar autenticação/autorização no servidor; não ampliar grants para contornar erros do frontend.
 - Tabelas privadas não precisam ganhar policy de navegador quando o acesso direto não é necessário.
 - Edge Functions sensíveis devem manter JWT quando aplicável, CORS restrito e validação rigorosa de entrada.
+- A configuração pública prefere `sb_publishable_...`; funções administrativas do backend preferem `sb_secret_...`, mantendo chaves legadas somente como fallback temporário.
