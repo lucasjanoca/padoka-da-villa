@@ -1,7 +1,11 @@
 (()=>{
   const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
   if(!isGestao)return;
-  const $=id=>document.getElementById(id),today=()=>new Date().toLocaleDateString('en-CA');
+  const $=id=>document.getElementById(id),TZ='America/Sao_Paulo',today=()=>{
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+    const pick=type=>parts.find(part=>part.type===type)?.value||'';
+    return `${pick('year')}-${pick('month')}-${pick('day')}`;
+  };
   const PENDING_KEY='padoka_pending_production_v2';
   const LEGACY_PENDING_KEY='padoka_pending_production_v1';
   const allowedRoles=new Set(['owner','manager','production']);
