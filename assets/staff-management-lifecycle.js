@@ -32,20 +32,29 @@
     }
   }
 
+  async function safeSession(client){
+    try{
+      const {data,error}=await client.auth.getSession();
+      if(error)throw error;
+      return data?.session||null;
+    }catch(error){
+      console.warn('PADOKA staff lifecycle session:',error);
+      return null;
+    }
+  }
+
   async function init(){
     const client=await waitForClient();
     if(!client)return;
 
     const epoch=transitionEpoch;
-    let session=null;
-    try{
-      ({data:{session}}=await client.auth.getSession());
-    }catch(error){
-      console.warn('PADOKA staff lifecycle session:',error);
+    const session=await safeSession(client);
+    if(epoch!==transitionEpoch)return;
+    if(!session?.user?.id){
+      clearStaffManagementUi(client);
       return;
     }
-    if(epoch!==transitionEpoch)return;
-    baselineUserId=session?.user?.id||'';
+    baselineUserId=session.user.id;
 
     client.auth.onAuthStateChange((event,nextSession)=>{
       if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
