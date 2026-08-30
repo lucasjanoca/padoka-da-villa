@@ -119,7 +119,7 @@ async function refreshOrders(epoch=currentEpoch(),userId=activeUserId){
     const since=new Date(Date.now()-36*60*60*1000).toISOString();
     const {data,error}=await window.padokaSupabase.from('padoka_orders').select('code,status,pickup_name,total,created_at').gte('created_at',since).order('created_at',{ascending:false});
     if(error)throw error;
-    if(!lifecycleCurrent(epoch,userId))return;
+    if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return}
     const today=dayKey();
     render((data||[]).filter(o=>o.created_at&&dayKey(new Date(o.created_at))===today));
   }catch(e){if(lifecycleCurrent(epoch,userId))console.error('Falha ao atualizar visão geral PADOKA',e)}finally{if(epoch===lifecycleEpoch)orderBusy=false}
@@ -136,16 +136,16 @@ async function refreshOperational(epoch=currentEpoch(),userId=activeUserId){
     if(access.inventory){
       const result=await window.padokaSupabase.from('padoka_inventory').select('product_id,quantity,min_quantity,padoka_products(name)').order('quantity',{ascending:true});
       if(result.error){if(missingOperationalLayer(result.error)){get('adminOperationalHealth')?.remove();return false}throw result.error}
-      if(!lifecycleCurrent(epoch,userId))return false;
+      if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return false}
       inventory=result.data||[];
     }
     if(access.production){
       const result=await window.padokaSupabase.from('padoka_production_plans').select('id,plan_date,status,planned_quantity,produced_quantity').eq('plan_date',today);
       if(result.error){if(missingOperationalLayer(result.error)){get('adminOperationalHealth')?.remove();return false}throw result.error}
-      if(!lifecycleCurrent(epoch,userId))return false;
+      if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return false}
       plans=result.data||[];
     }
-    if(!lifecycleCurrent(epoch,userId))return false;
+    if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return false}
     renderOperational(inventory,plans,access);
     return true;
   }catch(e){if(lifecycleCurrent(epoch,userId))console.error('Falha ao atualizar alertas operacionais PADOKA',e);return false}finally{if(epoch===lifecycleEpoch)opsBusy=false}
