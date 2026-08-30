@@ -43,7 +43,7 @@ jobs:
             for attempt in 1 2 3 4 5 6; do
               body="$(curl --location --silent --show-error --fail --max-time 20 "$url")"
               rc=$?
-              if [ "$rc" -eq 0 ] && printf '%s' "$body" | grep -Fq "$marker"; then
+              if [ "$rc" -eq 0 ] && [[ "$body" == *"$marker"* ]]; then
                 echo "OK: $name"
                 return 0
               fi
