@@ -33,28 +33,34 @@ jobs:
             local url="$1"
             local marker="$2"
             local name="$3"
-            local body
-            body="$(curl --location --silent --show-error --fail --max-time 20 "$url")"
-            local rc=$?
-            if [ "$rc" -ne 0 ] || ! printf '%s' "$body" | grep -Fq "$marker"; then
-              echo "::error::$name falhou: $url"
-              FAILED=1
-            else
-              echo "OK: $name"
-            fi
+            local body rc attempt
+            for attempt in 1 2 3 4 5 6; do
+              body="$(curl --location --silent --show-error --fail --max-time 20 "$url")"
+              rc=$?
+              if [ "$rc" -eq 0 ] && printf '%s' "$body" | grep -Fq "$marker"; then
+                echo "OK: $name"
+                return 0
+              fi
+              [ "$attempt" -lt 6 ] && sleep 10
+            done
+            echo "::error::$name falhou após retries: $url"
+            FAILED=1
           }
 
           check_status() {
             local url="$1"
             local name="$2"
-            local code
-            code="$(curl --location --silent --show-error --max-time 20 -o /dev/null -w '%{http_code}' "$url")"
-            if [ "$code" != "200" ]; then
-              echo "::error::$name retornou HTTP $code: $url"
-              FAILED=1
-            else
-              echo "OK: $name"
-            fi
+            local code attempt
+            for attempt in 1 2 3 4 5 6; do
+              code="$(curl --location --silent --show-error --max-time 20 -o /dev/null -w '%{http_code}' "$url")"
+              if [ "$code" = "200" ]; then
+                echo "OK: $name"
+                return 0
+              fi
+              [ "$attempt" -lt 6 ] && sleep 10
+            done
+            echo "::error::$name retornou HTTP $code após retries: $url"
+            FAILED=1
           }
 
           check "$BASE/" "assets/padoka-pwa.js?v=3" "Home"
