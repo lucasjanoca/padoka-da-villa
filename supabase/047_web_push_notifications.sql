@@ -29,7 +29,7 @@ create table if not exists public.padoka_push_config (
   id smallint primary key default 1 check (id = 1),
   vapid_public_key text not null,
   vapid_private_key text not null,
-  vapid_subject text not null default 'mailto:contato@infotech.io',
+  vapid_subject text not null default 'https://lucasjanoca.github.io/padoka-da-villa/',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint padoka_push_public_key_length_chk check (char_length(vapid_public_key) between 80 and 100),
