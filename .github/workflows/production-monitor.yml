@@ -40,13 +40,13 @@ jobs:
             fi
           }
 
-          check "$BASE/" "assets/padoka-pwa.js?v=2" "Home"
+          check "$BASE/" "assets/padoka-pwa.js?v=3" "Home"
           check "$BASE/produto.html" "PADOKA" "Produto"
           check "$BASE/conta.html" "customer-notifications.js" "Conta"
           check "$BASE/acompanhamento.html" "customer-notifications.js" "Acompanhamento"
           check "$BASE/pagamento.html" "PADOKA" "Pagamento"
           check "$BASE/manifest.webmanifest" "\"display\": \"standalone\"" "Manifest PWA"
-          check "$BASE/service-worker.js" "padoka-pwa-v3" "Service Worker"
+          check "$BASE/service-worker.js" "padoka-pwa-v4" "Service Worker"
           check "https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config" "publishableKey" "Config pública"
           check "https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-push?action=config" "publicKey" "Push config"
 
