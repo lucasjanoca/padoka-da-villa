@@ -4,11 +4,34 @@
   const STYLE_ID='padokaCustomerNotificationsStyle';
   const ROOT_ID='padokaCustomerNotifications';
   let client=null, session=null, channel=null, authSub=null, root=null, listEl=null, badgeEl=null, panelEl=null;
+  let lifecycleEpoch=0, activeUserId='';
 
   const escDate=value=>{
     if(!value)return '';
     try{return new Date(value).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});}catch{return '';}
   };
+
+  function lifecycleCurrent(epoch,userId){
+    return epoch===lifecycleEpoch&&Boolean(userId)&&activeUserId===userId&&session?.user?.id===userId;
+  }
+
+  async function safeSession(){
+    if(!client)return null;
+    try{
+      const {data,error}=await client.auth.getSession();
+      if(error){console.error('Falha ao confirmar sessão das notificações PADOKA',error);return null;}
+      return data?.session||null;
+    }catch(error){
+      console.error('Falha de rede ao confirmar sessão das notificações PADOKA',error);
+      return null;
+    }
+  }
+
+  async function sessionStillCurrent(epoch,userId){
+    if(!lifecycleCurrent(epoch,userId))return false;
+    const current=await safeSession();
+    return lifecycleCurrent(epoch,userId)&&current?.user?.id===userId;
+  }
 
   function styles(){
     if(document.getElementById(STYLE_ID))return;
@@ -35,7 +58,7 @@
       const next=panelEl.hidden;
       panelEl.hidden=!next;
       btn.setAttribute('aria-expanded',String(next));
-      if(next)load();
+      if(next)load(lifecycleEpoch,activeUserId);
     });
     root.querySelector('.padoka-notify-read').addEventListener('click',markAllRead);
     document.addEventListener('click',event=>{
@@ -51,8 +74,8 @@
     });
   }
 
-  function render(rows){
-    if(!listEl)return;
+  function render(rows,epoch=lifecycleEpoch,userId=activeUserId){
+    if(!listEl||!lifecycleCurrent(epoch,userId))return;
     listEl.replaceChildren();
     const unread=(rows||[]).filter(row=>!row.read_at).length;
     badgeEl.textContent=unread>99?'99+':String(unread);
@@ -76,69 +99,120 @@
       time.textContent=escDate(row.created_at);
       button.append(title,body,time);
       button.addEventListener('click',async()=>{
-        if(!row.read_at)await markOneRead(row.id);
-        location.href='acompanhamento.html';
+        if(!lifecycleCurrent(epoch,userId))return;
+        const ok=row.read_at?await sessionStillCurrent(epoch,userId):await markOneRead(row.id,epoch,userId);
+        if(ok&&lifecycleCurrent(epoch,userId))location.href='acompanhamento.html';
       });
       listEl.appendChild(button);
     }
   }
 
-  async function load(){
-    if(!client||!session?.user)return;
-    const {data,error}=await client.from('padoka_customer_notifications')
-      .select('id,order_id,title,body,read_at,created_at')
-      .eq('user_id',session.user.id)
-      .order('created_at',{ascending:false})
-      .limit(30);
-    if(error){console.error('Falha ao carregar notificações PADOKA',error);return;}
-    render(data||[]);
+  function renderEmpty(){
+    if(!listEl)return;
+    listEl.replaceChildren();
+    if(badgeEl){badgeEl.textContent='0';badgeEl.hidden=true;}
   }
 
-  async function markOneRead(id){
-    if(!client||!session?.user||!id)return;
+  async function load(epoch=lifecycleEpoch,userId=activeUserId){
+    if(!client||!lifecycleCurrent(epoch,userId))return false;
+    if(!await sessionStillCurrent(epoch,userId))return false;
+    const {data,error}=await client.from('padoka_customer_notifications')
+      .select('id,order_id,title,body,read_at,created_at')
+      .eq('user_id',userId)
+      .order('created_at',{ascending:false})
+      .limit(30);
+    if(!await sessionStillCurrent(epoch,userId))return false;
+    if(error){console.error('Falha ao carregar notificações PADOKA',error);return false;}
+    render(data||[],epoch,userId);
+    return true;
+  }
+
+  async function markOneRead(id,epoch=lifecycleEpoch,userId=activeUserId){
+    if(!client||!id||!lifecycleCurrent(epoch,userId))return false;
+    if(!await sessionStillCurrent(epoch,userId))return false;
     const {error}=await client.from('padoka_customer_notifications')
       .update({read_at:new Date().toISOString()})
       .eq('id',id)
-      .eq('user_id',session.user.id)
+      .eq('user_id',userId)
       .is('read_at',null);
-    if(error)console.error('Falha ao marcar notificação como lida',error);
-    await load();
+    if(!await sessionStillCurrent(epoch,userId))return false;
+    if(error){console.error('Falha ao marcar notificação como lida',error);return false;}
+    await load(epoch,userId);
+    return lifecycleCurrent(epoch,userId);
   }
 
   async function markAllRead(){
-    if(!client||!session?.user)return;
+    const epoch=lifecycleEpoch;
+    const userId=activeUserId;
+    if(!client||!lifecycleCurrent(epoch,userId))return false;
+    if(!await sessionStillCurrent(epoch,userId))return false;
     const {error}=await client.from('padoka_customer_notifications')
       .update({read_at:new Date().toISOString()})
-      .eq('user_id',session.user.id)
+      .eq('user_id',userId)
       .is('read_at',null);
-    if(error)console.error('Falha ao marcar notificações como lidas',error);
-    await load();
+    if(!await sessionStillCurrent(epoch,userId))return false;
+    if(error){console.error('Falha ao marcar notificações como lidas',error);return false;}
+    await load(epoch,userId);
+    return lifecycleCurrent(epoch,userId);
   }
 
   async function setSession(next){
+    const epoch=++lifecycleEpoch;
+    const userId=next?.user?.id||'';
+    activeUserId=userId;
     session=next||null;
-    if(channel&&client){try{await client.removeChannel(channel);}catch{} channel=null;}
     build();
-    root.hidden=!session?.user;
-    if(!session?.user){render([]);return;}
-    await load();
-    const userId=session.user.id;
-    channel=client.channel('padoka-customer-notifications-'+userId)
-      .on('postgres_changes',{event:'*',schema:'public',table:'padoka_customer_notifications',filter:'user_id=eq.'+userId},()=>load())
+    root.hidden=true;
+    panelEl.hidden=true;
+    root.querySelector('.padoka-notify-btn')?.setAttribute('aria-expanded','false');
+    renderEmpty();
+
+    const previousChannel=channel;
+    channel=null;
+    if(previousChannel&&client){try{await client.removeChannel(previousChannel);}catch{}}
+    if(epoch!==lifecycleEpoch||activeUserId!==userId)return;
+    if(!userId)return;
+
+    const current=await safeSession();
+    if(epoch!==lifecycleEpoch||activeUserId!==userId||current?.user?.id!==userId)return;
+    session=current;
+    root.hidden=false;
+    await load(epoch,userId);
+    if(!await sessionStillCurrent(epoch,userId))return;
+
+    const nextChannel=client.channel('padoka-customer-notifications-'+userId)
+      .on('postgres_changes',{event:'*',schema:'public',table:'padoka_customer_notifications',filter:'user_id=eq.'+userId},()=>{
+        if(lifecycleCurrent(epoch,userId))load(epoch,userId);
+      })
       .subscribe();
+    if(!lifecycleCurrent(epoch,userId)){
+      try{await client.removeChannel(nextChannel);}catch{}
+      return;
+    }
+    channel=nextChannel;
   }
 
   async function bind(nextClient){
     if(!nextClient||client===nextClient)return;
     client=nextClient;
-    const {data:{session:current}}=await client.auth.getSession();
+    const current=await safeSession();
     await setSession(current);
     const {data}=client.auth.onAuthStateChange((_event,nextSession)=>setTimeout(()=>setSession(nextSession),0));
     authSub=data?.subscription||null;
   }
 
   window.addEventListener('padoka:supabase-ready',event=>bind(event.detail?.client||window.padokaSupabase));
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&session?.user)load();});
-  window.addEventListener('pagehide',()=>{authSub?.unsubscribe();if(channel&&client)client.removeChannel(channel);});
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'&&activeUserId)load(lifecycleEpoch,activeUserId);
+  });
+  window.addEventListener('pagehide',()=>{
+    lifecycleEpoch++;
+    activeUserId='';
+    session=null;
+    authSub?.unsubscribe();
+    if(channel&&client)client.removeChannel(channel);
+    channel=null;
+    renderEmpty();
+  });
   document.addEventListener('DOMContentLoaded',()=>{build();if(window.padokaSupabase)bind(window.padokaSupabase);});
 })();
