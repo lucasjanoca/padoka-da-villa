@@ -50,9 +50,11 @@ need(js,/sb\.removeChannel\(channel\)/i,'troca de sessão precisa remover o cana
 need(js,/if\(root\)\{root\.remove\(\);root=null\}/i,'dados de vendas renderizados precisam ser removidos ao invalidar a sessão');
 need(js,/padoka-staff-pending/i,'reativação precisa aguardar o guard global de staff');
 need(js,/window\.padokaCanAccess\('pdv'\)/i,'reativação precisa exigir permissão explícita ao módulo PDV');
-need(js,/async function identityStillCurrent\(epoch,userId\)[\s\S]*try\{[\s\S]*sb\.auth\.getSession\(\)[\s\S]*catch\(error\)[\s\S]*return false/i,'confirmação da identidade precisa falhar fechada quando getSession rejeitar por transporte');
-need(js,/async function waitForStaffGuard\(expectedUserId,epoch\)[\s\S]*try\{[\s\S]*sb\.auth\.getSession\(\)[\s\S]*catch\(error\)[\s\S]*return false/i,'reativação precisa tratar falha de transporte ao confirmar a sessão do funcionário');
-need(js,/async function activateForUser\(expectedUserId\)[\s\S]*try\{[\s\S]*select\('id,void_reason'\)[\s\S]*sb\.auth\.getSession\(\)[\s\S]*catch\(fetchError\)[\s\S]*resetForIdentityChange\(\)/i,'ativação do histórico precisa voltar ao estado fail-closed se capability/sessão não puderem ser confirmadas');
+need(js,/async function safeSession\(\)[\s\S]*auth\.getSession\(\)[\s\S]*if\(error\)[\s\S]*return null[\s\S]*catch\(error\)[\s\S]*return null/i,'leituras de sessão do estorno precisam centralizar erros retornados e rejeições de transporte em modo fail-closed');
+need(js,/async function identityStillCurrent\(epoch,userId\)[\s\S]*const session=await safeSession\(\)[\s\S]*session\?\.user\?\.id===userId/i,'confirmação da identidade precisa usar a leitura segura de sessão');
+need(js,/async function waitForStaffGuard\(expectedUserId,epoch\)[\s\S]*const session=await safeSession\(\)[\s\S]*session\?\.user\?\.id!==expectedUserId/i,'reativação precisa usar a leitura segura ao confirmar o funcionário');
+need(js,/async function activateForUser\(expectedUserId\)[\s\S]*select\('id,void_reason'\)[\s\S]*const latestSession=await safeSession\(\)[\s\S]*resetForIdentityChange\(\)/i,'ativação do histórico precisa voltar ao estado fail-closed se capability/sessão não puderem ser confirmadas');
+need(js,/async function init\(\)[\s\S]*const session=await safeSession\(\)[\s\S]*if\(!session\)return/i,'bootstrap do estorno precisa permanecer fechado quando a sessão não puder ser confirmada');
 need(js,/async function identityStillCurrent\(epoch,userId\)/i,'respostas assíncronas precisam confirmar a identidade atual');
 need(js,/session\?\.user\?\.id===userId/i,'resultado sensível precisa ser descartado após mudança de usuário');
 need(js,/if\(!await identityStillCurrent\(epoch,userId\)\)/i,'estorno precisa descartar resultado da RPC quando a sessão mudar');
