@@ -103,6 +103,7 @@
     const epoch=lifecycleEpoch,userId=activeUserId,current=inventory.find(x=>x.product_id===id)||{};
     const barcode=Object.prototype.hasOwnProperty.call(patch,'barcode')?patch.barcode:(current.barcode||null);
     const minQuantity=Object.prototype.hasOwnProperty.call(patch,'min_quantity')?Math.max(0,Number(patch.min_quantity||0)):Math.max(0,Number(current.min_quantity||0));
+    if(!await sessionStillMatches(userId,epoch))return;
     let error=null;
     try{
       const result=await sb.rpc('padoka_update_inventory_metadata',{p_product_id:id,p_barcode:barcode,p_min_quantity:minQuantity});
@@ -123,6 +124,7 @@
       return;
     }
     if(!delta&&!existing)return;
+    if(!await sessionStillMatches(userId,epoch))return;
     const pending=existing||{product_id:id,target_quantity:next,delta,reason:'Ajuste pela gestão',request_id:crypto.randomUUID()};
     if(!existing&&!writePendingAdjustment(pending,userId))return;
     input.disabled=true;
@@ -152,7 +154,9 @@
   }
   async function savePlan(input){
     if(!active||!activeUserId)return;
-    const epoch=lifecycleEpoch,userId=activeUserId,quantity=Math.max(0,Number(input.value||0));input.disabled=true;
+    const epoch=lifecycleEpoch,userId=activeUserId,quantity=Math.max(0,Number(input.value||0));
+    if(!await sessionStillMatches(userId,epoch))return;
+    input.disabled=true;
     let error=null;
     try{
       const result=await sb.rpc('padoka_upsert_production_plan',{p_plan_date:today(),p_product_id:input.dataset.plan,p_planned_quantity:quantity,p_note:null});
