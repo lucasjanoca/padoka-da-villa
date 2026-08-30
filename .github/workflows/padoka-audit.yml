@@ -45,6 +45,10 @@ jobs:
         run: |
           set -euo pipefail
           for file in tests/*.mjs; do
+            if [ "$file" = "tests/e2e-browser-smoke.mjs" ]; then
+              echo "Skipping $file here; PADOKA Browser E2E installs pinned Playwright and runs it after deploy."
+              continue
+            fi
             echo ""
             echo "=== Running $file ==="
             node "$file"
