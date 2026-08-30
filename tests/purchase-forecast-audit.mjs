@@ -6,7 +6,7 @@ const need=(s,r,m)=>{if(!r.test(s))fail(m)};
 for(const table of ['padoka_suppliers','padoka_purchase_orders','padoka_purchase_order_items'])need(sql,new RegExp('create table if not exists public\\.'+table,'i'),table+' ausente');
 need(sql,/padoka_create_purchase_order/i,'RPC de ordem de compra ausente');
 need(sql,/padoka_receive_purchase_order/i,'RPC de recebimento ausente');
-need(sql,/source,'purchase'/i,'recebimento não registra movimento purchase');
+need(sql,/insert into public\.padoka_inventory_movements\(product_id,delta,reason,source,reference_id,created_by\)[\s\S]{0,260}?'purchase'/i,'recebimento não registra movimento purchase');
 need(sql,/quantity=public\.padoka_inventory\.quantity\+excluded\.quantity/i,'recebimento não atualiza estoque transacionalmente');
 need(sql,/status='completed' and o\.payment_status in \('paid','paid_late'\) and not o\.is_test/i,'forecast inclui pedido não-real');
 need(sql,/s\.status='completed' and not s\.is_test/i,'forecast inclui PDV de teste');
