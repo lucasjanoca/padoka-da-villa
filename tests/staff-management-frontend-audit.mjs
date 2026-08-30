@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
 const ui=fs.readFileSync('assets/staff-management.js','utf8');
+const lifecycle=fs.readFileSync('assets/staff-management-lifecycle.js','utf8');
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 const sql=fs.readFileSync('supabase/014_staff_management_rpc.sql','utf8');
 const enrollSql=fs.readFileSync('supabase/015_staff_enrollment_rpc.sql','utf8');
@@ -29,6 +30,10 @@ expect(ui.includes("missingListRpc(error)")&&ui.includes("location.replace('gest
 expect(ui.includes("row.user_id===currentUserId")&&ui.includes("self?'disabled':''"),'Owner deve ter proteção visual contra remover o próprio acesso.');
 expect(ui.includes("padoka-staff-management-ui")&&ui.includes("table:'padoka_staff_users'"),'Lista de equipe deve receber atualização Realtime.');
 expect(ui.includes('const esc=value=>')&&ui.includes("esc(row.display_name")&&ui.includes("esc(row.email||row.user_id)"),'Nome/e-mail vindos do servidor devem ser escapados antes de innerHTML.');
+expect(lifecycle.includes('async function safeSession(client)'),'Guard de lifecycle da Equipe deve centralizar a leitura segura da sessão.');
+expect(/safeSession\(client\)[\s\S]*?auth\.getSession\(\)[\s\S]*?if\(error\)throw error;[\s\S]*?catch\(error\)/.test(lifecycle),'Guard de lifecycle deve tratar erro retornado pelo Auth e rejeição de transporte.');
+expect(lifecycle.includes('const session=await safeSession(client);'),'Inicialização do guard de lifecycle deve usar safeSession.');
+expect(lifecycle.includes("if(!session?.user?.id){")&&lifecycle.includes('clearStaffManagementUi(client);'),'Sessão não confirmada deve manter a área Equipe fail-closed.');
 expect(sql.includes('join auth.users u on u.id = s.user_id'),'RPC owner-only deve resolver identificação do staff na origem Auth sem criar perfil PADOKA automático.');
 expect(sql.includes('display_name text')&&sql.includes('email text'),'Listagem deve retornar identificação suficiente para a tela interna.');
 expect(enrollSql.includes('from auth.users u')&&enrollSql.includes('insert into public.padoka_staff_users'),'Inclusão deve resolver Auth no servidor e escrever somente no cadastro interno PADOKA.');
