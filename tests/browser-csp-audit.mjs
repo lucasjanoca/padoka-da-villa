@@ -16,7 +16,11 @@ for(const page of pages){
   const meta=source.match(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]+content="([^"]+)"/i);
   const policy=meta?.[1]||'';
   const scriptDirective=(policy.match(/(?:^|;\s*)script-src\s+([^;]+)/)||[])[1]||'';
+  const styleDirective=(policy.match(/(?:^|;\s*)style-src\s+([^;]+)/)||[])[1]||'';
   if(scriptDirective.includes("'unsafe-inline'"))fail(page+': script-src ainda permite unsafe-inline');
+  if(styleDirective.includes("'unsafe-inline'"))fail(page+': style-src ainda permite unsafe-inline');
+  if(!/style-src-attr 'none'/.test(policy))fail(page+': atributos style inline não estão bloqueados');
+  if(/\sstyle=["']/i.test(source))fail(page+': atributo style= detectado');
 
   const inlineScripts=[...source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
     .filter(match=>!(/\bsrc\s*=/i.test(match[1]))&&match[2].trim());
@@ -25,6 +29,14 @@ for(const page of pages){
     const hash=crypto.createHash('sha256').update(match[2],'utf8').digest('base64');
     if(!scriptDirective.includes("'sha256-"+hash+"'")){
       fail(page+': hash CSP do script inline não corresponde ao conteúdo');
+    }
+  }
+
+  const inlineStyles=[...source.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].filter(match=>match[1].trim());
+  for(const match of inlineStyles){
+    const hash=crypto.createHash('sha256').update(match[1],'utf8').digest('base64');
+    if(!styleDirective.includes("'sha256-"+hash+"'")){
+      fail(page+': hash CSP do CSS inline não corresponde ao conteúdo');
     }
   }
 }
@@ -36,13 +48,20 @@ for(const page of ['index.html','produto.html','gestao.html','pdv.html']){
 
 const headers=fs.readFileSync('_headers','utf8');
 const headerScript=(headers.match(/script-src\s+([^;]+)/)||[])[1]||'';
+const headerStyle=(headers.match(/style-src\s+([^;]+)/)||[])[1]||'';
 if(headerScript.includes("'unsafe-inline'"))fail('_headers: script-src ainda permite unsafe-inline');
+if(headerStyle.includes("'unsafe-inline'"))fail('_headers: style-src ainda permite unsafe-inline');
+if(!/style-src-attr 'none'/.test(headers))fail('_headers: style-src-attr none ausente');
 for(const page of pages){
   const source=fs.readFileSync(page,'utf8');
   for(const match of [...source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter(x=>!(/\bsrc\s*=/i.test(x[1]))&&x[2].trim())){
     const hash=crypto.createHash('sha256').update(match[2],'utf8').digest('base64');
-    if(!headerScript.includes("'sha256-"+hash+"'"))fail('_headers: hash ausente para '+page);
+    if(!headerScript.includes("'sha256-"+hash+"'"))fail('_headers: hash de script ausente para '+page);
+  }
+  for(const match of [...source.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].filter(x=>x[1].trim())){
+    const hash=crypto.createHash('sha256').update(match[1],'utf8').digest('base64');
+    if(!headerStyle.includes("'sha256-"+hash+"'"))fail('_headers: hash de estilo ausente para '+page);
   }
 }
 
-if(!process.exitCode)console.log('Browser CSP audit: OK (unsafe-inline removido + hashes SHA-256 validados)');
+if(!process.exitCode)console.log('Browser CSP audit: OK (scripts e estilos inline protegidos por SHA-256; atributos inline bloqueados)');
