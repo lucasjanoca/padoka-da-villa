@@ -44,6 +44,13 @@ const isUuid = (value: unknown) =>
 const safeText = (value: unknown, max: number) =>
   typeof value === "string" ? value.trim().slice(0, max) : "";
 
+const constantTimeEqual = (a: string, b: string) => {
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+};
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   if (origin && !ALLOWED_ORIGINS.has(origin)) return json(403, { error: "origin_not_allowed" }, origin);
@@ -132,6 +139,18 @@ Deno.serve(async (req: Request) => {
 
   if (action !== "notification") return json(400, { error: "invalid_action" }, origin);
 
+  const { data: serverConfig, error: serverConfigError } = await admin.rpc("padoka_get_push_server_config");
+  const providedSecret = safeText(req.headers.get("x-padoka-push-secret"), 256);
+  const webhookSecret = typeof serverConfig?.webhook_secret === "string" ? serverConfig.webhook_secret : "";
+  const vapidPrivateKey = typeof serverConfig?.vapid_private_key === "string" ? serverConfig.vapid_private_key : "";
+
+  if (serverConfigError || !webhookSecret || !vapidPrivateKey) {
+    return json(503, { error: "server_push_config_unavailable" }, origin);
+  }
+  if (!constantTimeEqual(providedSecret, webhookSecret)) {
+    return json(401, { error: "invalid_internal_secret" }, origin);
+  }
+
   const notificationId = body.notification_id;
   if (!isUuid(notificationId)) return json(400, { error: "invalid_notification_id" }, origin);
 
@@ -147,11 +166,11 @@ Deno.serve(async (req: Request) => {
 
   const [{ data: config, error: configError }, { data: subscriptions, error: subscriptionsError }] =
     await Promise.all([
-      admin.from("padoka_push_config").select("vapid_public_key,vapid_private_key,vapid_subject").eq("id", 1).maybeSingle(),
+      admin.from("padoka_push_config").select("vapid_public_key,vapid_subject").eq("id", 1).maybeSingle(),
       admin.from("padoka_push_subscriptions").select("id,endpoint,p256dh,auth_key").eq("user_id", notification.user_id),
     ]);
 
-  if (configError || !config?.vapid_public_key || !config?.vapid_private_key || !config?.vapid_subject) {
+  if (configError || !config?.vapid_public_key || !config?.vapid_subject) {
     return json(503, { error: "push_not_configured" }, origin);
   }
   if (subscriptionsError) return json(500, { error: "subscription_lookup_failed" }, origin);
@@ -185,7 +204,7 @@ Deno.serve(async (req: Request) => {
 
   const vapid = {
     publicKey: config.vapid_public_key,
-    privateKey: config.vapid_private_key,
+    privateKey: vapidPrivateKey,
     subject: config.vapid_subject,
   };
 
