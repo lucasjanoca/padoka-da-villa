@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 const ordersLifecycle=fs.readFileSync('assets/orders-auth-lifecycle.js','utf8');
+const runtimeCss=fs.readFileSync('assets/runtime-security.css','utf8');
 const fail=message=>{throw new Error(message)};
 const expect=(condition,message)=>{if(!condition)fail(message)};
 
@@ -17,8 +18,8 @@ expect(nav.includes("link.hidden=!allowed(link.dataset.padokaModule,role)"),'Lin
 expect(nav.includes('filterPageShortcuts(role)'),'Atalhos e abas fora do drawer também devem seguir a função do staff.');
 expect(nav.includes("window.padokaCanAccess=id=>allowed(id,role)"),'Demais módulos devem poder consultar a mesma decisão de acesso já resolvida.');
 expect(nav.includes("location.replace('internal.html')"),'Acesso direto a módulo incompatível deve voltar ao painel interno.');
-expect(nav.includes('.padoka-role-pending #app')&&nav.includes('.padoka-role-pending body>main'),'Módulo restrito deve esconder tanto wrappers #app quanto páginas internas cujo conteúdo principal é body>main durante a validação.');
-expect(nav.includes('.padoka-staff-pending #app')&&nav.includes('.padoka-staff-pending body>main'),'Toda área interna deve esconder #app e a fila de pedidos body>main enquanto qualquer sessão de staff estiver sendo validada.');
+expect(runtimeCss.includes('.padoka-role-pending #app')&&runtimeCss.includes('.padoka-role-pending body>main'),'Módulo restrito deve esconder tanto wrappers #app quanto páginas internas cujo conteúdo principal é body>main durante a validação.');
+expect(runtimeCss.includes('.padoka-staff-pending #app')&&runtimeCss.includes('.padoka-staff-pending body>main'),'Toda área interna deve esconder #app e a fila de pedidos body>main enquanto qualquer sessão de staff estiver sendo validada.');
 expect(nav.includes("document.documentElement.classList.add('padoka-staff-pending')"),'Guard global de staff deve ser ativado antes da validação inicial e em invalidações.');
 expect(nav.includes("document.documentElement.classList.remove('padoka-staff-pending')"),'Guard global só deve ser removido depois que a mesma sessão continuar autorizada.');
 expect(nav.includes('async function safeSession(client)'),'Navegação deve centralizar a leitura segura da sessão.');
@@ -38,7 +39,7 @@ expect(nav.includes("const isOrders=location.pathname.endsWith('/pedidos.html')"
 expect(ordersLifecycle.includes('auth.onAuthStateChange'),'Fila de pedidos deve observar troca/logout de staff.');
 expect(ordersLifecycle.includes('activeUserId')&&ordersLifecycle.includes('lifecycleEpoch'),'Guard da fila deve vincular o runtime à identidade e invalidar operações antigas.');
 expect(ordersLifecycle.includes("document.documentElement.classList.add('padoka-orders-auth-transition')"),'Troca de identidade deve esconder e bloquear a fila imediatamente.');
-expect(ordersLifecycle.indexOf("document.documentElement.classList.add('padoka-orders-auth-transition')")<ordersLifecycle.indexOf('const start=async()=>'),'Fila deve nascer fail-closed antes da leitura inicial da sessão.');
+expect(runtimeCss.includes('.padoka-orders-auth-transition body>main')&&ordersLifecycle.indexOf("document.documentElement.classList.add('padoka-orders-auth-transition')")<ordersLifecycle.indexOf('const start=async()=>'),'Fila deve nascer fail-closed antes da leitura inicial da sessão.');
 expect(ordersLifecycle.includes("document.querySelectorAll('main button,main input,main select')"),'Controles da fila devem ser desabilitados durante revalidação.');
 expect(ordersLifecycle.includes('removeAllChannels'),'Canais Realtime da identidade anterior devem ser encerrados antes de reutilizar a página.');
 expect(!ordersLifecycle.includes('transitioning'),'Guard da fila não deve ignorar um segundo evento Auth enquanto uma transição anterior ainda está em andamento.');
