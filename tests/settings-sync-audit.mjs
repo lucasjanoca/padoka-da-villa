@@ -4,6 +4,13 @@ const migration=fs.readFileSync('supabase/009_internal_settings.sql','utf8');
 const frontend=fs.readFileSync('assets/settings-sync.js','utf8');
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 
+const loadStart=frontend.indexOf('async function load(){');
+const loadRpc=frontend.indexOf("sb.rpc('padoka_get_settings')",loadStart);
+const loadPreflight=frontend.indexOf('if(!await identityStillCurrent(epoch,userId)){',loadStart);
+const saveStart=frontend.indexOf('async function save(){');
+const saveRpc=frontend.indexOf("sb.rpc('padoka_update_settings'",saveStart);
+const savePreflight=frontend.indexOf('if(!await identityStillCurrent(epoch,userId)){',saveStart);
+
 const checks=[
   [migration.includes('Sites De Clientes! (yncspxfsvlqdnodlsosb)'), 'migration must target the PADOKA backend explicitly'],
   [migration.includes('create table if not exists public.padoka_settings'), 'settings table must use padoka_ prefix'],
@@ -28,13 +35,17 @@ const checks=[
   [frontend.includes("event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED'"), 'settings sync must ignore non-identity auth refresh events'],
   [frontend.includes("let sb=null,active=false,channel=null,lifecycleEpoch=0,activeUserId=''"), 'settings sync must bind async work to an auth lifecycle epoch and active user'],
   [frontend.includes('function resetForIdentityChange('), 'settings sync must fail closed immediately on identity changes'],
+  [frontend.includes('function failClosedAndRetry(userId'), 'settings sync must have a fail-closed retry path for transient session confirmation failures'],
+  [frontend.includes('setTimeout(()=>activateForUser(userId),3000)'), 'settings retry must re-run full staff activation rather than reviving stale state'],
   [frontend.includes('async function safeSession('), 'settings sync must centralize guarded session confirmation'],
   [frontend.includes("try{\n      const {data:{session},error}=await sb.auth.getSession();"), 'guarded session confirmation must catch transport rejections'],
   [frontend.includes("console.error(`PADOKA settings ${context} transport:`,error)"), 'session transport failures must be handled explicitly'],
   [frontend.includes('async function identityStillCurrent(epoch,userId)'), 'settings sync must revalidate delayed async responses against the active identity'],
   [frontend.includes("const session=await safeSession('identity check')"), 'identity checks must fail closed through guarded session confirmation'],
-  [(frontend.match(/identityStillCurrent\(epoch,userId\)/g)||[]).length>=5, 'settings load/save and transport recovery must reject stale responses from a previous identity'],
+  [(frontend.match(/identityStillCurrent\(epoch,userId\)/g)||[]).length>=7, 'settings load/save and transport recovery must reject stale responses from a previous identity'],
   [frontend.includes('const epoch=lifecycleEpoch,userId=activeUserId;'), 'settings async operations must capture the current identity before RPC work'],
+  [loadStart>=0&&loadPreflight>loadStart&&loadRpc>loadPreflight, 'settings load must confirm the same staff identity before calling padoka_get_settings'],
+  [saveStart>=0&&savePreflight>saveStart&&saveRpc>savePreflight, 'settings save must confirm the same staff identity before calling padoka_update_settings'],
   [frontend.includes('session?.user?.id!==expectedUserId'), 'settings activation must verify the Supabase session still belongs to the expected staff user'],
   [frontend.includes("document.documentElement.classList.contains('padoka-staff-pending')"), 'settings activation must wait for the staff guard before trusting role state'],
   [frontend.includes("document.documentElement.classList.contains('padoka-role-pending')"), 'settings activation must wait for role revalidation before enabling controls'],
