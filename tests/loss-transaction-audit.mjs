@@ -7,6 +7,13 @@ const frontend=fs.readFileSync('assets/loss-registration.js','utf8');
 const operationalSync=fs.readFileSync('assets/operational-sync.js','utf8');
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 
+const submitStart=frontend.indexOf('async function submit()');
+const submitRpc=frontend.indexOf("sb.rpc('padoka_register_loss_once'",submitStart);
+const submitPreflight=frontend.indexOf('const sessionBeforeRpc=await getSessionSafe(epoch,userId)',submitStart);
+const activateStart=frontend.indexOf('async function activateForUser(expectedUserId)');
+const capabilityProbe=frontend.indexOf("sb.from('padoka_losses').select('request_id').limit(1)",activateStart);
+const capabilityPreflight=frontend.indexOf('const sessionBeforeProbe=await getSessionSafe(epoch,expectedUserId)',activateStart);
+
 const checks=[
   ['migration alvo correto',/yncspxfsvlqdnodlsosb/.test(migration)&&/NÃO aplicar no projeto InfoTech\.io/.test(migration)],
   ['sem trigger global em auth.users',!/create\s+trigger[\s\S]{0,600}?\bon\s+auth\.users\b/i.test(migrationCode)],
@@ -29,6 +36,8 @@ const checks=[
   ['rejeição de transporte é capturada sem perder request_id',/try\s*\{[\s\S]*await sb\.rpc\('padoka_register_loss_once'[\s\S]*\}catch\(error\)\{[\s\S]*rpcError=/.test(frontend)&&/if\(networkish\(rpcError\)\)[\s\S]*Tente novamente com os mesmos dados/.test(frontend)],
   ['releitura de sessão usa helper fail-closed',/async function getSessionSafe\(epoch,userId=''\)[\s\S]*try\s*\{[\s\S]*await sb\.auth\.getSession\(\)[\s\S]*catch\(error\)[\s\S]*blockCapability/.test(frontend)&&/const latestSession=await getSessionSafe\(epoch,userId\)/.test(frontend)],
   ['helper de sessão rejeita erro retornado pelo Supabase Auth',/const \{data,error\}=await sb\.auth\.getSession\(\);[\s\S]*if\(error\)throw error;[\s\S]*const session=data\?\.session\|\|null/.test(frontend)],
+  ['registro confirma identidade antes da RPC',submitStart>=0&&submitPreflight>submitStart&&submitRpc>submitPreflight],
+  ['probe de capability confirma identidade antes da leitura',activateStart>=0&&capabilityPreflight>activateStart&&capabilityProbe>capabilityPreflight],
   ['probe de capability captura rejeição de transporte',/try\s*\{[\s\S]*probe=await sb\.from\('padoka_losses'\)\.select\('request_id'\)\.limit\(1\)[\s\S]*\}catch\(error\)[\s\S]*blockCapability/.test(frontend)],
   ['inicialização não revela perdas sem sessão confirmada',/const session=await getSessionSafe\(epoch\);[\s\S]*if\(!session\)return blockCapability\(\)/.test(frontend)],
   ['clique é interceptado mesmo sem capability',/function intercept\(e\)[\s\S]*if\(!btn\)return;[\s\S]*preventDefault\(\)[\s\S]*if\(!enabled\)/.test(frontend)],
