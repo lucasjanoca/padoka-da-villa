@@ -18,6 +18,13 @@ must(js,"async function confirmedSession(expectedUserId,expectedEpoch)",'Relató
 must(js,"try{\n      const {data:{session},error}=await sb.auth.getSession();",'Confirmação de sessão deve capturar falhas retornadas ou rejeitadas pelo Auth');
 must(js,"if(error||expectedEpoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return null",'Confirmação de sessão deve exigir epoch e identidade atuais');
 must(js,"catch{return null}",'Falha de transporte na confirmação de sessão deve resultar em estado não autorizado');
+must(js,"const preflightSession=await confirmedSession(userId,epoch);",'Relatório deve confirmar a sessão imediatamente antes da RPC financeira');
+must(js,"if(!preflightSession){if(epoch===lifecycleEpoch&&activeUserId===userId)failClosedAndRetry(userId);return}",'Falha no preflight deve limpar o relatório e permanecer fail-closed');
+const preflightIndex=js.indexOf("const preflightSession=await confirmedSession(userId,epoch);");
+const rpcIndex=js.indexOf("try{result=await sb.rpc('padoka_report_summary'");
+if(preflightIndex<0||rpcIndex<0||preflightIndex>rpcIndex)throw new Error('Confirmação de sessão deve ocorrer antes da chamada padoka_report_summary');
+must(js,"function failClosedAndRetry(userId)",'Relatório deve remover dados sensíveis e tentar revalidar após falha de sessão');
+must(js,"clearReporting();activeUserId=userId;",'Recuperação fail-closed deve limpar UI e canais antes de tentar reativar');
 must(js,"const session=await confirmedSession(userId,epoch);",'Resposta da RPC deve revalidar a identidade antes de renderizar dados financeiros');
 must(js,"if(!session)return;\n    render(data||{});subscribe()",'Relatório não deve renderizar nem assinar Realtime sem sessão reconfirmada');
 must(js,"table:'padoka_sales'",'Relatório deve atualizar após mudanças de vendas');
