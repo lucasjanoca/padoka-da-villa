@@ -19,7 +19,9 @@ for(const page of pages){
   const styleDirective=(policy.match(/(?:^|;\s*)style-src\s+([^;]+)/)||[])[1]||'';
   if(scriptDirective.includes("'unsafe-inline'"))fail(page+': script-src ainda permite unsafe-inline');
   if(styleDirective.includes("'unsafe-inline'"))fail(page+': style-src ainda permite unsafe-inline');
-  if(!/style-src-attr 'none'/.test(policy))fail(page+': atributos style inline não estão bloqueados');
+  if(page==='pdv.html'){
+    if(!/style-src-attr 'unsafe-inline'/.test(policy))fail(page+': scanner precisa da exceção style-src-attr controlada');
+  }else if(!/style-src-attr 'none'/.test(policy))fail(page+': atributos style inline não estão bloqueados');
   if(/\sstyle=["']/i.test(source))fail(page+': atributo style= detectado');
 
   const inlineScripts=[...source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
@@ -51,7 +53,7 @@ const headerScript=(headers.match(/script-src\s+([^;]+)/)||[])[1]||'';
 const headerStyle=(headers.match(/style-src\s+([^;]+)/)||[])[1]||'';
 if(headerScript.includes("'unsafe-inline'"))fail('_headers: script-src ainda permite unsafe-inline');
 if(headerStyle.includes("'unsafe-inline'"))fail('_headers: style-src ainda permite unsafe-inline');
-if(!/style-src-attr 'none'/.test(headers))fail('_headers: style-src-attr none ausente');
+if(!/style-src-attr 'unsafe-inline'/.test(headers))fail('_headers: exceção de compatibilidade do scanner ausente');
 for(const page of pages){
   const source=fs.readFileSync(page,'utf8');
   for(const match of [...source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter(x=>!(/\bsrc\s*=/i.test(x[1]))&&x[2].trim())){
@@ -64,4 +66,4 @@ for(const page of pages){
   }
 }
 
-if(!process.exitCode)console.log('Browser CSP audit: OK (scripts e estilos inline protegidos por SHA-256; atributos inline bloqueados)');
+if(!process.exitCode)console.log('Browser CSP audit: OK (hashes SHA-256 + style attrs bloqueados, exceto scanner PDV explicitamente auditado)');
