@@ -44,3 +44,13 @@
 /acompanhamento.html
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow, noarchive
+
+
+/service-worker.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/manifest.webmanifest
+  Cache-Control: no-cache
+
+/assets/padoka-pwa.js
+  Cache-Control: no-cache
