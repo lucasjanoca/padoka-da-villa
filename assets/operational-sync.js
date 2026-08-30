@@ -3,9 +3,9 @@
   const $=id=>document.getElementById(id), catalog=window.PADOKA_CATALOG||[];
   const productById=id=>catalog.find(p=>p.id===id);
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}), esc=v=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-  const ADJUST_KEY_PREFIX='padoka_pending_inventory_adjustment_v2:', LEGACY_ADJUST_KEY='padoka_pending_inventory_adjustment_v1';
+  const ADJUST_KEY_PREFIX='padoka_pending_inventory_adjustment_v2:', LEGACY_ADJUST_KEY='padoka_pending_inventory_adjustment_v1', PADOKA_TIME_ZONE='America/Sao_Paulo';
   let sb,inventory=[],plans=[],losses=[],channel=null,active=false,lifecycleEpoch=0,activeUserId='',authSubscription=null;
-  const today=()=>new Date().toLocaleDateString('en-CA');
+  const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:PADOKA_TIME_ZONE});
   const pendingAdjustmentKey=(userId=activeUserId)=>userId?`${ADJUST_KEY_PREFIX}${userId}`:'';
   function toast(t){const el=$('toast');if(!el)return;el.textContent=t;el.classList.remove('hidden');clearTimeout(window.__padokaOpsToast);window.__padokaOpsToast=setTimeout(()=>el.classList.add('hidden'),2600)}
   function relationMissing(error){return ['42P01','PGRST205','PGRST204'].includes(error?.code)||/does not exist|schema cache/i.test(error?.message||'')}
