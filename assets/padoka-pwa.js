@@ -16,28 +16,7 @@
   const pushSupported = () =>
     'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
-  function injectStyles() {
-    if (document.getElementById('padokaPwaStyles')) return;
-    const style = document.createElement('style');
-    style.id = 'padokaPwaStyles';
-    style.textContent = [
-      '.padoka-pwa-card{position:fixed;left:12px;right:12px;bottom:88px;z-index:96;max-width:460px;margin:auto;background:#fffdf9;color:#17130f;border:1px solid #dfd1c3;border-radius:19px;box-shadow:0 18px 50px rgba(30,20,12,.22);padding:14px;display:grid;grid-template-columns:44px 1fr auto;gap:11px;align-items:center;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}',
-      '.padoka-pwa-card[hidden]{display:none!important}',
-      '.padoka-pwa-icon{width:44px;height:44px;border-radius:13px;background:#15120f;display:grid;place-items:center;overflow:hidden}',
-      '.padoka-pwa-icon img{width:38px;height:38px;object-fit:contain}',
-      '.padoka-pwa-copy strong{display:block;font-size:12px;line-height:1.25}',
-      '.padoka-pwa-copy span{display:block;margin-top:3px;color:#776e65;font-size:9.5px;line-height:1.35}',
-      '.padoka-pwa-actions{display:flex;gap:6px;align-items:center}',
-      '.padoka-pwa-btn{border:0;border-radius:11px;padding:9px 10px;font:800 9.5px/1 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;white-space:nowrap;background:#15120f;color:#fff}',
-      '.padoka-pwa-close{border:0;background:transparent;color:#776e65;font-size:18px;line-height:1;padding:5px;cursor:pointer}',
-      '@media(min-width:700px){.padoka-pwa-card{left:auto;right:18px;bottom:18px;margin:0;width:min(440px,calc(100% - 36px))}}',
-      '@media(max-width:410px){.padoka-pwa-card{grid-template-columns:40px 1fr}.padoka-pwa-actions{grid-column:1/-1;justify-content:flex-end}.padoka-pwa-icon{width:40px;height:40px}}'
-    ].join('');
-    document.head.appendChild(style);
-  }
-
   function makeCard({ id, title, text, actionLabel, onAction, onClose }) {
-    injectStyles();
     const card = document.createElement('aside');
     card.className = 'padoka-pwa-card';
     card.id = id;
