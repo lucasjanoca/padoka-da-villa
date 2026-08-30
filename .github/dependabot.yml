@@ -1,10 +1,17 @@
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
+  - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: weekly
+      day: monday
+      time: "06:20"
+      timezone: America/Sao_Paulo
     open-pull-requests-limit: 5
     labels:
-      - "dependencies"
-      - "security"
+      - dependencies
+      - security
+    groups:
+      github-actions-security:
+        patterns:
+          - "*"
