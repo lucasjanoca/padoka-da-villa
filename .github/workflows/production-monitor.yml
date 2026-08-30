@@ -78,7 +78,7 @@ jobs:
           check "$BASE/manifest.webmanifest" "\"display\": \"standalone\"" "Manifest PWA"
           check "$BASE/manifest.webmanifest" "assets/icon-192.png" "Manifest icon 192"
           check "$BASE/manifest.webmanifest" "assets/icon-512.png" "Manifest icon 512"
-          check "$BASE/service-worker.js" "padoka-pwa-v5" "Service Worker"
+          check "$BASE/service-worker.js" "padoka-pwa-v6" "Service Worker"
           check "$BASE/.well-known/security.txt" "security/advisories/new" "security.txt"
           check "https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config" "publishableKey" "Config pública"
           check "$PUSH?action=config" "publicKey" "Push config"
