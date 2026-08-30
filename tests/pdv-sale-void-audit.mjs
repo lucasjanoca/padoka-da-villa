@@ -32,12 +32,15 @@ forbid(js,/globalThis\.staffRole/i,'staffRole declarado com let não deve ser li
 need(js,/from\('padoka_sales'\)\.select\('id,void_reason'\)/i,'frontend só deve ativar quando a migration 012 estiver disponível');
 need(js,/rpc\('padoka_void_sale'/i,'frontend deve usar a RPC transacional de estorno');
 need(js,/from\('padoka_sale_items'\)\.select/i,'detalhes da venda devem vir da tabela protegida de itens');
+need(js,/async function itemsFor\(id,detail\)[\s\S]*if\(!userId\|\|!await identityStillCurrent\(epoch,userId\)\|\|!detail\.isConnected\)return;[\s\S]*sb\.from\('padoka_sale_items'\)/i,'detalhes da venda precisam confirmar a identidade antes de consultar itens');
 need(js,/async function itemsFor\(id,detail\)[\s\S]*try\{\(\{data,error\}=await sb\.from\('padoka_sale_items'\)[\s\S]*catch\(fetchError\)/i,'detalhes da venda precisam tratar rejeição de transporte sem ficar presos em carregamento');
+need(js,/async function load\(\)[\s\S]*if\(!await identityStillCurrent\(epoch,userId\)\|\|!list\.isConnected\)return;[\s\S]*sb\.from\('padoka_sales'\)/i,'histórico de vendas precisa confirmar a identidade antes da consulta');
 need(js,/async function load\(\)[\s\S]*try\{\(\{data,error\}=await sb\.from\('padoka_sales'\)[\s\S]*catch\(fetchError\)/i,'histórico de vendas precisa tratar rejeição de transporte sem ficar preso em atualização');
 need(js,/Use Atualizar para tentar novamente/i,'falha de rede no histórico precisa oferecer recuperação explícita ao operador');
 need(js,/postgres_changes[\s\S]*padoka_sales/i,'histórico de vendas deve atualizar por Realtime');
 need(js,/reason\.length<3\|\|reason\.length>160/i,'frontend deve validar o motivo antes da RPC');
-need(js,/async function reconcileVoid\(id,epoch,userId\)/i,'frontend precisa reconciliar resposta ambígua vinculada à sessão atual');
+need(js,/formBusy\(form,true\);if\(!await identityStillCurrent\(epoch,userId\)\)[\s\S]*sb\.rpc\('padoka_void_sale'/i,'estorno precisa reconfirmar a sessão imediatamente antes da RPC');
+need(js,/async function reconcileVoid\(id,epoch,userId\)[\s\S]*if\(!await identityStillCurrent\(epoch,userId\)\)return null;[\s\S]*select\('id,status,voided_at,void_reason'\)/i,'reconciliação precisa confirmar a identidade antes de consultar a venda');
 need(js,/select\('id,status,voided_at,void_reason'\)\.eq\('id',id\)\.maybeSingle\(\)/i,'reconciliação deve consultar o estado autoritativo da venda');
 need(js,/data\.status==='voided'\?data:null/i,'reconciliação só pode assumir sucesso quando o servidor confirmar status voided');
 need(js,/catch\(error\)[\s\S]*uncertain=true/i,'falha de transporte precisa ser tratada como resposta incerta');
@@ -53,6 +56,7 @@ need(js,/window\.padokaCanAccess\('pdv'\)/i,'reativação precisa exigir permiss
 need(js,/async function safeSession\(\)[\s\S]*auth\.getSession\(\)[\s\S]*if\(error\)[\s\S]*return null[\s\S]*catch\(error\)[\s\S]*return null/i,'leituras de sessão do estorno precisam centralizar erros retornados e rejeições de transporte em modo fail-closed');
 need(js,/async function identityStillCurrent\(epoch,userId\)[\s\S]*const session=await safeSession\(\)[\s\S]*session\?\.user\?\.id===userId/i,'confirmação da identidade precisa usar a leitura segura de sessão');
 need(js,/async function waitForStaffGuard\(expectedUserId,epoch\)[\s\S]*const session=await safeSession\(\)[\s\S]*session\?\.user\?\.id!==expectedUserId/i,'reativação precisa usar a leitura segura ao confirmar o funcionário');
+need(js,/async function activateForUser\(expectedUserId\)[\s\S]*const preflightSession=await safeSession\(\)[\s\S]*preflightSession\?\.user\?\.id!==expectedUserId[\s\S]*select\('id,void_reason'\)/i,'ativação precisa confirmar a sessão antes da leitura de capability');
 need(js,/async function activateForUser\(expectedUserId\)[\s\S]*select\('id,void_reason'\)[\s\S]*const latestSession=await safeSession\(\)[\s\S]*resetForIdentityChange\(\)/i,'ativação do histórico precisa voltar ao estado fail-closed se capability/sessão não puderem ser confirmadas');
 need(js,/async function init\(\)[\s\S]*const session=await safeSession\(\)[\s\S]*if\(!session\)return/i,'bootstrap do estorno precisa permanecer fechado quando a sessão não puder ser confirmada');
 need(js,/async function identityStillCurrent\(epoch,userId\)/i,'respostas assíncronas precisam confirmar a identidade atual');
