@@ -46,6 +46,8 @@ ok(catalog.includes('/rest/v1/padoka_products'), 'assets/catalog.js: catálogo p
 ok(catalog.includes('active=eq.true'), 'assets/catalog.js: catálogo público não filtra somente produtos ativos');
 ok(!/\bprice\s*:\s*\d/i.test(catalog), 'assets/catalog.js: preço estático encontrado no catálogo visual');
 ok(catalog.includes('Catálogo e valores provisórios'), 'assets/catalog.js: dados demonstrativos não estão identificados ao cliente');
+ok(catalog.includes('Informações de funcionamento, endereço e campanhas'), 'assets/catalog.js: dados públicos não confirmados não estão identificados como provisórios');
+ok(catalog.includes("role','note'"), 'assets/catalog.js: aviso de dados públicos provisórios sem semântica de nota');
 
 // Server catalog data rendered by multiple surfaces must be normalized before it reaches innerHTML templates.
 ok(catalog.includes('const safeId='), 'assets/catalog.js: validação de product_id ausente');
