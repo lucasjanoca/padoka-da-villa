@@ -2,8 +2,6 @@
   'use strict';
 
   const PUSH_URL = 'https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-push';
-  const INSTALL_DISMISS_KEY = 'padoka_pwa_install_dismissed_v1';
-  const INSTALL_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
   const BOUND = Symbol('padokaPwaBound');
   let deferredInstallPrompt = null;
   let serviceWorkerRegistration = null;
@@ -61,17 +59,12 @@
     return card;
   }
 
-  function installDismissedRecently() {
-    const stamp = Number(localStorage.getItem(INSTALL_DISMISS_KEY) || 0);
-    return stamp > 0 && Date.now() - stamp < INSTALL_DISMISS_MS;
-  }
-
   function hideInstallBanner() {
     if (installBanner) installBanner.hidden = true;
   }
 
-  function showInstallBanner(force = false) {
-    if (isStandalone() || (!force && installDismissedRecently())) return;
+  function showInstallBanner() {
+    if (isStandalone()) return;
     if (!installBanner) {
       installBanner = makeCard({
         id: 'padokaInstallCard',
@@ -79,7 +72,7 @@
         text: 'Instale o app para abrir mais rápido e receber avisos do andamento do pedido.',
         actionLabel: 'Instalar app',
         onAction: installApp,
-        onClose: () => { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); window.setTimeout(() => showPushBanner(), 250); }
+        onClose: () => window.setTimeout(() => showPushBanner(), 250)
       });
     }
     installBanner.hidden = false;
@@ -234,7 +227,7 @@
           ? 'Instale o app primeiro. Depois abra a PADOKA pela tela inicial para ativar os avisos.'
           : 'Ative as notificações para saber quando o pedido for confirmado, entrar em preparo e ficar pronto.',
         actionLabel: iosNeedsInstall ? 'Instalar app' : 'Ativar avisos',
-        onAction: () => iosNeedsInstall ? showInstallBanner(true) : enablePush()
+        onAction: () => iosNeedsInstall ? showInstallBanner() : enablePush()
       });
     }
     pushBanner.hidden = false;
@@ -275,7 +268,6 @@
 
   window.addEventListener('appinstalled', () => {
     deferredInstallPrompt = null;
-    localStorage.removeItem(INSTALL_DISMISS_KEY);
     hideInstallBanner();
   });
 
@@ -292,7 +284,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     registerServiceWorker();
-    if (!isStandalone()) window.setTimeout(() => showInstallBanner(), 1200);
+    if (!isStandalone()) window.setTimeout(() => showInstallBanner(), 700);
     if (window.padokaSupabase) bindSupabase(window.padokaSupabase);
   });
 
