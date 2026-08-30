@@ -10,7 +10,7 @@
     ['production','Produção'],
     ['stock','Estoque']
   ];
-  const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt',"'":'&#39;','"':'&quot;'}[ch]));
+  const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   const missingListRpc=error=>['PGRST202','42883'].includes(String(error?.code||''))||/padoka_list_staff|function .* does not exist|schema cache/i.test(String(error?.message||''));
   const missingEnrollmentRpc=error=>['PGRST202','42883'].includes(String(error?.code||''))||/padoka_add_staff_by_email|function .* does not exist|schema cache/i.test(String(error?.message||''));
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
