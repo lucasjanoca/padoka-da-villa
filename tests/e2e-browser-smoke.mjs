@@ -39,6 +39,8 @@ page.on('response',response=>{
 await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:30000});
 await page.waitForFunction(()=>window.PADOKA_CATALOG_READY===true,{timeout:30000});
 await page.locator('[data-add]').first().waitFor({state:'visible',timeout:15000});
+const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+if(overflow>2) fail('Layout mobile possui overflow horizontal de '+overflow+'px');
 const productImages=page.locator('#grid .photo img');
 for(let i=0;i<await productImages.count();i++){
   const img=productImages.nth(i);
