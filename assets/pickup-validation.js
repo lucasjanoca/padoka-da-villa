@@ -14,11 +14,15 @@ function validate(showMessage=false){
   dateInput.min=current.date;
   const date=dateInput.value;
   const time=timeInput.value;
-  let message='';
-  if(date&&date<current.date)message='Escolha uma data de retirada a partir de hoje.';
-  else if(date===current.date&&time&&time<=current.time)message='Escolha um horário de retirada que ainda não passou.';
-  dateInput.setCustomValidity(message&&date<current.date?message:'');
-  timeInput.setCustomValidity(message&&date===current.date?message:'');
+  let dateMessage='';
+  let timeMessage='';
+  if(!date)dateMessage='Escolha a data de retirada.';
+  else if(date<current.date)dateMessage='Escolha uma data de retirada a partir de hoje.';
+  if(date&&!time)timeMessage='Escolha o horário de retirada.';
+  else if(date===current.date&&time&&time<=current.time)timeMessage='Escolha um horário de retirada que ainda não passou.';
+  dateInput.setCustomValidity(dateMessage);
+  timeInput.setCustomValidity(timeMessage);
+  const message=dateMessage||timeMessage;
   if(showMessage&&message)notify(message);
   return !message;
 }
@@ -26,7 +30,7 @@ function validate(showMessage=false){
 function refresh(){
   const previousDate=dateInput.value;
   validate(false);
-  if(previousDate&&previousDate<dateInput.min){dateInput.value='';timeInput.value=''}
+  if(previousDate&&previousDate<dateInput.min){dateInput.value='';timeInput.value='';validate(false)}
 }
 
 dateInput.addEventListener('change',()=>validate(true));
