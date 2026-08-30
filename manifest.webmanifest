@@ -15,5 +15,53 @@
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
+  ],
+  "id": "./",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "prefer_related_applications": false,
+  "categories": [
+    "food",
+    "shopping"
+  ],
+  "shortcuts": [
+    {
+      "name": "Cardápio",
+      "short_name": "Cardápio",
+      "url": "./index.html#cardapio",
+      "icons": [
+        {
+          "src": "assets/logo-padoka.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Meus pedidos",
+      "short_name": "Pedidos",
+      "url": "./acompanhamento.html",
+      "icons": [
+        {
+          "src": "assets/logo-padoka.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Minha conta",
+      "short_name": "Conta",
+      "url": "./conta.html",
+      "icons": [
+        {
+          "src": "assets/logo-padoka.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
   ]
 }
