@@ -52,10 +52,14 @@ expect(ordersLifecycle.includes('const safeSession=async client=>'),'Fila deve c
 expect(/const safeSession=async client=>\{[\s\S]*?try\{[\s\S]*?auth\.getSession\(\)[\s\S]*?if\(error\)throw error;[\s\S]*?catch\(error\)/.test(ordersLifecycle),'Leitura da sessão da fila deve tratar erro retornado e rejeição de transporte.');
 expect(ordersLifecycle.includes("console.warn('PADOKA orders session check:'")&&ordersLifecycle.includes('return null;'),'Falha de sessão da fila deve retornar estado não autenticado.');
 expect(ordersLifecycle.includes('const session=await safeSession(client);'),'Leitura inicial da fila deve usar safeSession.');
-expect(ordersLifecycle.includes('const latestSession=await safeSession(client);'),'Revalidação após consulta de staff deve usar safeSession.');
+expect(ordersLifecycle.includes('const initialPreflightSession=await safeSession(client);'),'Carregamento inicial deve reconfirmar a sessão imediatamente antes de consultar staff.');
 expect(ordersLifecycle.includes('const latestInitialSession=await safeSession(client);'),'Carregamento inicial deve reler a sessão com safeSession depois da consulta de staff.');
 expect(ordersLifecycle.includes("if(!activeUserId){\n        location.replace('internal.html')"),'Fila não pode ser revelada quando não existe sessão autenticada.');
 expect(ordersLifecycle.includes("const {data:initialStaff,error:initialStaffError}=await client.from('padoka_staff_users').select('active')"),'Carregamento inicial deve confirmar o cadastro ativo em padoka_staff_users antes de revelar a fila.');
+const initialPreflightPos=ordersLifecycle.indexOf('const initialPreflightSession=await safeSession(client);');
+const initialStaffQueryPos=ordersLifecycle.indexOf("const {data:initialStaff,error:initialStaffError}=await client.from('padoka_staff_users').select('active')");
+expect(initialPreflightPos>=0&&initialStaffQueryPos>=0&&initialPreflightPos<initialStaffQueryPos,'Preflight inicial de sessão deve ocorrer antes da consulta a padoka_staff_users.');
+expect(ordersLifecycle.includes('initialPreflightSession?.user?.id!==initialUserId||activeUserId!==initialUserId'),'Preflight inicial deve rejeitar identidade alterada antes de consultar staff.');
 expect(ordersLifecycle.includes("latestInitialSession?.user?.id!==initialUserId||activeUserId!==initialUserId"),'Autorização inicial não pode ser aplicada se a identidade mudar durante a consulta de staff.');
 expect(ordersLifecycle.includes("if(initialStaffError||!initialStaff?.active){"),'Erro ou staff inativo no carregamento inicial deve permanecer fail-closed.');
 expect(ordersLifecycle.indexOf("if(initialStaffError||!initialStaff?.active){")<ordersLifecycle.indexOf("document.documentElement.classList.remove('padoka-orders-auth-transition')"),'Fila só pode ser revelada depois da validação inicial do staff ativo.');
