@@ -63,18 +63,7 @@
     });
   }
 
-  function addStyles(){
-    if(document.getElementById('padokaProductManagementStyle'))return;
-    const style=document.createElement('style');
-    style.id='padokaProductManagementStyle';
-    style.textContent=`
-      .product-admin{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.product-admin-head{display:flex;justify-content:space-between;gap:10px;align-items:end}.product-admin-head h3{margin:0;font-size:14px}.product-admin-head p{margin:3px 0 0;color:var(--muted);font-size:9px;line-height:1.4}.product-admin-new{border:0;border-radius:10px;padding:9px 11px;background:var(--dark);color:#fff;font-size:9px;font-weight:950}.product-admin-list{display:grid;gap:8px;margin-top:10px}.product-admin-row{border:1px solid var(--line);border-radius:14px;padding:11px;display:grid;grid-template-columns:minmax(150px,.9fr) minmax(180px,1.2fr) minmax(120px,.7fr) 105px 80px 80px auto;gap:7px;align-items:center;background:#fff}.product-admin-row input,.product-admin-row select{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px;background:#fff;font-size:9px}.product-admin-row .flags{display:grid;gap:5px;font-size:8.5px;font-weight:850}.product-admin-row .flags label{display:flex;align-items:center;gap:5px}.product-admin-save{border:0;border-radius:9px;padding:9px 10px;background:var(--dark);color:#fff;font-size:8.5px;font-weight:950}.product-admin-save:disabled{opacity:.5}.product-admin-note{margin-top:9px;padding:9px 10px;border-radius:11px;background:#f8f4ef;border:1px solid var(--line);font-size:8.5px;color:var(--muted);line-height:1.45}.product-admin-message{min-height:18px;margin-top:7px;font-size:9px;font-weight:850}.product-admin-message.ok{color:#285b3e}.product-admin-message.error{color:#873f35}@media(max-width:1000px){.product-admin-row{grid-template-columns:1fr 1fr 1fr}.product-admin-row .flags,.product-admin-save{grid-column:auto}}@media(max-width:620px){.product-admin-head{align-items:start;flex-direction:column}.product-admin-new{width:100%}.product-admin-row{grid-template-columns:1fr 1fr}.product-admin-row [data-field="name"],.product-admin-row [data-field="id"]{grid-column:1/-1}.product-admin-save{grid-column:1/-1;width:100%}}@media(max-width:420px){.product-admin-row{grid-template-columns:1fr}.product-admin-row [data-field="name"],.product-admin-row [data-field="id"],.product-admin-save{grid-column:auto}}
-    `;
-    document.head.appendChild(style);
-  }
-
   function mount(){
-    addStyles();
     const panel=document.querySelector('[data-panel="produtos"] .card');
     if(!panel||document.getElementById('padokaProductAdmin'))return;
     const section=document.createElement('section');
