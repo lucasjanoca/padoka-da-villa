@@ -40,6 +40,7 @@
     return !roles||!!role&&roles.includes(role);
   };
   const targetNeedsRole=Array.isArray(roleAccess[current]);
+  const privilegedMfaRoles=new Set(['owner','manager']);
   let staffValidationEpoch=0;
   let validatedStaffUserId='';
 
@@ -108,6 +109,20 @@
       return null;
     }
   }
+  function mfaReturnTarget(){
+    const name=location.pathname.split('/').pop()||'internal.html';
+    return name==='gestao.html'?name+location.search:name;
+  }
+  async function ensurePrivilegedMfa(client,role,expectedUserId){
+    if(!privilegedMfaRoles.has(role))return true;
+    const session=await safeSession(client);
+    if(!session||session.user.id!==expectedUserId)throw new Error('mfa session changed');
+    const {data,error}=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(error)throw error;
+    if(data?.currentLevel==='aal2')return true;
+    location.replace('mfa.html?return='+encodeURIComponent(mfaReturnTarget()));
+    return false;
+  }
   function clearResolvedStaff(){
     validatedStaffUserId='';
     delete window.padokaStaffRole;
@@ -132,6 +147,7 @@
       const latestSession=await safeSession(client);
       if(epoch!==staffValidationEpoch||latestSession?.user?.id!==session.user.id)return;
       const role=String(staff.role||'').toLowerCase();
+      if(!await ensurePrivilegedMfa(client,role,session.user.id))return;
       validatedStaffUserId=session.user.id;
       window.padokaStaffRole=role;
       window.padokaCanAccess=id=>allowed(id,role);
