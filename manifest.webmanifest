@@ -1,7 +1,7 @@
 {
   "name": "PADOKA DA VILLA",
   "short_name": "PADOKA",
-  "description": "Cardápio, pedidos e acompanhamento da PADOKA DA VILLA.",
+  "description": "Peça pelo celular, acompanhe o preparo em tempo real e receba avisos quando seu pedido avançar ou ficar pronto.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -13,7 +13,13 @@
       "src": "assets/logo-padoka.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "assets/logo-padoka.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ],
   "id": "./",
@@ -37,7 +43,8 @@
           "sizes": "any",
           "type": "image/svg+xml"
         }
-      ]
+      ],
+      "description": "Abrir o cardápio da PADOKA"
     },
     {
       "name": "Meus pedidos",
@@ -49,7 +56,8 @@
           "sizes": "any",
           "type": "image/svg+xml"
         }
-      ]
+      ],
+      "description": "Ver o andamento dos seus pedidos"
     },
     {
       "name": "Minha conta",
@@ -61,7 +69,16 @@
           "sizes": "any",
           "type": "image/svg+xml"
         }
-      ]
+      ],
+      "description": "Abrir sua conta PADOKA"
     }
-  ]
+  ],
+  "orientation": "portrait-primary",
+  "dir": "ltr",
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  }
 }
