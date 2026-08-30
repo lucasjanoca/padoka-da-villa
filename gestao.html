@@ -36,7 +36,7 @@
     </main>
   </div>
   <div class="toast hidden" id="toast"></div>
-  <script src="assets/catalog.js"></script>
+  <script src="assets/image-fallback.js"></script><script src="assets/catalog.js"></script>
   <script src="assets/internal-nav.js"></script>
   <script>
     const CONFIG_URL='https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config';
@@ -50,7 +50,7 @@
     function tab(){return new URLSearchParams(location.search).get('tab')||'produtos'}
     function syncNav(){const n=$('padokaInternalNav');if(n)n.dataset.current=tab()}
     function drawTabs(){const a=tab();$('tabs').innerHTML=tabs.map(([id,n])=>`<a class="tab ${id===a?'active':''}" href="?tab=${id}">${n}</a>`).join('');document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===a));const t=tabs.find(x=>x[0]===a)||tabs[0];$('title').textContent=t[1];$('subtitle').textContent=t[2]}
-    function renderProducts(){const q=$('prodSearch').value.trim().toLowerCase(),list=catalog.filter(p=>!q||(`${p.name} ${p.category} ${p.id}`).toLowerCase().includes(q));$('prodGrid').innerHTML=list.map(p=>`<article class="product"><img src="${esc(p.img)}" alt="${esc(p.name)}" onerror="this.src='assets/logo-padoka.svg'"><div class="pcopy"><strong>${esc(p.name)}</strong><small>${esc(p.category)} • ${esc(p.id)}</small><div class="price">${money(p.price)} <span>/ ${esc(p.unit)}</span></div></div></article>`).join('')}
+    function renderProducts(){const q=$('prodSearch').value.trim().toLowerCase(),list=catalog.filter(p=>!q||(`${p.name} ${p.category} ${p.id}`).toLowerCase().includes(q));$('prodGrid').innerHTML=list.map(p=>`<article class="product"><img src="${esc(p.img)}" alt="${esc(p.name)}" data-padoka-fallback><div class="pcopy"><strong>${esc(p.name)}</strong><small>${esc(p.category)} • ${esc(p.id)}</small><div class="price">${money(p.price)} <span>/ ${esc(p.unit)}</span></div></div></article>`).join('')}
     function initUI(){syncNav();drawTabs();renderProducts();$('prodSearch').oninput=renderProducts}
     async function start(){try{const r=await fetch(CONFIG_URL,{cache:'no-store'});if(!r.ok)throw new Error('config');const c=await r.json();sb=window.supabase.createClient(c.url,c.publishableKey,{auth:{persistSession:true,autoRefreshToken:true}});window.padokaSupabase=sb;const {data:{session}}=await sb.auth.getSession();if(!session)return deny('Entre pelo painel administrativo para acessar a gestão.');const {data:s,error}=await sb.from('padoka_staff_users').select('role,active').eq('user_id',session.user.id).maybeSingle();if(error||!s?.active)return deny('Esta conta não possui permissão interna ativa na PADOKA.');$('staffBadge').textContent='EQUIPE • '+String(s.role||'staff').toUpperCase();$('gate').classList.add('hidden');$('app').classList.remove('hidden');initUI()}catch(e){console.error(e);deny('Não foi possível validar o acesso agora. Tente novamente em instantes.')}}
     start();
