@@ -74,3 +74,5 @@ body.padoka-body-lock{overflow:hidden!important}
 @media(max-width:520px){.ops-stats{grid-template-columns:1fr}.ops-head{align-items:flex-start;flex-direction:column}.staff-audit-head{align-items:start;flex-direction:column}.staff-audit-refresh{width:100%}}
 @media(max-width:460px){.staff-enroll-form{grid-template-columns:1fr}.staff-enroll-form button{grid-column:auto}.staff-summary{grid-template-columns:1fr}.staff-row{grid-template-columns:1fr}.staff-id{grid-column:auto}.staff-active{padding:4px 0}}
 @media(max-width:420px){.product-admin-row{grid-template-columns:1fr}.product-admin-row [data-field="name"],.product-admin-row [data-field="id"],.product-admin-save{grid-column:auto}}
+
+.padoka-empty-hidden{display:none!important}
