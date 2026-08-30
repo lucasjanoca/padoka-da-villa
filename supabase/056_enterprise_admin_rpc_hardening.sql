@@ -1,5 +1,9 @@
 
-create or replace function public.padoka_admin_resolve_incident(p_incident_id uuid)
+create schema if not exists padoka_rpc_private;
+revoke all on schema padoka_rpc_private from public,anon,authenticated;
+grant usage on schema padoka_rpc_private to authenticated;
+
+create or replace function padoka_rpc_private.admin_resolve_incident(p_incident_id uuid)
 returns table(id uuid,status text,resolved_at timestamptz,resolved_by uuid)
 language plpgsql
 security definer
@@ -24,7 +28,7 @@ begin
 end;
 $$;
 
-create or replace function public.padoka_admin_set_feature_flag(p_key text,p_enabled boolean)
+create or replace function padoka_rpc_private.admin_set_feature_flag(p_key text,p_enabled boolean)
 returns table(key text,enabled boolean,updated_at timestamptz,updated_by uuid)
 language plpgsql
 security definer
@@ -51,7 +55,7 @@ begin
 end;
 $$;
 
-create or replace function public.padoka_admin_update_privacy_request(
+create or replace function padoka_rpc_private.admin_update_privacy_request(
   p_request_id uuid,
   p_status text,
   p_resolution_note text default null
@@ -87,9 +91,41 @@ begin
 end;
 $$;
 
-revoke all on function public.padoka_admin_resolve_incident(uuid) from public,anon;
-revoke all on function public.padoka_admin_set_feature_flag(text,boolean) from public,anon;
-revoke all on function public.padoka_admin_update_privacy_request(uuid,text,text) from public,anon;
+revoke all on function padoka_rpc_private.admin_resolve_incident(uuid) from public,anon,authenticated;
+revoke all on function padoka_rpc_private.admin_set_feature_flag(text,boolean) from public,anon,authenticated;
+revoke all on function padoka_rpc_private.admin_update_privacy_request(uuid,text,text) from public,anon,authenticated;
+grant execute on function padoka_rpc_private.admin_resolve_incident(uuid) to authenticated;
+grant execute on function padoka_rpc_private.admin_set_feature_flag(text,boolean) to authenticated;
+grant execute on function padoka_rpc_private.admin_update_privacy_request(uuid,text,text) to authenticated;
+
+create or replace function public.padoka_admin_resolve_incident(p_incident_id uuid)
+returns table(id uuid,status text,resolved_at timestamptz,resolved_by uuid)
+language sql
+security invoker
+set search_path=''
+as $$ select * from padoka_rpc_private.admin_resolve_incident(p_incident_id); $$;
+
+create or replace function public.padoka_admin_set_feature_flag(p_key text,p_enabled boolean)
+returns table(key text,enabled boolean,updated_at timestamptz,updated_by uuid)
+language sql
+security invoker
+set search_path=''
+as $$ select * from padoka_rpc_private.admin_set_feature_flag(p_key,p_enabled); $$;
+
+create or replace function public.padoka_admin_update_privacy_request(
+  p_request_id uuid,
+  p_status text,
+  p_resolution_note text default null
+)
+returns table(id uuid,status text,resolution_note text,updated_at timestamptz,completed_at timestamptz,handled_by uuid)
+language sql
+security invoker
+set search_path=''
+as $$ select * from padoka_rpc_private.admin_update_privacy_request(p_request_id,p_status,p_resolution_note); $$;
+
+revoke all on function public.padoka_admin_resolve_incident(uuid) from public,anon,authenticated;
+revoke all on function public.padoka_admin_set_feature_flag(text,boolean) from public,anon,authenticated;
+revoke all on function public.padoka_admin_update_privacy_request(uuid,text,text) from public,anon,authenticated;
 grant execute on function public.padoka_admin_resolve_incident(uuid) to authenticated;
 grant execute on function public.padoka_admin_set_feature_flag(text,boolean) to authenticated;
 grant execute on function public.padoka_admin_update_privacy_request(uuid,text,text) to authenticated;
