@@ -19,6 +19,17 @@
     return null;
   };
 
+  const safeSession=async client=>{
+    try{
+      const {data,error}=await client.auth.getSession();
+      if(error)throw error;
+      return data?.session||null;
+    }catch(error){
+      console.warn('PADOKA orders session check:',error);
+      return null;
+    }
+  };
+
   const lockOrdersUi=async client=>{
     lifecycleEpoch+=1;
     document.documentElement.classList.add('padoka-orders-auth-transition');
@@ -27,12 +38,12 @@
   };
 
   const revalidateIdentity=async(client,expectedUserId,epoch)=>{
+    const session=await safeSession(client);
+    if(epoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return;
     try{
-      const {data:{session}}=await client.auth.getSession();
-      if(epoch!==lifecycleEpoch||session?.user?.id!==expectedUserId)return;
       const {data:staff,error}=await client.from('padoka_staff_users').select('active').eq('user_id',expectedUserId).maybeSingle();
       if(epoch!==lifecycleEpoch)return;
-      const {data:{session:latestSession}}=await client.auth.getSession();
+      const latestSession=await safeSession(client);
       if(epoch!==lifecycleEpoch||latestSession?.user?.id!==expectedUserId)return;
       if(error||!staff?.active){
         location.replace('internal.html');
@@ -50,7 +61,7 @@
     try{
       const client=await waitForClient();
       if(!client)return;
-      const {data:{session}}=await client.auth.getSession();
+      const session=await safeSession(client);
       activeUserId=session?.user?.id||'';
       client.auth.onAuthStateChange((event,nextSession)=>{
         if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
@@ -74,7 +85,7 @@
       }
       const initialUserId=activeUserId;
       const {data:initialStaff,error:initialStaffError}=await client.from('padoka_staff_users').select('active').eq('user_id',initialUserId).maybeSingle();
-      const {data:{session:latestInitialSession}}=await client.auth.getSession();
+      const latestInitialSession=await safeSession(client);
       if(latestInitialSession?.user?.id!==initialUserId||activeUserId!==initialUserId){
         document.documentElement.classList.add('padoka-orders-auth-transition');
         return;
