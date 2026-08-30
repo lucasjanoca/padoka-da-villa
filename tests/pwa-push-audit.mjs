@@ -19,7 +19,7 @@ need(!pwa.includes('installDismissedRecently'), 'PWA: cooldown de instalação r
 need(pwa.includes('pushManager.subscribe'), 'PWA: assinatura Web Push ausente');
 need(pwa.includes("Notification.requestPermission()"), 'PWA: pedido explícito de permissão push ausente');
 
-need(sw.includes("const CACHE_NAME = 'padoka-pwa-v5'"), 'Service Worker: versão de cache atual ausente');
+need(sw.includes("const CACHE_NAME = 'padoka-pwa-v6'"), 'Service Worker: versão de cache atual ausente');
 need(sw.includes("addEventListener('push'"), 'Service Worker: listener push ausente');
 need(sw.includes("addEventListener('notificationclick'"), 'Service Worker: clique em notificação ausente');
 
@@ -28,6 +28,8 @@ need(manifest.icons?.some(i=>i.src==='assets/icon-192.png'&&i.sizes==='192x192'&
 need(manifest.icons?.some(i=>i.src==='assets/icon-512.png'&&i.sizes==='512x512'&&i.type==='image/png'),'Manifest: ícone PNG 512 ausente');
 need(sw.includes("icon: './assets/icon-192.png'"),'Service Worker: notificação não usa ícone PNG');
 need(sw.includes("'./assets/icon-512.png'"),'Service Worker: ícone 512 não está no shell PWA');
+need(sw.includes("'./assets/runtime-security.css'"),'Service Worker: CSS crítico de segurança não está no shell');
+need(sw.includes("'./assets/frame-guard.js'"),'Service Worker: frame guard não está no shell');
 need(Array.isArray(manifest.shortcuts) && manifest.shortcuts.length >= 3, 'Manifest: atalhos do app ausentes');
 need(manifest.orientation === 'portrait-primary', 'Manifest: orientação mobile profissional ausente');
 need(manifest.launch_handler?.client_mode?.includes('navigate-existing'), 'Manifest: reaproveitamento da janela instalada ausente');
