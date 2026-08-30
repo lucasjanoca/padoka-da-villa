@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const pages=['acompanhamento.html','conta.html','gestao.html','internal.html','mfa.html','pagamento.html','pdv.html','pedidos.html'];
+const pages=['produto.html','acompanhamento.html','conta.html','gestao.html','internal.html','mfa.html','pagamento.html','pdv.html','pedidos.html','enterprise.html'];
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 
 for(const page of pages){
