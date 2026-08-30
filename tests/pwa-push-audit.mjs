@@ -37,6 +37,10 @@ for (const page of pages) {
 need(pushFn.includes('padoka_get_push_server_config'), 'Push: segredo do servidor não vem do backend protegido');
 need(pushFn.includes('x-padoka-push-secret'), 'Push: autenticação interna do webhook ausente');
 need(pushFn.includes('constantTimeEqual'), 'Push: comparação protegida do segredo interno ausente');
+need(pushFn.includes('rawBody.length > 16_384'), 'Push: limite de payload ausente');
+need(pushFn.includes('content_type_required'), 'Push: validação de Content-Type ausente');
+need(pushFn.includes('keepBeforeUpsert = existingEndpoint ? 5 : 4'), 'Push: limite de 5 dispositivos por conta ausente');
+need(pushFn.includes('subscription_prune_failed'), 'Push: poda de assinaturas antigas ausente');
 need(!pushFn.includes('select("vapid_public_key,vapid_private_key'), 'Push: chave privada voltou a ser consultada da tabela pública');
 
 need(vaultMigration.includes("padoka_vapid_private_key"), 'Vault: segredo VAPID não está migrado');
