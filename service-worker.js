@@ -1,11 +1,13 @@
 'use strict';
 
-const CACHE_NAME = 'padoka-pwa-v4';
+const CACHE_NAME = 'padoka-pwa-v5';
 const APP_SHELL = [
   './index.html',
   './produto.html',
   './manifest.webmanifest',
   './assets/logo-padoka.svg',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
   './assets/catalog.js',
   './assets/padoka-pwa.js?v=3'
 ];
@@ -15,6 +17,8 @@ const PUBLIC_CACHE_PATHS = new Set([
   'produto.html',
   'manifest.webmanifest',
   'assets/logo-padoka.svg',
+  'assets/icon-192.png',
+  'assets/icon-512.png',
   'assets/catalog.js',
   'assets/padoka-pwa.js'
 ]);
@@ -121,8 +125,8 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(self.registration.showNotification(title, {
     body,
-    icon: './assets/logo-padoka.svg',
-    badge: './assets/logo-padoka.svg',
+    icon: './assets/icon-192.png',
+    badge: './assets/icon-192.png',
     tag: payload.tag || 'padoka-order-update',
     renotify: true,
     data: { url }
