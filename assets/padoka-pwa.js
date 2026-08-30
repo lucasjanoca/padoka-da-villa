@@ -79,7 +79,7 @@
         text: 'Instale o app para abrir mais rápido e receber avisos do andamento do pedido.',
         actionLabel: 'Instalar app',
         onAction: installApp,
-        onClose: () => localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()))
+        onClose: () => { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); window.setTimeout(() => showPushBanner(), 250); }
       });
     }
     installBanner.hidden = false;
