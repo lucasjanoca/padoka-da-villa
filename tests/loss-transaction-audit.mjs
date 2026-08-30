@@ -28,6 +28,7 @@ const checks=[
   ['resposta ambígua não libera formulário',/networkish\(rpcError\)[\s\S]*lockForm\(true\)/.test(frontend)],
   ['rejeição de transporte é capturada sem perder request_id',/try\s*\{[\s\S]*await sb\.rpc\('padoka_register_loss_once'[\s\S]*\}catch\(error\)\{[\s\S]*rpcError=/.test(frontend)&&/if\(networkish\(rpcError\)\)[\s\S]*Tente novamente com os mesmos dados/.test(frontend)],
   ['releitura de sessão usa helper fail-closed',/async function getSessionSafe\(epoch,userId=''\)[\s\S]*try\s*\{[\s\S]*await sb\.auth\.getSession\(\)[\s\S]*catch\(error\)[\s\S]*blockCapability/.test(frontend)&&/const latestSession=await getSessionSafe\(epoch,userId\)/.test(frontend)],
+  ['helper de sessão rejeita erro retornado pelo Supabase Auth',/const \{data,error\}=await sb\.auth\.getSession\(\);[\s\S]*if\(error\)throw error;[\s\S]*const session=data\?\.session\|\|null/.test(frontend)],
   ['probe de capability captura rejeição de transporte',/try\s*\{[\s\S]*probe=await sb\.from\('padoka_losses'\)\.select\('request_id'\)\.limit\(1\)[\s\S]*\}catch\(error\)[\s\S]*blockCapability/.test(frontend)],
   ['inicialização não revela perdas sem sessão confirmada',/const session=await getSessionSafe\(epoch\);[\s\S]*if\(!session\)return blockCapability\(\)/.test(frontend)],
   ['clique é interceptado mesmo sem capability',/function intercept\(e\)[\s\S]*if\(!btn\)return;[\s\S]*preventDefault\(\)[\s\S]*if\(!enabled\)/.test(frontend)],
