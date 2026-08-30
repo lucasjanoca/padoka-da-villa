@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const pages=['index.html','acompanhamento.html','conta.html','gestao.html','internal.html','mfa.html','pagamento.html','pdv.html','pedidos.html'];
+const pages=['index.html','produto.html','acompanhamento.html','conta.html','gestao.html','internal.html','mfa.html','pagamento.html','pdv.html','pedidos.html','enterprise.html'];
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 
 for(const page of pages){
@@ -12,7 +12,7 @@ for(const page of pages){
   if(!/https:\/\/yncspxfsvlqdnodlsosb\.supabase\.co/.test(source))fail(page+': CSP não contém o backend PADOKA esperado');
   if(/\son[a-z]+\s*=/i.test(source))fail(page+': handler inline on*= detectado');
 }
-for(const page of ['index.html','gestao.html','pdv.html']){
+for(const page of ['index.html','produto.html','gestao.html','pdv.html']){
   const source=fs.readFileSync(page,'utf8');
   if(!source.includes('assets/image-fallback.js'))fail(page+': fallback externo de imagem ausente');
   if(!source.includes('data-padoka-fallback'))fail(page+': imagens sem marcador de fallback seguro');
