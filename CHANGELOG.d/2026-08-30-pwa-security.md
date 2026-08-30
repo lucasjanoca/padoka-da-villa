@@ -1,0 +1,11 @@
+## 2026-08-30 18:30 — PWA restringe cache à superfície pública
+- Relidos `README.md`, `CHANGELOG.md` e `AUTH_STATUS.md` antes da alteração.
+- Confirmado que o backend correto permanece **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) e que o projeto InfoTech.io não deve ser alterado.
+- Identificado no service worker recém-adicionado que qualquer resposta `GET` do mesmo origin podia ser gravada no Cache Storage, inclusive páginas internas caso um funcionário as abrisse.
+- `service-worker.js` agora usa allowlist explícita para cache público e denylist defensiva para `internal.html`, `pedidos.html`, `pdv.html`, `gestao.html` e `mfa.html`.
+- Leitura offline usa o mesmo gate público da escrita; páginas internas não recebem fallback público nem são recuperadas do cache PWA.
+- URLs vindas de payload de push agora passam por allowlist de destinos públicos e recaem em `acompanhamento.html` quando inválidas; ícone de notificação fica fixo no asset local da PADOKA.
+- Cache versionado para `padoka-pwa-v2`, removendo a versão anterior durante `activate`.
+- Criado `tests/pwa-security-audit.mjs` para impedir regressão para cache irrestrito ou navegação push arbitrária.
+- `node --check service-worker.js` e a nova auditoria passaram localmente.
+- Nenhuma migration, RLS, grant, RPC, secret ou Edge Function foi alterada; não houve necessidade de mexer em Security Advisors nesta rodada.
