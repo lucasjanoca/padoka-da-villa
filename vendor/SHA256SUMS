@@ -1,0 +1,5 @@
+PADOKA browser dependency lock
+Generated from exact npm package versions.
+
+f8ce7fab799af1916019cbd0b485b39bb80dbdbc6dc062909a751c9e5198e04c  vendor/supabase-js-2.112.4.js
+84313e033c6365d29923c6bf5a1490f76f893c0a1e156bbd2bb3f8a96a3523d7  vendor/html5-qrcode-2.3.8.js
