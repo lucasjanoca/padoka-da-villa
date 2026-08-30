@@ -41,4 +41,13 @@ expect(js.includes('if(!await confirmSession(epoch,userId))'),'RPCs do históric
 expect(js.includes('const session=await safeSession();'),'Inicialização não pode usar getSession sem tratamento fail-closed.');
 expect(!/const\s*\{\s*data\s*:\s*\{\s*session\s*\}\s*\}\s*=\s*await\s+client\.auth\.getSession\(\)/.test(js),'Inicialização não deve manter leitura direta de sessão fora do helper seguro.');
 
+const loadStart=js.indexOf('async function load()');
+const loadRpc=js.indexOf("client.rpc('padoka_list_staff_audit'",loadStart);
+const loadPreflight=js.indexOf('if(!await confirmSession(epoch,userId))',loadStart);
+expect(loadStart>=0&&loadRpc>loadStart&&loadPreflight>loadStart&&loadPreflight<loadRpc,'load() deve confirmar a sessão owner antes de consultar o histórico.');
+const probeStart=js.indexOf('async function probe(epoch,userId)');
+const probeRpc=js.indexOf("client.rpc('padoka_list_staff_audit'",probeStart);
+const probePreflight=js.indexOf('if(!await confirmSession(epoch,userId))',probeStart);
+expect(probeStart>=0&&probeRpc>probeStart&&probePreflight>probeStart&&probePreflight<probeRpc,'probe() deve confirmar a sessão owner antes de sondar a RPC.');
+
 console.log('staff-audit-trail-audit: ok');
