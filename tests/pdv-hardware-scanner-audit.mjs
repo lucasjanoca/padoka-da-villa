@@ -27,7 +27,12 @@ const checks = [
   ['resposta atrasada do catálogo de códigos é invalidada pelo lifecycle', /scannerLifecycleEpoch/.test(scanner)&&/scannerContextCurrent\(expectedEpoch,expectedUserId\)/.test(scanner)&&/session\?\.user\?\.id!==expectedUserId/.test(scanner)],
   ['troca de identidade limpa códigos locais antes de revalidar o novo staff', /resetScannerForIdentityChange[\s\S]*clearLocalBarcodes\(\)/.test(scanner)&&/barcode:null/.test(scanner)],
   ['câmera não abre depois de troca de identidade durante refresh', /openCamera=async function[\s\S]*scannerContextCurrent\(epoch,userId\)[\s\S]*await refreshBarcodes\(epoch,userId\)[\s\S]*scannerContextCurrent\(epoch,userId\)/.test(scanner)],
-  ['o cache-buster do loader aponta para a revisão atual do leitor físico', /pdv-scanner-fix\.js\?v=2026082801/.test(loader)],
+  ['leitor centraliza confirmação de sessão em helper fail-closed', /async function safeSession\(\)[\s\S]*auth\.getSession\(\)[\s\S]*if\(error\)[\s\S]*catch\(error\)[\s\S]*return null/.test(scanner)],
+  ['refresh de códigos usa sessão segura antes de aplicar catálogo', /refreshBarcodes[\s\S]*const session=await safeSession\(\)[\s\S]*session\?\.user\?\.id!==expectedUserId/.test(scanner)],
+  ['ativação do leitor usa sessão segura antes de liberar capability PDV', /activateScannerForUser[\s\S]*const session=await safeSession\(\)[\s\S]*window\.padokaCanAccess\('pdv'\)/.test(scanner)],
+  ['bootstrap do leitor falha fechado quando sessão não pode ser confirmada', /const session=await safeSession\(\)[\s\S]*Não foi possível confirmar uma sessão interna autorizada para usar o leitor/.test(scanner)],
+  ['reativação assíncrona do leitor captura rejeições inesperadas', /activateScannerForUser\(nextUserId\)\.catch/.test(scanner)],
+  ['o cache-buster do loader aponta para a revisão atual do leitor físico', /pdv-scanner-fix\.js\?v=2026082921/.test(loader)],
 ];
 
 for (const [label, passed] of checks) {
