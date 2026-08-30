@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
 const read = p => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
-const files = ['index.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html'];
+const files = ['index.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html','mfa.html'];
 const html = Object.fromEntries(files.map(f => [f, read(f)]));
 const catalog = read('assets/catalog.js');
 const orderIdempotency = read('assets/order-idempotency.js');
