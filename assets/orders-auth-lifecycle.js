@@ -5,10 +5,6 @@
   let activeUserId='';
   let lifecycleEpoch=0;
 
-  const style=document.createElement('style');
-  style.id='padokaOrdersAuthLifecycleStyle';
-  style.textContent='.padoka-orders-auth-transition body>main{visibility:hidden!important;pointer-events:none!important}';
-  document.head.appendChild(style);
   document.documentElement.classList.add('padoka-orders-auth-transition');
 
   const waitForClient=async()=>{
