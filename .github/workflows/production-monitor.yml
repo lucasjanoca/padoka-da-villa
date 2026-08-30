@@ -1,0 +1,98 @@
+name: PADOKA Production Monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: padoka-production-monitor
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check production surfaces
+        id: smoke
+        shell: bash
+        run: |
+          set +e
+          BASE="https://lucasjanoca.github.io/padoka-da-villa"
+          FAILED=0
+
+          check() {
+            local url="$1"
+            local marker="$2"
+            local name="$3"
+            body="$(curl --location --silent --show-error --fail --max-time 20 "$url")"
+            rc=$?
+            if [ "$rc" -ne 0 ] || ! printf '%s' "$body" | grep -Fq "$marker"; then
+              echo "::error::$name falhou: $url"
+              FAILED=1
+            else
+              echo "OK: $name"
+            fi
+          }
+
+          check "$BASE/" "assets/padoka-pwa.js?v=2" "Home"
+          check "$BASE/produto.html" "PADOKA" "Produto"
+          check "$BASE/conta.html" "customer-notifications.js" "Conta"
+          check "$BASE/acompanhamento.html" "customer-notifications.js" "Acompanhamento"
+          check "$BASE/pagamento.html" "PADOKA" "Pagamento"
+          check "$BASE/manifest.webmanifest" "\"display\": \"standalone\"" "Manifest PWA"
+          check "$BASE/service-worker.js" "padoka-pwa-v3" "Service Worker"
+          check "https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config" "publishableKey" "Config pública"
+          check "https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-push?action=config" "publicKey" "Push config"
+
+          HOME="$(curl --location --silent --show-error --fail --max-time 20 "$BASE/")"
+          if printf '%s' "$HOME" | grep -Eq "script-src[^;]*'unsafe-inline'"; then
+            echo "::error::CSP de produção voltou a permitir unsafe-inline em script-src"
+            FAILED=1
+          else
+            echo "OK: CSP sem script unsafe-inline"
+          fi
+
+          code="$(curl --silent --show-error --max-time 20 -o /tmp/padoka-push-guard.json -w '%{http_code}'             -X POST             -H 'content-type: application/json'             --data '{"action":"subscribe","subscription":{}}'             'https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-push')"
+          if [ "$code" != "401" ]; then
+            echo "::error::Push subscribe sem sessão retornou HTTP $code; esperado 401"
+            cat /tmp/padoka-push-guard.json || true
+            FAILED=1
+          else
+            echo "OK: Push exige autenticação"
+          fi
+
+          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+          exit "$FAILED"
+
+      - name: Open production incident
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          title="PADOKA produção indisponível"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [ -z "$existing" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY"               --title "$title"               --body "O monitor automático detectou uma falha em produção. Consulte a execução do workflow **PADOKA Production Monitor** para identificar a superfície afetada."
+          else
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "A falha continua presente em uma nova verificação automática."
+          fi
+
+      - name: Close recovered incident
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          title="PADOKA produção indisponível"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "✅ Produção recuperada. Todos os smoke tests voltaram a passar."
+            gh issue close "$existing" --repo "$GITHUB_REPOSITORY"
+          fi
