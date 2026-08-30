@@ -47,6 +47,16 @@ function showProvisionalNotice(){
   note.style.cssText='margin:7px 0 2px;padding:8px 10px;border:1px solid #e7dbcf;border-radius:12px;background:#fffdf9;color:#776e65;font-size:9px;line-height:1.4';
   (cats||section.querySelector('.search'))?.insertAdjacentElement('afterend',note);
 }
+function showPublicDataNotice(){
+  const info=document.querySelector('#inicio .info');
+  if(!info||document.getElementById('padokaPublicDataNotice'))return;
+  const note=document.createElement('div');
+  note.id='padokaPublicDataNotice';
+  note.className='info-card full';
+  note.setAttribute('role','note');
+  note.innerHTML='<strong>ℹ️ Dados em validação</strong><span>Informações de funcionamento, endereço e campanhas exibidas nesta versão podem ser demonstrativas até a confirmação oficial da padaria.</span>';
+  info.appendChild(note);
+}
 function loadPickupValidation(){
   if(!document.getElementById('pickup')||document.querySelector('script[data-padoka-pickup-validation]'))return;
   const script=document.createElement('script');
@@ -84,6 +94,7 @@ async function load(){
     refreshConsumers();
   }
 }
+showPublicDataNotice();
 loadPickupValidation();
 load();
 })();
