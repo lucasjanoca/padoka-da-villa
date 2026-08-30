@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'sha256-RcMp4BPU/OWi22LhuDnSwTgSDPOwaIo6MBTu2xM9OTM=' https://cdn.jsdelivr.net; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://yncspxfsvlqdnodlsosb.supabase.co wss://yncspxfsvlqdnodlsosb.supabase.co; media-src 'self' data: blob:; frame-src 'none'; manifest-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'sha256-RcMp4BPU/OWi22LhuDnSwTgSDPOwaIo6MBTu2xM9OTM=' https://cdn.jsdelivr.net; script-src-attr 'none'; style-src 'self' 'sha256-3ZlCtwCUYiBoidxrdfQD0LHPtpzRPEBG0pl1vPyIubk='; style-src-attr 'none'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://yncspxfsvlqdnodlsosb.supabase.co wss://yncspxfsvlqdnodlsosb.supabase.co; media-src 'self' data: blob:; frame-src 'none'; manifest-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="theme-color" content="#15120f">
+  <meta name="theme-color" content="#15120f"><link rel="stylesheet" href="assets/runtime-security.css">
   <title>Centro de Operações • PADOKA DA VILLA</title>
   <link rel="stylesheet" href="assets/internal-nav.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -42,7 +42,7 @@
 
       <section class="grid">
         <div>
-          <section class="card"><div class="section-head"><div><h2>Funil digital</h2><p class="sub">Telemetria técnica dos últimos 7 dias.</p></div><button class="btn soft" id="refreshAll" type="button">Atualizar</button></div><div class="stats" style="grid-template-columns:repeat(5,1fr);margin-bottom:0"><div class="stat"><small>VISITAS</small><strong id="mViews">0</strong></div><div class="stat"><small>PRODUTOS</small><strong id="mProducts">0</strong></div><div class="stat"><small>CARRINHO</small><strong id="mAdds">0</strong></div><div class="stat"><small>CHECKOUT</small><strong id="mCheckout">0</strong></div><div class="stat"><small>SUCESSO</small><strong id="mSuccess">0</strong></div></div></section>
+          <section class="card"><div class="section-head"><div><h2>Funil digital</h2><p class="sub">Telemetria técnica dos últimos 7 dias.</p></div><button class="btn soft" id="refreshAll" type="button">Atualizar</button></div><div class="stats padoka-stats-five"><div class="stat"><small>VISITAS</small><strong id="mViews">0</strong></div><div class="stat"><small>PRODUTOS</small><strong id="mProducts">0</strong></div><div class="stat"><small>CARRINHO</small><strong id="mAdds">0</strong></div><div class="stat"><small>CHECKOUT</small><strong id="mCheckout">0</strong></div><div class="stat"><small>SUCESSO</small><strong id="mSuccess">0</strong></div></div></section>
 
           <section class="card"><h2>Core Web Vitals</h2><p class="sub">p75 de usuários reais. Verde = dentro das metas de experiência.</p><div class="vitals"><div class="vital"><small>LCP</small><strong id="vLcp">—</strong><span>meta ≤ 2,5s</span></div><div class="vital"><small>INP</small><strong id="vInp">—</strong><span>meta ≤ 200ms</span></div><div class="vital"><small>CLS</small><strong id="vCls">—</strong><span>meta ≤ 0,1</span></div></div></section>
 
@@ -50,7 +50,7 @@
 
           <section class="card"><div class="section-head"><div><h2>Compras e fornecedores</h2><p class="sub">Entrada de compra atualiza estoque somente no recebimento.</p></div></div><div class="formgrid"><label>Fornecedor<select id="purchaseSupplier"></select></label><label>Previsão de chegada<input id="purchaseExpected" type="date"></label><label>Produto<select id="purchaseProduct"></select></label><label>Quantidade<input id="purchaseQty" type="number" min="0.001" step="0.001"></label><label>Custo unitário<input id="purchaseCost" type="number" min="0" step="0.01"></label><div><button class="btn soft" id="addPurchaseLine" type="button">Adicionar item</button></div><label class="full">Observação<textarea id="purchaseNotes" rows="2"></textarea></label></div><div class="draft" id="purchaseDraft"></div><button class="btn dark" id="createPurchase" type="button">Criar ordem de compra</button><div class="tablewrap" id="purchaseTable"></div></section>
 
-          <section class="card"><h2>Previsão de produção</h2><p class="sub">Usa apenas pedidos/vendas reais concluídos. Sugestão inclui margem de 10%.</p><div class="toolbar" style="margin-top:10px"><input id="forecastDate" type="date"><button class="btn dark" id="loadForecast" type="button">Calcular</button></div><div class="tablewrap" id="forecastTable"></div></section>
+          <section class="card"><h2>Previsão de produção</h2><p class="sub">Usa apenas pedidos/vendas reais concluídos. Sugestão inclui margem de 10%.</p><div class="toolbar padoka-mt-10"><input id="forecastDate" type="date"><button class="btn dark" id="loadForecast" type="button">Calcular</button></div><div class="tablewrap" id="forecastTable"></div></section>
         </div>
 
         <div>
