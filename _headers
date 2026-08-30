@@ -28,3 +28,19 @@
 /mfa.html
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow, noarchive
+
+/enterprise.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/conta.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/pagamento.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow, noarchive
+
+/acompanhamento.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow, noarchive
