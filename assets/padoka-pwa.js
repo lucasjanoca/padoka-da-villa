@@ -99,7 +99,7 @@
   async function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return null;
     try {
-      serviceWorkerRegistration = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+      serviceWorkerRegistration = await navigator.serviceWorker.register('./service-worker.js', { scope: './', updateViaCache: 'none' });
       return serviceWorkerRegistration;
     } catch (error) {
       console.error('Falha ao registrar o app da PADOKA', error);
