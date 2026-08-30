@@ -34,10 +34,12 @@ O projeto segue uma separação entre interface pública e funções administrat
 
 Princípios adotados:
 - nenhuma chave administrativa deve ficar no frontend;
-- operações sensíveis devem validar a identidade e a permissão do usuário no backend;
-- preços, estoque e totais não devem confiar apenas em valores enviados pelo navegador;
-- alterações devem ser testadas na branch `dev` antes de chegar ao `main`;
-- auditorias automáticas verificam estrutura e possíveis segredos antes da publicação.
+- operações sensíveis validam identidade e permissão no backend;
+- preços, estoque e totais não confiam apenas em valores enviados pelo navegador;
+- RPCs públicas sensíveis usam wrappers `SECURITY INVOKER`, com implementação privilegiada fora do schema público;
+- `owner` e `manager` usam MFA/AAL2 para mutações administrativas sensíveis;
+- o GitHub Pages publica somente a aplicação web, excluindo migrations, testes e documentação técnica;
+- auditorias automáticas executam todos os `tests/*.mjs` em cada alteração do `main` e em pull requests.
 
 ## 🚧 Estado atual
 
@@ -68,11 +70,13 @@ Depois acesse `http://localhost:8000/`.
 
 ## 📌 Próximas prioridades
 
-1. Validar o fluxo completo de pedido com dados reais aprovados.
-2. Testar PDV, estoque, produção e perdas de ponta a ponta.
-3. Finalizar regras de pagamento e operação.
-4. Definir integração fiscal e equipamentos antes do uso comercial.
-5. Continuar auditorando segurança, permissões e desempenho do banco.
+A camada de hardening técnico foi aplicada e o Security Advisor da PADOKA está sem avisos pendentes. O que falta para operação comercial depende de dados/serviços reais:
+
+1. Substituir catálogo, preços e códigos demonstrativos pelos dados aprovados pela padaria.
+2. Fazer teste físico de ponta a ponta no caixa, celular/tablet e leitor/câmera.
+3. Escolher e integrar um banco/provedor Pix real com cobrança dinâmica e webhook autenticado.
+4. Definir a integração fiscal adequada antes de tratar o PDV web como emissor fiscal.
+5. Avaliar a migração futura para um projeto Supabase exclusivo da PADOKA para reduzir ainda mais o raio de impacto do backend compartilhado.
 
 ---
 
