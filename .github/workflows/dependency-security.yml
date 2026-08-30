@@ -40,7 +40,8 @@ jobs:
           work="$(mktemp -d)"
           cd "$work"
           npm init -y >/dev/null
-          npm install --ignore-scripts --no-save @supabase/supabase-js@2.112.4 html5-qrcode@2.3.8
+          npm install --ignore-scripts --package-lock-only @supabase/supabase-js@2.112.4 html5-qrcode@2.3.8
+          npm ci --ignore-scripts
           npm audit --omit=dev --audit-level=high
           npm audit signatures
 
