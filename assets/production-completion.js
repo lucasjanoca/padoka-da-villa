@@ -57,8 +57,8 @@
     const remaining=Math.max(0,Number(plan.planned_quantity||0)-Number(plan.produced_quantity||0));
     const pending=pendingFor(plan.id);
     const disabled=plan.status==='completed'||plan.status==='cancelled';
-    const wrap=document.createElement('div');wrap.style.cssText='display:flex;gap:6px;min-width:190px';
-    const qty=document.createElement('input');qty.dataset.prodQty=id;qty.type='number';qty.min='0.001';qty.step='0.001';qty.value=String(pending?.quantity??(remaining>0?remaining:1));qty.style.minWidth='88px';qty.disabled=disabled||!!pending;
+    const wrap=document.createElement('div');wrap.className='padoka-production-controls';
+    const qty=document.createElement('input');qty.dataset.prodQty=id;qty.type='number';qty.min='0.001';qty.step='0.001';qty.value=String(pending?.quantity??(remaining>0?remaining:1));qty.classList.add('padoka-production-qty');qty.disabled=disabled||!!pending;
     const btn=document.createElement('button');btn.className='btn';btn.dataset.prodSave=id;btn.type='button';btn.disabled=disabled;btn.textContent=plan.status==='completed'?'Concluído':plan.status==='cancelled'?'Cancelado':pending?'Tentar novamente':'Registrar';
     if(pending){btn.dataset.requestId=pending.requestId;btn.dataset.requestQuantity=String(pending.quantity)}
     wrap.append(qty,btn);td.appendChild(wrap);if(!disabled)btn.onclick=()=>record(plan,qty,btn)
