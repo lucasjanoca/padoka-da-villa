@@ -1,0 +1,19 @@
+{
+  "name": "PADOKA DA VILLA",
+  "short_name": "PADOKA",
+  "description": "Cardápio, pedidos e acompanhamento da PADOKA DA VILLA.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5efe7",
+  "theme_color": "#15120f",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "assets/logo-padoka.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
