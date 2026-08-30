@@ -36,6 +36,7 @@ for (const page of pages) {
   const source = read(page);
   need(source.includes('assets/padoka-pwa.js?v=3'), `${page}: cliente PWA v3 ausente`);
   need(source.includes('rel="manifest"'), `${page}: manifest PWA ausente`);
+  need(source.includes('rel="apple-touch-icon"') && source.includes('assets/icon-192.png'), `${page}: Apple touch icon ausente`);
 }
 
 need(pushFn.includes('padoka_get_push_server_config'), 'Push: segredo do servidor não vem do backend protegido');
