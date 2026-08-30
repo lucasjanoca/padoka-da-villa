@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const sql=fs.readFileSync('supabase/057_security_self_check.sql','utf8');
+const sql=fs.readFileSync('supabase/057_security_self_check.sql','utf8')+'\n'+fs.readFileSync('supabase/059_security_self_check_production_writes.sql','utf8');
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 const need=(c,m)=>{if(!c)fail(m)};
 
@@ -17,6 +17,7 @@ need(/push_server_secret_rpc_exposed/i.test(sql),'Self-check não valida RPC de 
 need(/private_rpc_schema_anon_usage/i.test(sql),'Self-check não valida exposição do schema privado');
 need(/enterprise_admin_rpc_anon_execute/i.test(sql),'Self-check não valida RPCs administrativas anônimas');
 need(/sensitive_direct_update_restored/i.test(sql),'Self-check não valida UPDATE direto sensível');
+need(/production_plan_direct_write_restored/i.test(sql),'Self-check não valida restauração de escrita direta em produção');
 need(/PADOKA security self-check failed/i.test(sql),'Self-check não registra incidente crítico');
 need(/on conflict \(fingerprint\) do update/i.test(sql),'Incidente do self-check deve ser idempotente');
 need(/padoka-security-self-check-hourly/i.test(sql),'Cron horário do self-check ausente');
