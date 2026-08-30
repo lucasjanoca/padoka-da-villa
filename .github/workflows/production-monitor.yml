@@ -53,6 +53,19 @@ jobs:
             FAILED=1
           }
 
+          check_not_found() {
+            local url="$1"
+            local name="$2"
+            local code
+            code="$(curl --location --silent --show-error --max-time 20 -o /dev/null -w '%{http_code}' "$url")"
+            if [ "$code" != "404" ]; then
+              echo "::error::$name deveria retornar 404, recebeu HTTP $code: $url"
+              FAILED=1
+            else
+              echo "OK: $name não publicado"
+            fi
+          }
+
           check_status() {
             local url="$1"
             local name="$2"
@@ -86,6 +99,10 @@ jobs:
           check "$BASE/manifest.webmanifest" "assets/icon-512.png" "Manifest icon 512"
           check "$BASE/service-worker.js" "padoka-pwa-v6" "Service Worker"
           check "$BASE/.well-known/security.txt" "security/advisories/new" "security.txt"
+          check_not_found "$BASE/supabase/" "Backend Supabase"
+          check_not_found "$BASE/tests/" "Testes internos"
+          check_not_found "$BASE/SECURITY.md" "Documento técnico de segurança"
+          check_not_found "$BASE/.github/" "Configuração GitHub"
           check "https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config" "publishableKey" "Config pública"
           check "$PUSH?action=config" "publicKey" "Push config"
 
