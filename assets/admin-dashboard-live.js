@@ -13,6 +13,21 @@ const operationalAccess=()=>{const role=staffRole();return {inventory:INVENTORY_
 const staffGuardPending=()=>document.documentElement.classList.contains('padoka-staff-pending');
 const currentEpoch=()=>lifecycleEpoch;
 const lifecycleCurrent=(epoch,userId=activeUserId)=>epoch===lifecycleEpoch&&!!userId&&userId===activeUserId&&!staffGuardPending();
+async function safeSession(){
+  try{
+    const {data,error}=await window.padokaSupabase.auth.getSession();
+    if(error){console.error('Falha ao confirmar sessão do dashboard PADOKA',error);return null}
+    return data?.session||null;
+  }catch(error){
+    console.error('Falha de rede ao confirmar sessão do dashboard PADOKA',error);
+    return null;
+  }
+}
+async function sessionStillCurrent(epoch,userId){
+  if(!lifecycleCurrent(epoch,userId))return false;
+  const session=await safeSession();
+  return lifecycleCurrent(epoch,userId)&&session?.user?.id===userId;
+}
 function dayKey(value=new Date()){
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(value);
   const pick=t=>parts.find(p=>p.type===t)?.value||'';
@@ -49,6 +64,12 @@ function clearDashboardState(){
   get('adminOperationalHealth')?.remove();
   for(const id of ['sOrders','sPending','sReady','sSales']){if(get(id))get(id).textContent='—'}
   if(get('recent'))get('recent').replaceChildren();
+}
+function failClosedAndRetry(userId){
+  if(!userId)return clearDashboardState();
+  clearDashboardState();
+  const epoch=currentEpoch();
+  setTimeout(()=>init(userId,epoch),1200);
 }
 function missingOperationalLayer(error){
   const code=String(error?.code||'');
@@ -92,6 +113,7 @@ function renderOperational(inventory,plans,access=operationalAccess()){
 }
 async function refreshOrders(epoch=currentEpoch(),userId=activeUserId){
   if(orderBusy||!window.padokaSupabase||get('panelView')?.classList.contains('hidden')||!lifecycleCurrent(epoch,userId))return;
+  if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return}
   orderBusy=true;
   try{
     const since=new Date(Date.now()-36*60*60*1000).toISOString();
@@ -104,6 +126,7 @@ async function refreshOrders(epoch=currentEpoch(),userId=activeUserId){
 }
 async function refreshOperational(epoch=currentEpoch(),userId=activeUserId){
   if(opsBusy||!window.padokaSupabase||get('panelView')?.classList.contains('hidden')||!lifecycleCurrent(epoch,userId))return false;
+  if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return false}
   const access=operationalAccess();
   if(!access.inventory&&!access.production){get('adminOperationalHealth')?.remove();return false}
   opsBusy=true;
@@ -139,15 +162,10 @@ async function waitForValidatedStaff(expectedUserId='',expectedEpoch=currentEpoc
   for(let i=0;i<80;i++){
     if(expectedEpoch!==lifecycleEpoch)return '';
     if(!staffGuardPending()&&window.padokaStaffRole){
-      try{
-        const {data:{session},error}=await window.padokaSupabase.auth.getSession();
-        if(expectedEpoch!==lifecycleEpoch)return '';
-        if(error){console.error('Falha ao confirmar sessão do dashboard PADOKA',error);return ''}
-        if(session?.user?.id&&(!expectedUserId||session.user.id===expectedUserId))return session.user.id;
-      }catch(error){
-        if(expectedEpoch===lifecycleEpoch)console.error('Falha de rede ao confirmar sessão do dashboard PADOKA',error);
-        return '';
-      }
+      const session=await safeSession();
+      if(expectedEpoch!==lifecycleEpoch)return '';
+      if(session?.user?.id&&(!expectedUserId||session.user.id===expectedUserId))return session.user.id;
+      return '';
     }
     await new Promise(resolve=>setTimeout(resolve,100));
   }
