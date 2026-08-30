@@ -29,6 +29,7 @@ const checks=[
   ['confirma a mesma identidade antes de ativar',/session\?\.user\?\.id!==expectedUserId/.test(src)&&/activeUserId=expectedUserId/.test(src)],
   ['captura falha de transporte ao confirmar sessão',/async function confirmedSession\(\).*?try\{.*?auth\.getSession\(\).*?catch\{return null\}/s.test(src)],
   ['falha fechada quando sessão não pode ser confirmada',/const session=await confirmedSession\(\);.*?session\?\.user\?\.id!==expectedUserId/s.test(src)&&/start\(\)\.catch\(\(\)=>clearProduction\(\)\)/.test(src)],
+  ['confirma identidade imediatamente antes da RPC de produção',/async function record\(.*?const preflightSession=await confirmedSession\(\);.*?preflightSession\?\.user\?\.id!==userId.*?const operation=stored\|\|savePending.*?await sb\.rpc\('padoka_record_production'/s.test(src)],
   ['revalida identidade após RPC de produção',/await sb\.rpc\('padoka_record_production'.*?const session=await confirmedSession\(\).*?session\?\.user\?\.id!==userId/s.test(src)],
   ['captura falha de transporte no probe da capability',/try\{probe=await sb\.from\('padoka_production_batches'\).*?catch\(error\).*?return/s.test(src)],
   ['encerra subscription no pagehide',/pagehide/.test(src)&&/authSubscription\?\.unsubscribe/.test(src)],
