@@ -17,8 +17,11 @@ for(const page of pages){
   const policy=meta?.[1]||'';
   const scriptDirective=(policy.match(/(?:^|;\s*)script-src\s+([^;]+)/)||[])[1]||'';
   const styleDirective=(policy.match(/(?:^|;\s*)style-src\s+([^;]+)/)||[])[1]||'';
+  const imgDirective=(policy.match(/(?:^|;\s*)img-src\s+([^;]+)/)||[])[1]||'';
   if(scriptDirective.includes("'unsafe-inline'"))fail(page+': script-src ainda permite unsafe-inline');
   if(/https?:\/\//i.test(scriptDirective))fail(page+': script-src ainda permite origem remota');
+  if(/(?:^|\s)https:(?:\s|$)/.test(imgDirective))fail(page+': img-src ainda permite qualquer origem HTTPS');
+  if(!imgDirective.includes('https://images.unsplash.com'))fail(page+': allowlist de imagem esperada ausente');
   if(styleDirective.includes("'unsafe-inline'"))fail(page+': style-src ainda permite unsafe-inline');
   if(page==='pdv.html'){
     if(!/style-src-attr 'unsafe-inline'/.test(policy))fail(page+': scanner precisa da exceção style-src-attr controlada');
