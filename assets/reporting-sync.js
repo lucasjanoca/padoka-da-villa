@@ -32,6 +32,12 @@
     if(channel&&sb){try{sb.removeChannel(channel)}catch{}}channel=null;
     if(removeUi)$('serverReport')?.remove();
   }
+  function failClosedAndRetry(userId){
+    if(!userId){clearReporting();return}
+    clearReporting();activeUserId=userId;
+    const epoch=lifecycleEpoch;
+    setTimeout(()=>activate(userId,epoch),3000);
+  }
   async function confirmedSession(expectedUserId,expectedEpoch){
     try{
       const {data:{session},error}=await sb.auth.getSession();
@@ -43,6 +49,8 @@
     const epoch=lifecycleEpoch,userId=activeUserId,from=$('reportFrom')?.value||today(),to=$('reportTo')?.value||today(),problem=validRange(from,to),state=$('reportState'),btn=$('reportLoad');if(problem){if(state){state.className='notice';state.textContent=problem}return}
     if(!enabled||!sb||!userId)return;
     if(btn){btn.disabled=true;btn.textContent='Atualizando…'}
+    const preflightSession=await confirmedSession(userId,epoch);
+    if(!preflightSession){if(epoch===lifecycleEpoch&&activeUserId===userId)failClosedAndRetry(userId);return}
     let result;
     try{result=await sb.rpc('padoka_report_summary',{p_from:from,p_to:to})}catch{
       if(epoch!==lifecycleEpoch||activeUserId!==userId)return;
