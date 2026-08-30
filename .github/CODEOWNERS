@@ -1,12 +1,3 @@
-# Security-sensitive PADOKA surfaces
-/.github/ @lucasjanoca
-/supabase/ @lucasjanoca
-/tests/ @lucasjanoca
-/vendor/ @lucasjanoca
-/_headers @lucasjanoca
-/SECURITY.md @lucasjanoca
-/service-worker.js @lucasjanoca
-/assets/internal-nav.js @lucasjanoca
-/assets/order-idempotency.js @lucasjanoca
-/assets/customer-notifications.js @lucasjanoca
-/assets/padoka-pwa.js @lucasjanoca
+# PADOKA DA VILLA
+# O proprietário do repositório revisa alterações em qualquer parte do sistema.
+* @lucasjanoca
