@@ -14,7 +14,7 @@
       if(!r.ok)throw new Error('config unavailable');
       const cfg=await r.json();
       const url=cfg.url+'/rest/v1/padoka_feature_flags?select=key,enabled,config&audience=eq.public';
-      const f=await fetch(url,{cache:'no-store',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+cfg.publishableKey}});
+      const f=await fetch(url,{cache:'no-store',headers:{apikey:cfg.publishableKey}});
       if(!f.ok)throw new Error('flags unavailable');
       const rows=await f.json(),flags={},config={};
       for(const row of rows||[]){flags[row.key]=row.enabled===true;config[row.key]=row.config||{}}
