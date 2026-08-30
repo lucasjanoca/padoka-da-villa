@@ -1,0 +1,22 @@
+title: PADOKA DA VILLA
+description: Plataforma web da PADOKA DA VILLA
+encoding: utf-8
+
+# GitHub Pages deve publicar somente a aplicação web.
+# Código de backend, migrations, testes e documentação técnica ficam no repositório,
+# mas não fazem parte do artefato público servido pelo Pages.
+exclude:
+  - .github
+  - .gitignore
+  - .nojekyll
+  - AUTH_STATUS.md
+  - CHANGELOG.md
+  - CHANGELOG.d
+  - DEPLOYMENT.md
+  - PIX_SETUP_CHECKLIST.md
+  - README.md
+  - SECURITY.md
+  - supabase
+  - tests
+  - docs
+  - vendor
