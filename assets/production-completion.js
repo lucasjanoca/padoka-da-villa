@@ -75,9 +75,12 @@
     const quantity=stored?Number(stored.quantity):requested;
     if(!Number.isFinite(quantity)||quantity<=0)return toast('Informe uma quantidade válida.');
     if(stored&&Number.isFinite(requested)&&requested!==Number(stored.quantity)){input.value=String(stored.quantity)}
+    btn.disabled=true;input.disabled=true;btn.textContent=stored?'Confirmando sessão…':'Confirmando…';
+    const preflightSession=await confirmedSession();
+    if(epoch!==lifecycleEpoch||userId!==activeUserId||preflightSession?.user?.id!==userId){clearProduction();return}
     const operation=stored||savePending(plan.id,quantity,btn.dataset.requestId||crypto.randomUUID());
     btn.dataset.requestId=operation.requestId;btn.dataset.requestQuantity=String(operation.quantity);
-    btn.disabled=true;input.disabled=true;btn.textContent='Registrando…';
+    btn.textContent='Registrando…';
     let error=null;
     try{
       const result=await sb.rpc('padoka_record_production',{p_plan_id:plan.id,p_quantity:Number(operation.quantity),p_request_id:operation.requestId});
