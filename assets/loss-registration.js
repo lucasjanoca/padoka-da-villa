@@ -24,10 +24,12 @@
   }
   async function getSessionSafe(epoch,userId=''){
     try{
-      const {data:{session}}=await sb.auth.getSession();
+      const {data,error}=await sb.auth.getSession();
+      if(error)throw error;
+      const session=data?.session||null;
       if(epoch!==lifecycleEpoch)return null;
       if(userId&&session?.user?.id!==userId)return null;
-      return session||null;
+      return session;
     }catch(error){
       if(epoch===lifecycleEpoch){console.error('PADOKA loss auth session:',error);blockCapability('Não foi possível confirmar seu acesso agora. Tente novamente após reconectar.');}
       return null;
