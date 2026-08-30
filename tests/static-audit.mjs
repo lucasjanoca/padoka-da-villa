@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
 const read = p => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
-const files = ['index.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html','mfa.html'];
+const files = ['index.html','produto.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html','mfa.html','enterprise.html'];
 const html = Object.fromEntries(files.map(f => [f, read(f)]));
 const catalog = read('assets/catalog.js');
 const orderIdempotency = read('assets/order-idempotency.js');
@@ -13,12 +13,12 @@ const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
 
 // Public pages must not advertise internal operational modules.
-for (const f of ['index.html','conta.html','pagamento.html','acompanhamento.html']) {
+for (const f of ['index.html','produto.html','conta.html','pagamento.html','acompanhamento.html']) {
   ok(!/(href=["'][^"']*(?:internal|pdv|gestao|pedidos)\.html)/i.test(html[f]), `${f}: expõe link para módulo interno`);
 }
 
 // Every internal surface must remain protected by the staff table.
-for (const f of ['internal.html','pedidos.html','pdv.html','gestao.html']) {
+for (const f of ['internal.html','pedidos.html','pdv.html','gestao.html','enterprise.html']) {
   ok(html[f].includes('padoka_staff_users'), `${f}: não valida padoka_staff_users`);
 }
 
