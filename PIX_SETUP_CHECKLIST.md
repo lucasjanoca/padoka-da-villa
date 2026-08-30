@@ -9,6 +9,8 @@ O checkout público está em modo **Pix automático obrigatório / fail-closed**
 - O cliente recebe uma mensagem amigável informando que o pagamento automático está em configuração.
 - Comprovante, imagem, PDF, texto ou confirmação manual **não libera pedido**.
 - O endpoint `padoka-pix-checkout` continua fechado por padrão enquanto não houver um provedor oficial configurado.
+- O código implantado da Edge Function está versionado no repositório e sincronizado com a produção.
+- A função prefere `SUPABASE_SECRET_KEYS`/`sb_secret_...` no servidor e mantém `SUPABASE_SERVICE_ROLE_KEY` apenas como fallback legado; nenhuma dessas chaves é enviada ao navegador.
 - Valores e itens continuam autoritativos no servidor; o navegador não define total pago, txid nem status `paid`.
 - Clientes não podem alterar diretamente `padoka_orders`, equipe ou eventos de pagamento.
 
@@ -38,6 +40,6 @@ A regra operacional atual é:
 ## Privacidade e secrets
 
 - Nunca colocar Client Secret, certificado privado, segredo de webhook, `service_role` ou outra chave administrativa em HTML/JavaScript público.
-- Secrets financeiros devem existir somente no backend do projeto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`).
+- Secrets financeiros devem existir somente no backend do projeto **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) enquanto esse for o backend ativo. Se a PADOKA migrar para um projeto Supabase exclusivo, os secrets devem ser recriados/rotacionados no novo projeto, nunca copiados para o frontend.
 - O projeto InfoTech.io não deve ser usado ou alterado para a integração PADOKA.
 - Objetos exclusivos continuam isolados por prefixo `padoka_`.
