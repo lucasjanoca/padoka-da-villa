@@ -16,6 +16,8 @@ const checks=[
   ['não escreve estoque diretamente',!/(from\('padoka_inventory'\).*?(insert|update|upsert)|\.from\('padoka_inventory'\)\.update)/s.test(src)],
   ['não simula sucesso sem RPC',!/localStorage|padoka_demo_production/.test(src)],
   ['trata permissão sem expor detalhe técnico',/não tem permissão|Sem permissão/i.test(src)],
+  ['usa o dia operacional de São Paulo',/TZ='America\/Sao_Paulo'/.test(src)&&/Intl\.DateTimeFormat\('en-CA',\{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'\}\)/.test(src)&&/\.eq\('plan_date',today\(\)\)/.test(src)],
+  ['não depende do fuso local do aparelho para o dia',!/toLocaleDateString\('en-CA'\)/.test(src)],
   ['re-renderiza controle quando plano muda',/prodSignature/.test(src)&&/replaceChildren\(\)/.test(src)&&/function signature\(plan\)/.test(src)],
   ['refresh reconcilia e recarrega antes de redesenhar',/async function refresh\(\).*?reconcilePending\(epoch\).*?loadPlans\(epoch\).*?enhance\(\)/s.test(src)],
   ['realtime atualiza plano e lote',/padoka_production_plans/.test(src)&&/padoka_production_batches/.test(src)&&/scheduleRefresh/.test(src)],
