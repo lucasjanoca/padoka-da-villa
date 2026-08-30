@@ -1,19 +1,21 @@
 'use strict';
 
-const CACHE_NAME = 'padoka-pwa-v2';
+const CACHE_NAME = 'padoka-pwa-v3';
 const APP_SHELL = [
   './index.html',
+  './produto.html',
   './manifest.webmanifest',
   './assets/logo-padoka.svg',
+  './assets/catalog.js',
   './assets/padoka-pwa.js?v=2'
 ];
 
 const PUBLIC_CACHE_PATHS = new Set([
   'index.html',
-  'conta.html',
-  'acompanhamento.html',
+  'produto.html',
   'manifest.webmanifest',
   'assets/logo-padoka.svg',
+  'assets/catalog.js',
   'assets/padoka-pwa.js'
 ]);
 
