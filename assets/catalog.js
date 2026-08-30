@@ -35,7 +35,7 @@ function refreshConsumers(){
 }
 function markUnavailable(){
   const empty=document.getElementById('empty');
-  if(empty){empty.textContent='Cardápio temporariamente indisponível. Tente novamente em instantes.';empty.style.display='block'}
+  if(empty){empty.textContent='Cardápio temporariamente indisponível. Tente novamente em instantes.';empty.classList.add('padoka-catalog-empty-visible')}
 }
 function showProvisionalNotice(){
   const section=document.getElementById('cardapio');
@@ -44,7 +44,7 @@ function showProvisionalNotice(){
   const note=document.createElement('div');
   note.id='padokaCatalogNotice';
   note.textContent='Catálogo e valores provisórios até a confirmação dos dados oficiais da padaria.';
-  note.style.cssText='margin:7px 0 2px;padding:8px 10px;border:1px solid #e7dbcf;border-radius:12px;background:#fffdf9;color:#776e65;font-size:9px;line-height:1.4';
+  note.className='padoka-catalog-note';
   (cats||section.querySelector('.search'))?.insertAdjacentElement('afterend',note);
 }
 function showPublicDataNotice(){
