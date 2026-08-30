@@ -283,14 +283,14 @@ begin
   end if;
   return query
   with raw as (
-    select (o.completed_at at time zone 'America/Sao_Paulo')::date day,oi.product_id,oi.product_name,oi.quantity
+    select (o.completed_at at time zone 'America/Sao_Paulo')::date as sale_day,oi.product_id,oi.product_name,oi.quantity
     from public.padoka_orders o
     join public.padoka_order_items oi on oi.order_id=o.id
     where o.status='completed' and o.payment_status in ('paid','paid_late') and not o.is_test
       and o.completed_at is not null
       and o.completed_at >= now()-make_interval(weeks=>v_weeks)
     union all
-    select (s.created_at at time zone 'America/Sao_Paulo')::date day,si.product_id,si.product_name,si.quantity
+    select (s.created_at at time zone 'America/Sao_Paulo')::date as sale_day,si.product_id,si.product_name,si.quantity
     from public.padoka_sales s
     join public.padoka_sale_items si on si.sale_id=s.id
     where s.status='completed' and not s.is_test
@@ -298,16 +298,16 @@ begin
   ), same_weekday as (
     select r.*
     from raw r
-    where extract(isodow from r.day)=extract(isodow from v_target)
+    where extract(isodow from r.sale_day)=extract(isodow from v_target)
   ), per_day as (
-    select day,product_id,max(product_name) product_name,sum(quantity) qty
-    from same_weekday group by day,product_id
+    select sale_day,product_id,max(product_name) product_name,sum(quantity) qty
+    from same_weekday group by sale_day,product_id
   )
   select d.product_id,max(d.product_name),
          round(avg(d.qty),2),
          ceil(avg(d.qty)*1.10),
-         count(distinct d.day)::integer,
-         case when count(distinct d.day)>=8 then 'high' when count(distinct d.day)>=4 then 'medium' else 'low' end
+         count(distinct d.sale_day)::integer,
+         case when count(distinct d.sale_day)>=8 then 'high' when count(distinct d.sale_day)>=4 then 'medium' else 'low' end
   from per_day d
   group by d.product_id
   order by ceil(avg(d.qty)*1.10) desc,max(d.product_name);
