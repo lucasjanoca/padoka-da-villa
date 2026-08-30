@@ -4,9 +4,9 @@
     if(img.dataset.padokaFallbackApplied==='1')return;
     img.dataset.padokaFallbackApplied='1';
     img.src='assets/logo-padoka.svg';
-    img.style.objectFit='contain';
-    const padding=String(img.getAttribute('data-padoka-fallback')||'').trim();
-    if(padding)img.style.padding=padding;
+    img.classList.add('padoka-fallback-applied');
+    const padding=String(img.getAttribute('data-padoka-fallback')||'').trim().replace(/px$/,'');
+    if(['15','16','24','26'].includes(padding))img.classList.add('padoka-fallback-pad-'+padding);
   }
   document.addEventListener('error',event=>fallback(event.target),true);
 })();
