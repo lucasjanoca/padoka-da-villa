@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#15120f">
   <title>Caixa / PDV • PADOKA DA VILLA</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <link rel="stylesheet" href="assets/internal-nav.css">
   <style>
     :root{--bg:#f3eee8;--paper:#fff;--ink:#17130f;--muted:#776f67;--line:#e5ddd4;--dark:#15120f;--brand:#a86f3d;--ok:#2f6b49;--danger:#a13e34}
@@ -41,7 +41,7 @@
     </div>
   </div>
   <div class="toast hidden" id="toast"></div>
-  <script src="assets/image-fallback.js"></script><script src="assets/catalog.js"></script><script src="assets/internal-nav.js"></script><script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="assets/image-fallback.js"></script><script src="assets/catalog.js"></script><script src="assets/internal-nav.js"></script><script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.js" integrity="sha512-r6rDA7W6ZeQhvl8S7yRVQUKVHdexq+GAlNkNNqVC7YyIV+NwqCTJe2hDWCiffTyRNOeGEzRRJ9ifvRm/HCzGYg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
     const CONFIG_URL='https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config',$=id=>document.getElementById(id),visual=window.PADOKA_CATALOG_BY_ID||{};
     let sb=null,products=[],cart={},staffRole='',pdvReady=false,saleBusy=false,cameraScanner=null;
