@@ -1,0 +1,47 @@
+.padoka-pwa-card{position:fixed;left:12px;right:12px;bottom:88px;z-index:96;max-width:460px;margin:auto;background:#fffdf9;color:#17130f;border:1px solid #dfd1c3;border-radius:19px;box-shadow:0 18px 50px rgba(30,20,12,.22);padding:14px;display:grid;grid-template-columns:44px 1fr auto;gap:11px;align-items:center;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.padoka-pwa-card[hidden]{display:none!important}
+.padoka-pwa-icon{width:44px;height:44px;border-radius:13px;background:#15120f;display:grid;place-items:center;overflow:hidden}
+.padoka-pwa-icon img{width:38px;height:38px;object-fit:contain}
+.padoka-pwa-copy strong{display:block;font-size:12px;line-height:1.25}
+.padoka-pwa-copy span{display:block;margin-top:3px;color:#776e65;font-size:9.5px;line-height:1.35}
+.padoka-pwa-actions{display:flex;gap:6px;align-items:center}
+.padoka-pwa-btn{border:0;border-radius:11px;padding:9px 10px;font:800 9.5px/1 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;white-space:nowrap;background:#15120f;color:#fff}
+.padoka-pwa-close{border:0;background:transparent;color:#776e65;font-size:18px;line-height:1;padding:5px;cursor:pointer}
+.padoka-notify{position:fixed;right:12px;top:78px;z-index:92;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.padoka-notify-btn{width:46px;height:46px;border:1px solid #dfd1c3;border-radius:15px;background:#fffdf9;color:#17130f;box-shadow:0 12px 34px #27180f24;display:grid;place-items:center;font-size:20px;cursor:pointer;position:relative}
+.padoka-notify-badge{position:absolute;right:-5px;top:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#9b453a;color:#fff;border:2px solid #fff;font:900 9px/15px Inter,system-ui,sans-serif;display:grid;place-items:center}
+.padoka-notify-badge[hidden]{display:none}
+.padoka-notify-panel{position:absolute;right:0;top:54px;width:min(360px,calc(100vw - 24px));max-height:min(520px,70vh);overflow:hidden;background:#fffdf9;border:1px solid #dfd1c3;border-radius:20px;box-shadow:0 22px 60px #25170e35}
+.padoka-notify-panel[hidden]{display:none}
+.padoka-notify-head{padding:14px 14px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #eee4da}
+.padoka-notify-head strong{font-size:12px}
+.padoka-notify-read{border:0;background:#eee5dc;border-radius:10px;padding:7px 9px;font:850 9px/1 Inter,system-ui,sans-serif;cursor:pointer}
+.padoka-notify-list{overflow:auto;max-height:min(450px,60vh)}
+.padoka-notify-item{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #f0e8e1;background:#fffdf9;padding:12px 14px;cursor:pointer}
+.padoka-notify-item.unread{background:#fff7e9}
+.padoka-notify-item strong{display:block;font-size:10.5px;color:#17130f}
+.padoka-notify-item span{display:block;margin-top:4px;font-size:9.5px;line-height:1.4;color:#776e65}
+.padoka-notify-item small{display:block;margin-top:6px;font-size:8px;color:#9b8f84}
+.padoka-notify-empty{padding:24px 14px;text-align:center;color:#776e65;font-size:10px}
+.padoka-notify[hidden]{display:none}
+.padoka-staff-pending #app,.padoka-staff-pending body>main,.padoka-role-pending #app,.padoka-role-pending body>main{visibility:hidden!important}
+body.padoka-body-lock{overflow:hidden!important}
+.padoka-fallback-applied{object-fit:contain!important}
+.padoka-fallback-pad-15{padding:15px!important}
+.padoka-fallback-pad-16{padding:16px!important}
+.padoka-fallback-pad-24{padding:24px!important}
+.padoka-fallback-pad-26{padding:26px!important}
+.padoka-hint-strong-password{display:block;margin-top:5px;color:#776e66;font-size:8.5px}
+.padoka-block-center{display:block;text-align:center}
+.padoka-inline-h2-17{margin:0 0 5px;font-size:17px}
+.padoka-inline-sub{margin:0;color:var(--muted);font-size:10.5px;line-height:1.45}
+.padoka-inline-h2{margin:0 0 6px}
+.padoka-mt-10{margin-top:10px!important}
+.padoka-mt-12{margin-top:12px!important}
+.padoka-block-mt-12{display:block;margin-top:12px}
+.padoka-muted-link{color:#aaa199;font-size:10px;text-decoration:none}
+.padoka-mt-0{margin-top:0}
+.padoka-stats-five{grid-template-columns:repeat(5,1fr)!important;margin-bottom:0!important}
+@media(min-width:700px){.padoka-pwa-card{left:auto;right:18px;bottom:18px;margin:0;width:min(440px,calc(100% - 36px))}}
+@media(max-width:520px){.padoka-notify{right:10px;top:72px}.padoka-notify-panel{position:fixed;left:10px;right:10px;top:126px;width:auto}}
+@media(max-width:410px){.padoka-pwa-card{grid-template-columns:40px 1fr}.padoka-pwa-actions{grid-column:1/-1;justify-content:flex-end}.padoka-pwa-icon{width:40px;height:40px}}
