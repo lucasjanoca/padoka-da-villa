@@ -45,25 +45,7 @@
     return session?.user?.id===expectedUserId&&window.padokaStaffRole==='owner';
   }
 
-  function addStyles(){
-    if(document.getElementById('padokaStaffManagementStyle'))return;
-    const style=document.createElement('style');
-    style.id='padokaStaffManagementStyle';
-    style.textContent=`
-      .staff-enroll{border:1px solid var(--line);border-radius:16px;padding:13px;background:#faf8f5;margin-bottom:10px}.staff-enroll h3{margin:0 0 4px;font-size:13px}.staff-enroll p{margin:0;color:var(--muted);font-size:9px;line-height:1.45}.staff-enroll-form{display:grid;grid-template-columns:minmax(190px,1fr) minmax(140px,.55fr) auto;gap:8px;margin-top:10px}.staff-enroll-form input,.staff-enroll-form select{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;font-size:9.5px}.staff-enroll-form button{border:0;border-radius:10px;padding:10px 12px;background:var(--dark);color:#fff;font-size:9px;font-weight:950}.staff-enroll-form button:disabled{opacity:.5}.staff-enroll-msg{min-height:16px;margin-top:7px!important;font-weight:850}.staff-enroll-msg.ok{color:#285b3e}.staff-enroll-msg.error{color:#873f35}
-      .staff-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:10px}
-      .staff-summary>div{border:1px solid var(--line);border-radius:14px;padding:12px;background:#faf8f5}
-      .staff-summary small{display:block;font-size:8px;color:var(--muted);font-weight:900}.staff-summary strong{display:block;font-size:21px;margin-top:5px}
-      .staff-list{display:grid;gap:8px}.staff-row{border:1px solid var(--line);border-radius:15px;padding:12px;display:grid;grid-template-columns:minmax(190px,1.2fr) minmax(140px,.7fr) auto auto;gap:9px;align-items:center}
-      .staff-id strong{display:block;font-size:11px}.staff-id small{display:block;color:var(--muted);font-size:8.5px;margin-top:3px;overflow-wrap:anywhere}.staff-role{border:1px solid var(--line);border-radius:10px;padding:9px;background:#fff;font-size:9.5px}.staff-active{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:900}.staff-save{border:0;border-radius:10px;padding:9px 11px;background:var(--dark);color:#fff;font-size:9px;font-weight:950}.staff-save:disabled,.staff-role:disabled{opacity:.5}.staff-note{font-size:9px;color:var(--muted);line-height:1.45;margin-top:10px}
-      @media(max-width:760px){.staff-enroll-form{grid-template-columns:1fr 1fr}.staff-enroll-form button{grid-column:1/-1}.staff-row{grid-template-columns:1fr 1fr}.staff-id{grid-column:1/-1}.staff-save{width:100%}}
-      @media(max-width:460px){.staff-enroll-form{grid-template-columns:1fr}.staff-enroll-form button{grid-column:auto}.staff-summary{grid-template-columns:1fr}.staff-row{grid-template-columns:1fr}.staff-id{grid-column:auto}.staff-active{padding:4px 0}}
-    `;
-    document.head.appendChild(style);
-  }
-
   function ensureUI(){
-    addStyles();
     let tab=document.querySelector('.tabs a[href="?tab=equipe"]');
     if(!tab){
       tab=document.createElement('a');
