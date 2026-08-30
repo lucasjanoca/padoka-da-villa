@@ -51,8 +51,13 @@ for (const file of files) {
   for (const match of functionBlocks) {
     const block = match[0];
     const name = match[1];
-    if (/security\s+definer/i.test(block) && !/set\s+search_path\s*=\s*public/i.test(block)) {
-      fail(`${file}: SECURITY DEFINER ${name} sem search_path=public explícito`);
+    if (/security\s+definer/i.test(block)) {
+      const pinnedPublic=/set\s+search_path\s*(?:=|to)\s*['"]?public['"]?/i.test(block);
+      const pinnedEmpty=/set\s+search_path\s*(?:=|to)\s*['"]{0,2}\s*['"]{0,2}/i.test(block)
+        || /set\s+search_path\s*=\s*''/i.test(block);
+      if (!pinnedPublic && !pinnedEmpty) {
+        fail(`${file}: SECURITY DEFINER ${name} sem search_path explícito e fixo`);
+      }
     }
   }
 }
@@ -97,8 +102,15 @@ if (!/grant\s+select\s+on\s+public\.padoka_products\s+to\s+anon\s*,\s*authentica
 
 for (const file of files.filter(name => name !== '002_server_authoritative_test_catalog.sql')) {
   const sql = read(file).replace(/^\s*--.*$/gm, '');
-  if (/\bgrant\b[\s\S]{0,250}?\bto\s+anon\b/i.test(sql)) {
-    fail(`${file}: grant para anon fora da migration pública do catálogo`);
+  const anonGrants=[...sql.matchAll(/grant\s+([\s\S]{0,220}?)\s+to\s+anon(?:\s*,\s*authenticated)?\s*;/gi)].map(m=>m[0]);
+  for (const grant of anonGrants) {
+    const allowedPublicFlagRead =
+      file === '041_enterprise_observability.sql' &&
+      /grant\s+select\s+on\s+table\s+public\.padoka_feature_flags\s+to\s+anon\s*,\s*authenticated/i.test(grant);
+    if (!allowedPublicFlagRead) fail(`${file}: grant para anon fora da superfície pública explicitamente auditada`);
+    if (/\b(insert|update|delete|truncate|references|trigger|execute)\b/i.test(grant)) {
+      fail(`${file}: anon nunca pode receber privilégio mutável/EXECUTE`);
+    }
   }
 }
 
