@@ -52,16 +52,29 @@ jobs:
           test -s vendor/supabase-js-2.112.4.js
           test -s vendor/html5-qrcode-2.3.8.js
 
-      - name: Commit vendored dependencies
+      - name: Generate PWA PNG icons
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- vendor/ && git ls-files --error-unmatch vendor/SHA256SUMS >/dev/null 2>&1; then
-            echo "Vendored dependencies already current."
+          if ! command -v rsvg-convert >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends librsvg2-bin
+          fi
+          rsvg-convert -w 192 -h 192 assets/logo-padoka.svg > assets/icon-192.png
+          rsvg-convert -w 512 -h 512 assets/logo-padoka.svg > assets/icon-512.png
+          test -s assets/icon-192.png
+          test -s assets/icon-512.png
+
+      - name: Commit vendored dependencies and icons
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- vendor/ assets/icon-192.png assets/icon-512.png && git ls-files --error-unmatch vendor/SHA256SUMS >/dev/null 2>&1 && git ls-files --error-unmatch assets/icon-192.png >/dev/null 2>&1 && git ls-files --error-unmatch assets/icon-512.png >/dev/null 2>&1; then
+            echo "Vendored dependencies and PWA icons already current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add vendor/
-          git commit -m "build: vendor exact browser dependencies"
+          git add vendor/ assets/icon-192.png assets/icon-512.png
+          git commit -m "build: vendor exact browser dependencies and PWA icons"
           git push
