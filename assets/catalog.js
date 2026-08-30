@@ -8,7 +8,7 @@ const visual=[
 {id:'esfiha',unit:'100 g',desc:'Esfiha assada com massa macia e recheio bem temperado.',img:'https://recipesblob.oetker.com.br/assets/0b7a266463ca46f6a4f52fc661dade26/1272x764/esfiha.jpg',tag:'Assado'},
 {id:'misto',unit:'un.',desc:'Pão tostado com presunto e queijo derretido.',img:'https://static-images.ifood.com.br/pratos/5bbd48af-70a2-4bfb-a192-66d1503d772a/202408011835_1O21_i.jpg',tag:'Rápido'},
 {id:'combo-noturno',unit:'combo',desc:'Seleção prática para retirada na Padoca Noturna.',img:'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=900&q=82',tag:'🌙 Noturna'},
-{id:'bolo',unit:'fatia',desc:'Fatia generosa de bolo para acompanhar o café.',img:'https://www.oreporterregional.com.br/images/noticias/48030/5d022d777b22c7aa729233c926f86ea4.jpg',tag:'Doce'},
+{id:'bolo',unit:'fatia',desc:'Fatia generosa de bolo para acompanhar o café.',img:'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&w=900&q=82',tag:'Doce'},
 {id:'sonho',unit:'100 g',desc:'Sonho macio, recheado com creme e finalizado com açúcar.',img:'https://p2.trrsf.com/image/fget/cf/1200/1200/middle/images.terra.com/2024/07/02/958314339-sonho-de-padaria-1.jpg',tag:'Clássico'},
 {id:'cookie',unit:'100 g',desc:'Cookie macio por dentro com gotas de chocolate.',img:'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=900&q=82',tag:'Queridinho'},
 {id:'muffin',unit:'100 g',desc:'Bolinho individual macio e perfeito para o café.',img:'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&w=900&q=82',tag:'Café'},
