@@ -1,0 +1,1 @@
+alter table public.padoka_push_config\n  alter column vapid_subject\n  set default 'https://lucasjanoca.github.io/padoka-da-villa/';\n
