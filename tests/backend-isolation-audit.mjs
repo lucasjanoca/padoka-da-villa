@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
 const root = new URL('../', import.meta.url);
-const runtimeFiles = ['index.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html'];
+const runtimeFiles = ['index.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html','mfa.html'];
 const assetsDir = new URL('assets/', root);
 for (const name of fs.readdirSync(assetsDir)) if (name.endsWith('.js')) runtimeFiles.push(`assets/${name}`);
 const migrationFiles = [];
