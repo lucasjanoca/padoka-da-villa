@@ -14,6 +14,11 @@
   function blockLegacyFallback(message='Carregando configurações do servidor…'){active=false;setControlsEnabled(false);const btn=$('cfgSave');if(btn)btn.onclick=()=>toast('As configurações do servidor estão indisponíveis. Nada foi salvo apenas neste navegador.');showState(message)}
   async function clearChannel(){if(!channel||!sb)return;const current=channel;channel=null;try{await sb.removeChannel(current)}catch{}}
   function resetForIdentityChange(message='Revalidando permissões da conta interna…'){lifecycleEpoch+=1;activeUserId='';active=false;clearChannel();blockLegacyFallback(message)}
+  function failClosedAndRetry(userId,message='Não foi possível confirmar a sessão interna. Verifique a conexão e tente novamente.'){
+    if(!userId){resetForIdentityChange(message);return}
+    resetForIdentityChange(message);
+    setTimeout(()=>activateForUser(userId),3000)
+  }
   async function safeSession(context='session'){
     if(!sb)return null;
     try{
@@ -30,6 +35,10 @@
   async function load(){
     const epoch=lifecycleEpoch,userId=activeUserId;
     if(!userId||!active)return false;
+    if(!await identityStillCurrent(epoch,userId)){
+      if(epoch===lifecycleEpoch&&activeUserId===userId)failClosedAndRetry(userId);
+      return false
+    }
     let response;
     try{response=await sb.rpc('padoka_get_settings')}
     catch(error){
@@ -49,6 +58,10 @@
     const btn=$('cfgSave'),open=$('cfgOpen')?.value,close=$('cfgClose')?.value,night=$('cfgNight')?.value||null,payment=paymentToDb[$('cfgPayment')?.value]||null,note=$('cfgNote')?.value?.trim()||null;
     if(!open||!close)return toast('Informe abertura e fechamento.');if(open>=close)return toast('O fechamento precisa ser depois da abertura.');
     if(btn)btn.disabled=true;
+    if(!await identityStillCurrent(epoch,userId)){
+      if(epoch===lifecycleEpoch&&activeUserId===userId)failClosedAndRetry(userId);
+      return
+    }
     let response;
     try{response=await sb.rpc('padoka_update_settings',{p_open_time:open,p_close_time:close,p_night_time:night,p_payment_method:payment,p_note:note})}
     catch(error){
