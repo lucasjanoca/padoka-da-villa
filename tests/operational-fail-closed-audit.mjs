@@ -62,20 +62,30 @@ if (/byId\s*=\s*Object\.fromEntries\(catalog\.map/.test(sync)) {
 }
 
 const authLifecycleMarkers = [
+  'async function safeSession()',
+  'const {data,error}=await sb.auth.getSession()',
+  "if(error){console.error('Falha ao confirmar sessão operacional PADOKA',error);return null}",
+  "console.error('Falha de rede ao confirmar sessão operacional PADOKA',error)",
   'async function waitForStaffGuard(expectedUserId)',
   "document.documentElement.classList.contains('padoka-staff-pending')",
   "document.documentElement.classList.contains('padoka-role-pending')",
   'async function sessionStillMatches(expectedUserId,epoch=lifecycleEpoch)',
+  'const session=await safeSession()',
   'if(!await waitForStaffGuard(expectedUserId)||epoch!==lifecycleEpoch)return',
-  'const {data:{session}}=await sb.auth.getSession()',
   'onAuthStateChange',
   "clearOperationalState('Validando novamente o acesso interno…'",
+  "start().catch(error=>{console.error('Falha ao iniciar sincronização operacional PADOKA',error)",
 ];
 
 for (const marker of authLifecycleMarkers) {
   if (!sync.includes(marker)) {
     throw new Error(`Operational sync deve aguardar e revalidar a área interna autenticada: ${marker}`);
   }
+}
+
+const directGetSessionCalls = sync.match(/sb\.auth\.getSession\(\)/g) || [];
+if (directGetSessionCalls.length !== 1) {
+  throw new Error('Operational sync deve centralizar getSession exclusivamente em safeSession().');
 }
 
 if (!sync.includes("lockOperationalUi('Carregando dados operacionais seguros do servidor…')")) {
