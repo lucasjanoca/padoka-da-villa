@@ -10,6 +10,18 @@
   "lang": "pt-BR",
   "icons": [
     {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "assets/logo-padoka.svg",
       "sizes": "any",
       "type": "image/svg+xml",
@@ -39,9 +51,9 @@
       "url": "./index.html#cardapio",
       "icons": [
         {
-          "src": "assets/logo-padoka.svg",
-          "sizes": "any",
-          "type": "image/svg+xml"
+          "src": "assets/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ],
       "description": "Abrir o cardápio da PADOKA"
@@ -52,9 +64,9 @@
       "url": "./acompanhamento.html",
       "icons": [
         {
-          "src": "assets/logo-padoka.svg",
-          "sizes": "any",
-          "type": "image/svg+xml"
+          "src": "assets/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ],
       "description": "Ver o andamento dos seus pedidos"
@@ -65,9 +77,9 @@
       "url": "./conta.html",
       "icons": [
         {
-          "src": "assets/logo-padoka.svg",
-          "sizes": "any",
-          "type": "image/svg+xml"
+          "src": "assets/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ],
       "description": "Abrir sua conta PADOKA"
