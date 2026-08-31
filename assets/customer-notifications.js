@@ -120,11 +120,7 @@
   async function markOneRead(id,epoch=lifecycleEpoch,userId=activeUserId){
     if(!client||!id||!lifecycleCurrent(epoch,userId))return false;
     if(!await sessionStillCurrent(epoch,userId))return false;
-    const {error}=await client.from('padoka_customer_notifications')
-      .update({read_at:new Date().toISOString()})
-      .eq('id',id)
-      .eq('user_id',userId)
-      .is('read_at',null);
+    const {error}=await client.rpc('padoka_mark_customer_notifications_read',{p_notification_id:id});
     if(!await sessionStillCurrent(epoch,userId))return false;
     if(error){console.error('Falha ao marcar notificação como lida',error);return false;}
     await load(epoch,userId);
@@ -136,10 +132,7 @@
     const userId=activeUserId;
     if(!client||!lifecycleCurrent(epoch,userId))return false;
     if(!await sessionStillCurrent(epoch,userId))return false;
-    const {error}=await client.from('padoka_customer_notifications')
-      .update({read_at:new Date().toISOString()})
-      .eq('user_id',userId)
-      .is('read_at',null);
+    const {error}=await client.rpc('padoka_mark_customer_notifications_read',{p_notification_id:null});
     if(!await sessionStillCurrent(epoch,userId))return false;
     if(error){console.error('Falha ao marcar notificações como lidas',error);return false;}
     await load(epoch,userId);
