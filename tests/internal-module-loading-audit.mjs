@@ -8,6 +8,7 @@ const forbid=(re,m)=>{if(re.test(nav))fail(m)};
 need(/function loadValidatedModuleScripts\(role\)/,'carregamento dos scripts internos precisa ocorrer somente após papel validado');
 need(/if\(!allowed\(current,role\)\)return/,'loader interno precisa falhar fechado para módulo sem permissão');
 need(/loadValidatedModuleScripts\(role\)[\s\S]*?classList\.remove\(['"]padoka-role-pending['"]\)/,'scripts do módulo precisam ser carregados dentro do fluxo de staff já validado');
+need(/if\(isPdv\)\{[\s\S]*?loadScript\(['"]assets\/pdv-scanner-fix\.js['"],['"]padokaPdvScanner['"]\)[\s\S]*?pdv-idempotency\.js[\s\S]*?pdv-sale-void\.js/,'scanner seguro do PDV precisa carregar somente no módulo PDV após validação de staff');
 need(/if\(current===['"]produtos['"]\)loadScript\(['"]assets\/product-management\.js['"]/,'gestão de produtos só deve carregar no módulo Produtos');
 need(/if\(\[['"]estoque['"],['"]producao['"],['"]perdas['"],['"]relatorios['"]\]\.includes\(current\)\)loadScript\(['"]assets\/operational-sync\.js['"]/,'sincronização operacional não deve carregar fora dos módulos operacionais');
 need(/if\(current===['"]producao['"]\)loadScript\(['"]assets\/production-completion\.js['"]/,'finalização de produção só deve carregar na Produção');
