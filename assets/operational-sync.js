@@ -4,6 +4,10 @@
   const productById=id=>catalog.find(p=>p.id===id);
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}), esc=v=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const ADJUST_KEY_PREFIX='padoka_pending_inventory_adjustment_v2:', LEGACY_ADJUST_KEY='padoka_pending_inventory_adjustment_v1', PADOKA_TIME_ZONE='America/Sao_Paulo';
+  const OPERATIONAL_SCOPE=(new URLSearchParams(location.search).get('tab')||'').toLowerCase();
+  const needsInventory=()=>OPERATIONAL_SCOPE==='estoque'||OPERATIONAL_SCOPE==='relatorios';
+  const needsPlans=()=>OPERATIONAL_SCOPE==='producao'||OPERATIONAL_SCOPE==='relatorios';
+  const needsLosses=()=>OPERATIONAL_SCOPE==='perdas'||OPERATIONAL_SCOPE==='relatorios';
   let sb,inventory=[],plans=[],losses=[],channel=null,active=false,lifecycleEpoch=0,activeUserId='',authSubscription=null;
   const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:PADOKA_TIME_ZONE});
   const pendingAdjustmentKey=(userId=activeUserId)=>userId?`${ADJUST_KEY_PREFIX}${userId}`:'';
@@ -30,10 +34,10 @@
     lockOperationalUi(message);
   }
   function showUnavailable(){
-    lockOperationalUi('Dados operacionais do servidor indisponíveis. Estoque, produção e perdas ficam bloqueados para evitar salvar informações apenas neste navegador.');
+    lockOperationalUi('Dados deste módulo estão indisponíveis no servidor. A operação fica bloqueada para evitar estado apenas neste navegador.');
     const badge=$('staffBadge');if(badge)badge.textContent=badge.textContent.replace('SERVIDOR PENDENTE','SERVIDOR INDISPONÍVEL');
   }
-  function unlockLossForm(){document.querySelectorAll('[data-panel="perdas"] input,[data-panel="perdas"] select,[data-panel="perdas"] button').forEach(el=>el.disabled=false)}
+  function unlockLossForm(){if(OPERATIONAL_SCOPE!=='perdas')return;document.querySelectorAll('[data-panel="perdas"] input,[data-panel="perdas"] select,[data-panel="perdas"] button').forEach(el=>el.disabled=false)}
   async function safeSession(){
     try{
       const {data,error}=await sb.auth.getSession();
@@ -61,6 +65,7 @@
     return false;
   }
   async function reconcilePendingAdjustment(epoch=lifecycleEpoch,expectedUserId=activeUserId){
+    if(OPERATIONAL_SCOPE!=='estoque')return true;
     const pending=readPendingAdjustment(expectedUserId);if(!pending)return true;
     if(!await sessionStillMatches(expectedUserId,epoch))return false;
     const {error}=await sb.rpc('padoka_adjust_inventory_once',{p_product_id:pending.product_id,p_delta:Number(pending.delta),p_reason:pending.reason||'Ajuste pela gestão',p_request_id:pending.request_id});
@@ -70,20 +75,29 @@
     toast('Ainda há um ajuste de estoque com resposta incerta. A mesma operação será reutilizada na próxima tentativa.');
     return false;
   }
-  async function loadAll(epoch=lifecycleEpoch,expectedUserId=activeUserId){
+  async function loadScoped(epoch=lifecycleEpoch,expectedUserId=activeUserId){
     if(!await sessionStillMatches(expectedUserId,epoch))return false;
-    const [i,p,l]=await Promise.all([
-      sb.from('padoka_inventory').select('product_id,barcode,quantity,min_quantity,updated_at').order('product_id'),
-      sb.from('padoka_production_plans').select('id,plan_date,product_id,planned_quantity,produced_quantity,status,note,updated_at').eq('plan_date',today()).order('product_id'),
-      sb.from('padoka_losses').select('id,product_id,quantity,reason,note,created_at').order('created_at',{ascending:false}).limit(100)
-    ]);
+    const queries={};
+    if(needsInventory())queries.inventory=sb.from('padoka_inventory').select('product_id,barcode,quantity,min_quantity,updated_at').order('product_id');
+    if(needsPlans())queries.plans=sb.from('padoka_production_plans').select('id,plan_date,product_id,planned_quantity,produced_quantity,status,note,updated_at').eq('plan_date',today()).order('product_id');
+    if(needsLosses())queries.losses=sb.from('padoka_losses').select('id,product_id,quantity,reason,note,created_at').order('created_at',{ascending:false}).limit(100);
+    const entries=await Promise.all(Object.entries(queries).map(async([key,query])=>[key,await query]));
     if(!await sessionStillMatches(expectedUserId,epoch))return false;
-    if(i.error){if(relationMissing(i.error))return false;throw i.error}
-    if(p.error){if(relationMissing(p.error))return false;throw p.error}
-    if(l.error){if(relationMissing(l.error))return false;throw l.error}
-    inventory=i.data||[];plans=p.data||[];losses=l.data||[];active=true;unlockLossForm();render();return true;
+    const results=Object.fromEntries(entries);
+    for(const result of Object.values(results)){
+      if(result?.error){if(relationMissing(result.error))return false;throw result.error}
+    }
+    inventory=results.inventory?.data||[];plans=results.plans?.data||[];losses=results.losses?.data||[];
+    active=true;unlockLossForm();render();return true;
   }
-  function render(){if(!active)return;renderStock();renderProduction();renderLosses();renderReports();const badge=$('staffBadge');if(badge){badge.textContent=badge.textContent.replace(/ • SERVIDOR (?:PENDENTE|INDISPONÍVEL)/g,'');if(!badge.textContent.includes('SINCRONIZADO'))badge.textContent+=' • SINCRONIZADO'}}
+  function render(){
+    if(!active)return;
+    if(OPERATIONAL_SCOPE==='estoque')renderStock();
+    else if(OPERATIONAL_SCOPE==='producao')renderProduction();
+    else if(OPERATIONAL_SCOPE==='perdas')renderLosses();
+    else if(OPERATIONAL_SCOPE==='relatorios')renderReports();
+    const badge=$('staffBadge');if(badge){badge.textContent=badge.textContent.replace(/ • SERVIDOR (?:PENDENTE|INDISPONÍVEL)/g,'');if(!badge.textContent.includes('SINCRONIZADO'))badge.textContent+=' • SINCRONIZADO'}
+  }
   function renderStock(){
     const host=$('stockTable');if(!host)return;
     const inv=Object.fromEntries(inventory.map(x=>[x.product_id,x]));
@@ -99,7 +113,7 @@
     if($('stockPending'))$('stockPending').textContent=catalog.filter(p=>!inv[p.id]?.barcode).length;
   }
   async function saveMeta(id,patch){
-    if(!active||!activeUserId)return;
+    if(!active||!activeUserId||OPERATIONAL_SCOPE!=='estoque')return;
     const epoch=lifecycleEpoch,userId=activeUserId,current=inventory.find(x=>x.product_id===id)||{};
     const barcode=Object.prototype.hasOwnProperty.call(patch,'barcode')?patch.barcode:(current.barcode||null);
     const minQuantity=Object.prototype.hasOwnProperty.call(patch,'min_quantity')?Math.max(0,Number(patch.min_quantity||0)):Math.max(0,Number(current.min_quantity||0));
@@ -112,11 +126,11 @@
       error=requestError instanceof Error?requestError:new Error('inventory metadata network failure');
     }
     if(!await sessionStillMatches(userId,epoch))return;
-    if(error){toast(error.message?.includes('permission')?'Sem permissão para alterar o estoque.':!error.code?'Falha de conexão ao salvar o estoque. Confira a rede e tente novamente.':'Não foi possível salvar os dados do estoque.');try{await loadAll(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}return}
-    toast('Estoque atualizado');try{await loadAll(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}
+    if(error){toast(error.message?.includes('permission')?'Sem permissão para alterar o estoque.':!error.code?'Falha de conexão ao salvar o estoque. Confira a rede e tente novamente.':'Não foi possível salvar os dados do estoque.');try{await loadScoped(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}return}
+    toast('Estoque atualizado');try{await loadScoped(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}
   }
   async function adjustQty(input){
-    if(!active||!activeUserId)return;
+    if(!active||!activeUserId||OPERATIONAL_SCOPE!=='estoque')return;
     const epoch=lifecycleEpoch,userId=activeUserId,id=input.dataset.srvQty,current=Number(inventory.find(x=>x.product_id===id)?.quantity||0),next=Math.max(0,Number(input.value||0)),delta=Number((next-current).toFixed(3)),existing=readPendingAdjustment(userId);
     if(existing&&(existing.product_id!==id||Number(existing.target_quantity)!==next)){
       if(existing.product_id===id)input.value=existing.target_quantity;
@@ -141,10 +155,10 @@
       const ambiguous=ambiguousAdjustmentError(error);
       if(!ambiguous)clearPendingAdjustment(pending.request_id,userId);
       toast(ambiguous?'Resposta incerta do servidor. Pressione Enter para repetir a mesma operação com segurança.':error.message?.includes('permission')?'Sem permissão para ajustar estoque.':error.message?.includes('insufficient')?'Saldo insuficiente para esse ajuste.':'Não foi possível ajustar o estoque.');
-      if(!ambiguous)await loadAll(epoch,userId);
+      if(!ambiguous)await loadScoped(epoch,userId);
       return;
     }
-    clearPendingAdjustment(pending.request_id,userId);toast('Saldo atualizado');await loadAll(epoch,userId)
+    clearPendingAdjustment(pending.request_id,userId);toast('Saldo atualizado');await loadScoped(epoch,userId)
   }
   function renderProduction(){
     const host=$('productionTable');if(!host)return;const map=Object.fromEntries(plans.map(x=>[x.product_id,x]));
@@ -153,7 +167,7 @@
     document.querySelectorAll('[data-plan]').forEach(i=>i.onchange=()=>savePlan(i));
   }
   async function savePlan(input){
-    if(!active||!activeUserId)return;
+    if(!active||!activeUserId||OPERATIONAL_SCOPE!=='producao')return;
     const epoch=lifecycleEpoch,userId=activeUserId,quantity=Math.max(0,Number(input.value||0));
     if(!await sessionStillMatches(userId,epoch))return;
     input.disabled=true;
@@ -166,8 +180,8 @@
     }
     if(!await sessionStillMatches(userId,epoch))return;
     input.disabled=false;
-    if(error){toast(error.message?.includes('permission')?'Sem permissão para planejar produção.':!error.code?'Falha de conexão ao salvar o planejamento. Confira a rede e tente novamente.':'Não foi possível salvar o planejamento.');try{await loadAll(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}return}
-    toast('Planejamento atualizado');try{await loadAll(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}
+    if(error){toast(error.message?.includes('permission')?'Sem permissão para planejar produção.':!error.code?'Falha de conexão ao salvar o planejamento. Confira a rede e tente novamente.':'Não foi possível salvar o planejamento.');try{await loadScoped(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}return}
+    toast('Planejamento atualizado');try{await loadScoped(epoch,userId)}catch{if(epoch===lifecycleEpoch&&activeUserId===userId)showUnavailable()}
   }
   function renderLosses(){
     const select=$('lossProduct');if(select)select.innerHTML=catalog.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
@@ -191,15 +205,23 @@
     const recentLoss=losses.slice(0,8).map(x=>`<tr><td>${esc(productById(x.product_id)?.name||x.product_id)}</td><td>${Number(x.quantity||0)}</td><td>${esc(x.reason)}</td><td>${new Date(x.created_at).toLocaleDateString('pt-BR')}</td></tr>`).join('');
     host.innerHTML=`<h3 style="margin-top:0">Resumo operacional de hoje</h3><div class="stats" style="margin-bottom:12px"><div class="stat"><small>PRODUÇÃO PLANEJADA</small><strong>${Number(planned.toFixed(3))}</strong></div><div class="stat"><small>PRODUZIDO</small><strong>${Number(produced.toFixed(3))}</strong></div><div class="stat"><small>ITENS COM SALDO</small><strong>${inventory.filter(x=>Number(x.quantity)>0).length}</strong></div><div class="stat"><small>SEM CÓDIGO</small><strong>${catalog.filter(p=>!invMap[p.id]?.barcode).length}</strong></div></div><h3>Estoque que pede atenção</h3><div class="tablewrap"><table class="table"><thead><tr><th>Produto</th><th>Saldo</th><th>Mínimo</th></tr></thead><tbody>${lowRows||'<tr><td colspan="3">Nenhum item abaixo do mínimo.</td></tr>'}</tbody></table></div><h3 style="margin-top:18px">Perdas recentes</h3><div class="tablewrap"><table class="table"><thead><tr><th>Produto</th><th>Quantidade</th><th>Motivo</th><th>Data</th></tr></thead><tbody>${recentLoss||'<tr><td colspan="4">Nenhuma perda registrada.</td></tr>'}</tbody></table></div>`;
   }
-  function scheduleLoad(){if(!active||!activeUserId)return;const epoch=lifecycleEpoch,userId=activeUserId;setTimeout(()=>{if(epoch===lifecycleEpoch&&activeUserId===userId)loadAll(epoch,userId).catch(e=>{if(epoch===lifecycleEpoch)console.error('PADOKA operational realtime:',e)})},80)}
-  function subscribe(){if(channel||!active)return;channel=sb.channel('padoka-operational-ui').on('postgres_changes',{event:'*',schema:'public',table:'padoka_inventory'},scheduleLoad).on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},scheduleLoad).on('postgres_changes',{event:'*',schema:'public',table:'padoka_losses'},scheduleLoad).subscribe()}
+  function scheduleLoad(){if(!active||!activeUserId)return;const epoch=lifecycleEpoch,userId=activeUserId;setTimeout(()=>{if(epoch===lifecycleEpoch&&activeUserId===userId)loadScoped(epoch,userId).catch(e=>{if(epoch===lifecycleEpoch)console.error('PADOKA operational realtime:',e)})},80)}
+  function subscribe(){
+    if(channel||!active)return;
+    channel=sb.channel(`padoka-operational-ui-${OPERATIONAL_SCOPE||'unknown'}`);
+    if(needsInventory())channel.on('postgres_changes',{event:'*',schema:'public',table:'padoka_inventory'},scheduleLoad);
+    if(needsPlans())channel.on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},scheduleLoad);
+    if(needsLosses())channel.on('postgres_changes',{event:'*',schema:'public',table:'padoka_losses'},scheduleLoad);
+    channel.subscribe();
+  }
   async function activate(expectedUserId){
     const epoch=lifecycleEpoch;if(!expectedUserId||!sb)return;
+    if(!['estoque','producao','perdas','relatorios'].includes(OPERATIONAL_SCOPE))return;
     if(!await waitForStaffGuard(expectedUserId)||epoch!==lifecycleEpoch)return;
     if(!await sessionStillMatches(expectedUserId,epoch))return;
     activeUserId=expectedUserId;
-    lockOperationalUi('Carregando dados operacionais seguros do servidor…');
-    try{await reconcilePendingAdjustment(epoch,expectedUserId);if(epoch!==lifecycleEpoch)return;if(await loadAll(epoch,expectedUserId))subscribe();else if(epoch===lifecycleEpoch)showUnavailable()}catch(e){if(epoch===lifecycleEpoch){console.error('PADOKA operational sync:',e);showUnavailable()}}
+    lockOperationalUi('Carregando dados seguros deste módulo…');
+    try{await reconcilePendingAdjustment(epoch,expectedUserId);if(epoch!==lifecycleEpoch)return;if(await loadScoped(epoch,expectedUserId))subscribe();else if(epoch===lifecycleEpoch)showUnavailable()}catch(e){if(epoch===lifecycleEpoch){console.error('PADOKA operational sync:',e);showUnavailable()}}
   }
   function watchAuth(){
     const result=sb.auth.onAuthStateChange((event,session)=>{
