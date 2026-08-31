@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 
-const sql=fs.readFileSync('supabase/057_security_self_check.sql','utf8')+'\n'+fs.readFileSync('supabase/059_security_self_check_production_writes.sql','utf8');
+const sql=[
+  'supabase/057_security_self_check.sql',
+  'supabase/059_security_self_check_production_writes.sql',
+  'supabase/069_security_self_check_internal_direct_dml.sql'
+].map(file=>fs.readFileSync(file,'utf8')).join('\n');
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 const need=(c,m)=>{if(!c)fail(m)};
 
@@ -18,6 +22,15 @@ need(/private_rpc_schema_anon_usage/i.test(sql),'Self-check não valida exposiç
 need(/enterprise_admin_rpc_anon_execute/i.test(sql),'Self-check não valida RPCs administrativas anônimas');
 need(/sensitive_direct_update_restored/i.test(sql),'Self-check não valida UPDATE direto sensível');
 need(/production_plan_direct_write_restored/i.test(sql),'Self-check não valida restauração de escrita direta em produção');
+need(/internal_direct_dml_restored/i.test(sql),'Self-check não detecta retorno de DML direto nas tabelas internas');
+need(/has_table_privilege\('authenticated',c\.oid,'INSERT'\)/i.test(sql),'Self-check não valida INSERT direto por tabela');
+need(/has_table_privilege\('authenticated',c\.oid,'UPDATE'\)/i.test(sql),'Self-check não valida UPDATE direto por tabela');
+need(/has_table_privilege\('authenticated',c\.oid,'DELETE'\)/i.test(sql),'Self-check não valida DELETE direto por tabela');
+need(/has_any_column_privilege\('authenticated',c\.oid,'INSERT'\)/i.test(sql),'Self-check não valida INSERT concedido por coluna');
+need(/has_any_column_privilege\('authenticated',c\.oid,'UPDATE'\)/i.test(sql),'Self-check não valida UPDATE concedido por coluna');
+for(const table of ['padoka_inventory','padoka_production_plans','padoka_losses','padoka_sales','padoka_settings','padoka_payment_attempts','padoka_push_subscriptions']){
+  need(sql.includes(`'${table}'`),`Self-check não monitora DML direto em ${table}`);
+}
 need(/PADOKA security self-check failed/i.test(sql),'Self-check não registra incidente crítico');
 need(/on conflict \(fingerprint\) do update/i.test(sql),'Incidente do self-check deve ser idempotente');
 need(/padoka-security-self-check-hourly/i.test(sql),'Cron horário do self-check ausente');
