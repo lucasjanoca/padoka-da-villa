@@ -40,7 +40,8 @@ need(ui,/p_request_id:op\.request_id/i,'frontend precisa reutilizar o mesmo requ
 need(ui,/sessionStorage\.setItem\(key,JSON\.stringify\(v\)\)/i,'retry ambíguo precisa preservar a tentativa na chave do funcionário');
 need(ui,/Tentar novamente/i,'interface precisa oferecer retry explícito');
 need(ui,/Venda aguardando confirmação do servidor/i,'interface precisa explicar estado ambíguo sem simular sucesso');
-need(ui,/select\('request_id'\)/i,'camada só deve assumir o PDV quando a migration 010 estiver disponível');
+need(ui,/sb\.rpc\('padoka_list_product_barcodes'\)/i,'probe do Caixa deve usar RPC autorizada sem depender de leitura direta do histórico de vendas');
+forbid(ui,/from\('padoka_sales'\)\.select\('request_id'\)/i,'probe do Caixa não pode exigir SELECT amplo em padoka_sales');
 need(ui,/function disableLegacyFinish\(message\)/i,'frontend precisa neutralizar o finalizador legado quando a camada segura não estiver pronta');
 need(ui,/updateFinish=update/i,'atualizações posteriores do PDV precisam continuar passando pelo guard idempotente');
 need(ui,/Finalização segura indisponível/i,'falha de capability precisa ser fail-closed e amigável');
@@ -52,7 +53,7 @@ need(ui,/if\(error\)[\s\S]*return null/i,'safeSession precisa falhar fechado qua
 need(ui,/const latestSession=await safeSession\(\)/i,'reconciliação da venda precisa confirmar sessão via helper seguro');
 need(ui,/if\(!latestSession\)[\s\S]*savePending\(op\)[\s\S]*disableLegacyFinish/i,'falha ao confirmar sessão após RPC precisa preservar o request_id e bloquear nova venda');
 need(ui,/const session=await safeSession\(\)[\s\S]*session\?\.user\?\.id!==expectedUserId/i,'guard do staff precisa usar confirmação de sessão fail-closed');
-need(ui,/let error=null;try\{\(\{error\}=await sb\.from\('padoka_sales'\)/i,'probe da capability do PDV precisa capturar falha de transporte');
+need(ui,/let error=null;try\{\(\{error\}=await sb\.rpc\('padoka_list_product_barcodes'\)\)/i,'probe não mutável do PDV precisa capturar falha de transporte');
 need(ui,/activateForUser\(nextUserId\)\.catch/i,'reativação assíncrona do Caixa não pode gerar rejeição não tratada');
 need(ui,/user_id:userId/i,'tentativa pendente precisa ficar vinculada ao operador que iniciou a venda');
 need(ui,/v\.user_id===expectedUserId/i,'retry salvo precisa ser recusado quando não pertence à identidade atual');
