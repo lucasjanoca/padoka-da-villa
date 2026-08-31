@@ -92,6 +92,36 @@
       if(module&&Object.prototype.hasOwnProperty.call(roleAccess,module))link.hidden=!allowed(module,role);
     });
   }
+  function loadScript(src,dataKey){
+    const attr=`data-${dataKey.replace(/[A-Z]/g,m=>`-${m.toLowerCase()}`)}`;
+    if(document.querySelector(`script[${attr}]`))return;
+    const s=document.createElement('script');
+    s.src=src;
+    s.defer=true;
+    s.dataset[dataKey]='1';
+    document.head.appendChild(s);
+  }
+  function loadValidatedModuleScripts(role){
+    if(!allowed(current,role))return;
+    if(isAdmin)loadScript('assets/admin-dashboard-live.js','padokaAdminDashboard');
+    if(isOrders)loadScript('assets/orders-auth-lifecycle.js','padokaOrdersAuthLifecycle');
+    if(isPdv){
+      loadScript('assets/pdv-idempotency.js','padokaPdvIdempotency');
+      loadScript('assets/pdv-sale-void.js','padokaPdvSaleVoid');
+    }
+    if(!isGestao)return;
+    if(current==='produtos')loadScript('assets/product-management.js','padokaProductManagement');
+    if(['estoque','producao','perdas','relatorios'].includes(current))loadScript('assets/operational-sync.js','padokaOps');
+    if(current==='producao')loadScript('assets/production-completion.js','padokaProduction');
+    if(current==='perdas')loadScript('assets/loss-registration.js','padokaLoss');
+    if(current==='relatorios')loadScript('assets/reporting-sync.js','padokaReporting');
+    if(current==='configuracoes')loadScript('assets/settings-sync.js','padokaSettings');
+    if(current==='equipe'){
+      loadScript('assets/staff-management-lifecycle.js','padokaStaffManagementLifecycle');
+      loadScript('assets/staff-management.js','padokaStaffManagement');
+      loadScript('assets/staff-audit.js','padokaStaffAudit');
+    }
+  }
 
   async function waitForClient(){
     for(let i=0;i<80;i++){
@@ -162,6 +192,7 @@
       }
       filterPageShortcuts(role);
       [250,750,1500].forEach(delay=>setTimeout(()=>filterPageShortcuts(role),delay));
+      loadValidatedModuleScripts(role);
       document.documentElement.classList.remove('padoka-role-pending');
       document.documentElement.classList.remove('padoka-staff-pending');
     }catch(error){
@@ -191,98 +222,4 @@
   }
   watchStaffAuth();
   applyStaffRole();
-
-  if(isAdmin&&!document.querySelector('script[data-padoka-admin-dashboard]')){
-    const s=document.createElement('script');
-    s.src='assets/admin-dashboard-live.js';
-    s.defer=true;
-    s.dataset.padokaAdminDashboard='1';
-    document.head.appendChild(s);
-  }
-  if(isOrders&&!document.querySelector('script[data-padoka-orders-auth-lifecycle]')){
-    const s=document.createElement('script');
-    s.src='assets/orders-auth-lifecycle.js';
-    s.defer=true;
-    s.dataset.padokaOrdersAuthLifecycle='1';
-    document.head.appendChild(s);
-  }
-  if(isPdv&&!document.querySelector('script[data-padoka-pdv-idempotency]')){
-    const s=document.createElement('script');
-    s.src='assets/pdv-idempotency.js';
-    s.defer=true;
-    s.dataset.padokaPdvIdempotency='1';
-    document.head.appendChild(s);
-  }
-  if(isPdv&&!document.querySelector('script[data-padoka-pdv-sale-void]')){
-    const s=document.createElement('script');
-    s.src='assets/pdv-sale-void.js';
-    s.defer=true;
-    s.dataset.padokaPdvSaleVoid='1';
-    document.head.appendChild(s);
-  }
-  if(isGestao){
-    if(!document.querySelector('script[data-padoka-staff-management-lifecycle]')){
-      const s=document.createElement('script');
-      s.src='assets/staff-management-lifecycle.js';
-      s.defer=true;
-      s.dataset.padokaStaffManagementLifecycle='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-padoka-ops]')){
-      const s=document.createElement('script');
-      s.src='assets/operational-sync.js';
-      s.defer=true;
-      s.dataset.padokaOps='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-padoka-production]')){
-      const s=document.createElement('script');
-      s.src='assets/production-completion.js';
-      s.defer=true;
-      s.dataset.padokaProduction='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-padoka-loss]')){
-      const s=document.createElement('script');
-      s.src='assets/loss-registration.js';
-      s.defer=true;
-      s.dataset.padokaLoss='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-padoka-reporting]')){
-      const s=document.createElement('script');
-      s.src='assets/reporting-sync.js';
-      s.defer=true;
-      s.dataset.padokaReporting='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-padoka-settings]')){
-      const s=document.createElement('script');
-      s.src='assets/settings-sync.js';
-      s.defer=true;
-      s.dataset.padokaSettings='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-padoka-staff-management]')){
-      const s=document.createElement('script');
-      s.src='assets/staff-management.js';
-      s.defer=true;
-      s.dataset.padokaStaffManagement='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-padoka-staff-audit]')){
-      const s=document.createElement('script');
-      s.src='assets/staff-audit.js';
-      s.defer=true;
-      s.dataset.padokaStaffAudit='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-padoka-product-management]')){
-      const s=document.createElement('script');
-      s.src='assets/product-management.js';
-      s.defer=true;
-      s.dataset.padokaProductManagement='1';
-      document.head.appendChild(s);
-    }
-  }
 })();
