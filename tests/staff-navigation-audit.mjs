@@ -35,7 +35,7 @@ expect(nav.includes('delete window.padokaStaffRole')&&nav.includes('delete windo
 expect(nav.includes('staffValidationEpoch'),'Respostas assíncronas de validações antigas precisam ser invalidadas quando a sessão muda.');
 expect(nav.includes('latestSession?.user?.id!==session.user.id'),'A função do staff só pode ser aplicada se a mesma conta continuar autenticada após a consulta ao banco.');
 expect(nav.includes('setTimeout(()=>applyStaffRole(nextUserId),0)'),'Revalidação após evento Auth deve ocorrer fora do callback para evitar trabalho assíncrono dentro do listener.');
-expect(nav.includes("const isOrders=location.pathname.endsWith('/pedidos.html')")&&nav.includes("s.src='assets/orders-auth-lifecycle.js'"),'A fila interna deve carregar seu guard dedicado de lifecycle.');
+expect(nav.includes("const isOrders=location.pathname.endsWith('/pedidos.html')")&&nav.includes("loadScript('assets/orders-auth-lifecycle.js','padokaOrdersAuthLifecycle')"),'A fila interna deve carregar seu guard dedicado de lifecycle somente pelo loader validado.');
 expect(ordersLifecycle.includes('auth.onAuthStateChange'),'Fila de pedidos deve observar troca/logout de staff.');
 expect(ordersLifecycle.includes('activeUserId')&&ordersLifecycle.includes('lifecycleEpoch'),'Guard da fila deve vincular o runtime à identidade e invalidar operações antigas.');
 expect(ordersLifecycle.includes("document.documentElement.classList.add('padoka-orders-auth-transition')"),'Troca de identidade deve esconder e bloquear a fila imediatamente.');
