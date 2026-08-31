@@ -106,6 +106,7 @@
     if(isAdmin)loadScript('assets/admin-dashboard-live.js','padokaAdminDashboard');
     if(isOrders)loadScript('assets/orders-auth-lifecycle.js','padokaOrdersAuthLifecycle');
     if(isPdv){
+      loadScript('assets/pdv-scanner-fix.js','padokaPdvScanner');
       loadScript('assets/pdv-idempotency.js','padokaPdvIdempotency');
       loadScript('assets/pdv-sale-void.js','padokaPdvSaleVoid');
     }
