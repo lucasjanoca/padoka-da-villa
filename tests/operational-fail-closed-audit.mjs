@@ -16,6 +16,8 @@ const required = [
   'showUnavailable()',
   "window.addEventListener('padoka:catalog-updated'",
   'productById=id=>catalog.find(',
+  "OPERATIONAL_SCOPE=(new URLSearchParams(location.search).get('tab')||'').toLowerCase()",
+  "if(!['estoque','producao','perdas','relatorios'].includes(OPERATIONAL_SCOPE))return",
 ];
 
 for (const marker of required) {
@@ -88,8 +90,8 @@ if (directGetSessionCalls.length !== 1) {
   throw new Error('Operational sync deve centralizar getSession exclusivamente em safeSession().');
 }
 
-if (!sync.includes("lockOperationalUi('Carregando dados operacionais seguros do servidor…')")) {
-  throw new Error('Interface operacional deve iniciar bloqueada até o backend seguro carregar.');
+if (!sync.includes("lockOperationalUi('Carregando dados seguros deste módulo…')")) {
+  throw new Error('Interface operacional deve iniciar bloqueada até os dados autorizados do módulo carregarem.');
 }
 
 for (const legacyMarker of ['padoka_demo_stock', 'padoka_demo_production', 'padoka_demo_losses']) {
