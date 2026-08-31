@@ -62,8 +62,9 @@ const checks=[
   [frontend.includes("console.error('PADOKA settings load transport:',error)"), 'settings load transport failures must be handled explicitly'],
   [frontend.includes("catch(error){\n      if(!await identityStillCurrent(epoch,userId))return;\n      if(btn)btn.disabled=false;"), 'settings save must restore the retry control after a transport rejection for the same identity'],
   [frontend.includes("toast('Falha de conexão. Tente salvar novamente.')"), 'settings save transport failures must provide a safe retry message'],
-  [nav.includes("s.src='assets/settings-sync.js'"), 'management navigation must load settings sync'],
-  [nav.includes('if(isGestao)'), 'settings sync must only be loaded in internal management']
+  [nav.includes("loadScript('assets/settings-sync.js','padokaSettings')"), 'management navigation must load settings sync'],
+  [nav.includes("current==='configuracoes'"), 'settings sync must only be loaded for the authorized settings module'],
+  [nav.includes('function loadValidatedModuleScripts(role)'), 'settings loader must run only after staff role validation']
 ];
 
 const failed=checks.filter(([ok])=>!ok).map(([,msg])=>msg);
