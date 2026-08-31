@@ -102,12 +102,20 @@ if (/localStorage\.(?:getItem|setItem)\(['"]padoka_demo_(?:stock|production|loss
   throw new Error('Gestão não pode ler ou salvar estoque, produção ou perdas em localStorage.');
 }
 
-if (!nav.includes("s.src='assets/operational-sync.js'")) {
+if (!nav.includes("loadScript('assets/operational-sync.js','padokaOps')")) {
   throw new Error('Gestão precisa carregar a sincronização operacional server-authoritative.');
 }
 
-if (!nav.includes("s.src='assets/loss-registration.js'")) {
+if (!nav.includes("['estoque','producao','perdas','relatorios'].includes(current)")) {
+  throw new Error('Sincronização operacional deve ficar limitada aos módulos operacionais da Gestão.');
+}
+
+if (!nav.includes("loadScript('assets/loss-registration.js','padokaLoss')")) {
   throw new Error('Gestão precisa carregar o registrador idempotente de perdas.');
+}
+
+if (!nav.includes("current==='perdas'")) {
+  throw new Error('Registrador de perdas deve ficar limitado ao módulo Perdas.');
 }
 
 if (!gestao.includes('Carregando dados operacionais seguros do servidor…')) {
