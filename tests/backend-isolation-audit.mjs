@@ -10,6 +10,7 @@ for (const name of fs.readdirSync(new URL('supabase/', root))) if (name.endsWith
 const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
 const PADOKA_REF = 'yncspxfsvlqdnodlsosb';
+const PADOKA_ORIGIN = `https://${PADOKA_REF}.supabase.co`;
 
 // Public/browser runtime must never contain an administrative credential or point
 // to a different Supabase project. Migration SQL is intentionally excluded from
@@ -22,6 +23,14 @@ for (const rel of runtimeFiles) {
     ok(match[1] === PADOKA_REF, `${rel}: aponta para Supabase diferente do backend PADOKA (${match[1]})`);
   }
 }
+
+// Public config is allowed to transport a publishable key, but consumers that use
+// its URL must not silently follow a response to another Supabase project.
+const featureFlags = fs.readFileSync(new URL('assets/feature-flags.js', root), 'utf8');
+ok(featureFlags.includes(`const PADOKA_ORIGIN='${PADOKA_ORIGIN}'`), 'assets/feature-flags.js: origem PADOKA precisa estar fixada');
+ok(/url\.origin!==PADOKA_ORIGIN/.test(featureFlags), 'assets/feature-flags.js: cfg.url precisa ser validado contra a origem PADOKA');
+ok(/const origin=requirePadokaOrigin\(cfg\.url\)/.test(featureFlags), 'assets/feature-flags.js: feature flags não podem usar cfg.url sem validação');
+ok(!/const url=cfg\.url\s*\+/.test(featureFlags), 'assets/feature-flags.js: acesso direto por cfg.url pode escapar do backend PADOKA');
 
 // Migrations may document forbidden destinations (for example, "não aplicar no
 // InfoTech.io") and may name PostgreSQL roles. What they must not do is embed a
