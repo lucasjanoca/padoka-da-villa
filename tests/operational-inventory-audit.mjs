@@ -19,9 +19,10 @@ ok(sync.includes("rpc('padoka_update_inventory_metadata'"), 'operational-sync.js
 ok(!/from\('padoka_inventory'\)\.update\(/.test(sync), 'operational-sync.js: ainda existe UPDATE direto em padoka_inventory');
 ok(sync.includes('lockOperationalUi('), 'operational-sync.js: gestão não bloqueia o fallback local antes da sincronização');
 ok(sync.includes('showUnavailable()'), 'operational-sync.js: estado indisponível fail-closed ausente');
-ok(sync.includes('salvar informações apenas neste navegador'), 'operational-sync.js: mensagem de bloqueio do fallback local ausente');
-ok(/if\(p\.error\)\{if\(relationMissing\(p\.error\)\)return false/.test(sync), 'operational-sync.js: produção não falha fechada quando a relação está ausente');
-ok(/if\(l\.error\)\{if\(relationMissing\(l\.error\)\)return false/.test(sync), 'operational-sync.js: perdas não falham fechadas quando a relação está ausente');
+ok(sync.includes('A operação fica bloqueada para evitar estado apenas neste navegador.'), 'operational-sync.js: mensagem de bloqueio do fallback local ausente');
+ok(/for\(const result of Object\.values\(results\)\)\{[\s\S]*?if\(result\?\.error\)\{if\(relationMissing\(result\.error\)\)return false;throw result\.error\}/.test(sync), 'operational-sync.js: relações operacionais não falham fechadas quando ausentes');
+ok(/if\(needsPlans\(\)\)queries\.plans=sb\.from\('padoka_production_plans'\)/.test(sync), 'operational-sync.js: leitura de produção não está limitada ao módulo necessário');
+ok(/if\(needsLosses\(\)\)queries\.losses=sb\.from\('padoka_losses'\)/.test(sync), 'operational-sync.js: leitura de perdas não está limitada ao módulo necessário');
 ok(/async function saveMeta[\s\S]*?try\s*\{[\s\S]*?rpc\('padoka_update_inventory_metadata'/.test(sync), 'operational-sync.js: rejeição de transporte nos metadados do estoque não é capturada');
 ok(/async function saveMeta[\s\S]*?sessionStillMatches\(userId,epoch\)[\s\S]*?rpc\('padoka_update_inventory_metadata'/.test(sync), 'operational-sync.js: metadados do estoque devem reconfirmar a sessão antes da RPC');
 ok(/inventory metadata network failure/.test(sync), 'operational-sync.js: falha de rede nos metadados não é normalizada para recuperação segura');
