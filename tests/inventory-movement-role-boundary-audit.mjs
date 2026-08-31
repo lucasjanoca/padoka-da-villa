@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
+// Regression guard for the least-privilege read boundary applied by migration 060.
 const sql = fs.readFileSync('supabase/060_inventory_movement_read_role_boundary.sql', 'utf8');
 
 assert.match(sql, /alter table public\.padoka_inventory_movements enable row level security;/i);
