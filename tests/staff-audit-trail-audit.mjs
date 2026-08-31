@@ -24,7 +24,9 @@ expect(js.includes("client.rpc('padoka_list_staff_audit'"),'Frontend deve carreg
 expect(!/\.from\(['"]padoka_staff_audit['"]\)\.(insert|update|delete|upsert)/.test(js),'Frontend não pode escrever diretamente na tabela de auditoria.');
 expect(js.includes('esc(value')||js.includes('const esc='),'Frontend deve sanitizar textos antes de renderizar.');
 expect(js.includes('missingRpc')&&js.includes("document.getElementById('staffAudit')?.remove()"),'Frontend deve sumir com segurança quando a migration 016 ainda não existir.');
-expect(nav.includes("s.src='assets/staff-audit.js'"),'Navegação interna deve carregar o módulo de auditoria somente na Gestão.');
+expect(nav.includes("loadScript('assets/staff-audit.js','padokaStaffAudit')"),'Navegação interna deve carregar o módulo de auditoria pela carga validada.');
+expect(nav.includes("current==='equipe'"),'Auditoria de equipe deve carregar somente no módulo Equipe.');
+expect(nav.includes('function loadValidatedModuleScripts(role)'),'Carga da auditoria deve ocorrer somente depois da validação do papel interno.');
 
 expect(js.includes('onAuthStateChange'),'Área Equipe deve reagir a logout/troca de identidade sem depender de reload manual.');
 expect(js.includes('clearTeamUi()')&&js.includes("document.querySelector('[data-panel=\"equipe\"]')?.remove()"),'Troca de identidade deve remover imediatamente a interface sensível de equipe.');
