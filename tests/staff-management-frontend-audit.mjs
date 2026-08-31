@@ -9,7 +9,8 @@ const fail=message=>{throw new Error(message)};
 const expect=(condition,message)=>{if(!condition)fail(message)};
 
 expect(nav.includes("equipe:['owner']"),'Navegação deve classificar Equipe como módulo exclusivo de owner.');
-expect(nav.includes("s.src='assets/staff-management.js'"),'Gestão deve carregar o módulo condicional de equipe.');
+expect(nav.includes("loadScript('assets/staff-management.js','padokaStaffManagement')"),'Gestão deve carregar o módulo de equipe pela carga validada.');
+expect(nav.includes("current==='equipe'")&&nav.includes('function loadValidatedModuleScripts(role)'),'Módulo de equipe deve carregar somente na aba Equipe depois da validação do papel owner.');
 expect(ui.includes("context.role!=='owner'"),'Frontend deve recusar funções diferentes de owner antes de montar a interface.');
 expect(ui.includes('async function safeSession()')&&ui.includes("client.auth.getSession()")&&ui.includes("staff management session transport"),'Gestão de equipe deve capturar falhas retornadas e rejeições de transporte ao confirmar a sessão.');
 expect(ui.includes('async function identityStillCurrent')&&ui.includes("window.padokaStaffRole==='owner'"),'Gestão de equipe deve reconfirmar identidade e papel owner após operações assíncronas.');
