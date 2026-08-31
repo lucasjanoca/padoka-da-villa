@@ -1,4 +1,8 @@
 (()=>{
+  const INTERNAL_PAGES=new Set(['internal.html','pedidos.html','pdv.html','gestao.html','enterprise.html','mfa.html']);
+  const currentPage=String(location.pathname||'/').split('/').pop()||'index.html';
+  if(INTERNAL_PAGES.has(currentPage))return;
+
   const ENDPOINT='https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-telemetry';
   const KEY='padoka_telemetry_session_v1';
   const allowed=new Set(['page_view','product_view','add_to_cart','remove_from_cart','checkout_start','checkout_review','checkout_submit','checkout_success','auth_login','order_view','client_error','web_vital','feature_exposure','reorder']);
