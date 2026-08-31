@@ -19,9 +19,19 @@ const visual=[
 ];
 const visualById=Object.fromEntries(visual.map(p=>[p.id,p]));
 const labels={paes:'Pães',pães:'Pães',salgados:'Salgados',lanches:'Lanches',doces:'Doces',bebidas:'Bebidas'};
-const CONFIG_URL='https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config';
+const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
+const CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config';
 const safeId=v=>{const s=String(v??'').trim();return /^[a-z0-9][a-z0-9_-]{0,79}$/i.test(s)?s:null};
-const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const requirePadokaOrigin=value=>{
+  try{
+    const url=new URL(String(value||''));
+    if(url.origin!==PADOKA_ORIGIN)throw new Error('backend mismatch');
+    return PADOKA_ORIGIN;
+  }catch{
+    throw new Error('PADOKA public config returned an invalid backend');
+  }
+};
 window.PADOKA_CATALOG=[];
 window.PADOKA_CATALOG_BY_ID=visualById;
 window.PADOKA_CATALOG_READY=false;
@@ -70,7 +80,9 @@ async function load(){
     const configResponse=await fetch(CONFIG_URL,{cache:'no-store'});
     if(!configResponse.ok)throw new Error('public config unavailable');
     const cfg=await configResponse.json();
-    const endpoint=`${cfg.url}/rest/v1/padoka_products?select=id,name,category,price,is_demo,sort_order&active=eq.true&order=sort_order.asc`;
+    const origin=requirePadokaOrigin(cfg.url);
+    if(typeof cfg.publishableKey!=='string'||!cfg.publishableKey.trim())throw new Error('publishable key unavailable');
+    const endpoint=`${origin}/rest/v1/padoka_products?select=id,name,category,price,is_demo,sort_order&active=eq.true&order=sort_order.asc`;
     const response=await fetch(endpoint,{cache:'no-store',headers:{apikey:cfg.publishableKey}});
     if(!response.ok)throw new Error('catalog unavailable');
     const rows=await response.json();
