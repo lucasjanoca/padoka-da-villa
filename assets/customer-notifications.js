@@ -2,6 +2,7 @@
   'use strict';
 
   const ROOT_ID='padokaCustomerNotifications';
+  const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
   let client=null, session=null, channel=null, authSub=null, root=null, listEl=null, badgeEl=null, panelEl=null;
   let lifecycleEpoch=0, activeUserId='';
 
@@ -9,6 +10,11 @@
     if(!value)return '';
     try{return new Date(value).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});}catch{return '';}
   };
+
+  function isPadokaClient(candidate){
+    if(!candidate)return false;
+    try{return new URL(candidate.supabaseUrl).origin===PADOKA_ORIGIN;}catch{return false;}
+  }
 
   function lifecycleCurrent(epoch,userId){
     return epoch===lifecycleEpoch&&Boolean(userId)&&activeUserId===userId&&session?.user?.id===userId;
@@ -176,7 +182,8 @@
   }
 
   async function bind(nextClient){
-    if(!nextClient||client===nextClient)return;
+    if(!isPadokaClient(nextClient))return;
+    if(client===nextClient)return;
     client=nextClient;
     const current=await safeSession();
     await setSession(current);
