@@ -1,6 +1,51 @@
 (()=>{
   'use strict';
 
+  const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
+  const PUBLIC_CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config';
+  const PUBLIC_CONFIG_CACHE='padoka_public_config_v1';
+  const PUBLIC_CONFIG_MAX_AGE=24*60*60*1000;
+  let configRefresh=null;
+
+  function validPublicConfig(value){
+    if(!value||typeof value!=='object')return false;
+    try{
+      const url=new URL(String(value.url||''));
+      return url.origin===PADOKA_ORIGIN&&typeof value.publishableKey==='string'&&value.publishableKey.length>20;
+    }catch{return false}
+  }
+
+  function readPublicConfig(){
+    try{
+      const parsed=JSON.parse(localStorage.getItem(PUBLIC_CONFIG_CACHE)||'null');
+      if(!parsed||!validPublicConfig(parsed.value))return null;
+      if(Date.now()-Number(parsed.savedAt||0)>PUBLIC_CONFIG_MAX_AGE)return null;
+      return parsed.value;
+    }catch{return null}
+  }
+
+  async function refreshPublicConfig(){
+    if(configRefresh)return configRefresh;
+    configRefresh=(async()=>{
+      const response=await fetch(PUBLIC_CONFIG_URL,{cache:'no-store',credentials:'omit'});
+      if(!response.ok)throw new Error('PADOKA public config unavailable');
+      const value=await response.json();
+      if(!validPublicConfig(value))throw new Error('PADOKA public config invalid');
+      try{localStorage.setItem(PUBLIC_CONFIG_CACHE,JSON.stringify({savedAt:Date.now(),value}))}catch{}
+      return value;
+    })();
+    try{return await configRefresh}finally{configRefresh=null}
+  }
+
+  async function getPublicConfig(){
+    const cached=readPublicConfig();
+    if(cached){
+      refreshPublicConfig().catch(()=>{});
+      return cached;
+    }
+    return refreshPublicConfig();
+  }
+
   const root=document.documentElement;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
   root.classList.add('padoka-app');
@@ -67,6 +112,11 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupAccountBoot,{once:true});
   else setupAccountBoot();
 
+  window.PADOKA_RUNTIME=Object.freeze({
+    getPublicConfig,
+    refreshPublicConfig,
+    standalone
+  });
   window.PADOKA_APP=Object.freeze({
     standalone,
     installed:standalone
