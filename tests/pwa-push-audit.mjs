@@ -13,13 +13,13 @@ const dropMigration = read('supabase/051_push_remove_public_private_key.sql');
 const pages = ['index.html','produto.html','pagamento.html','conta.html','acompanhamento.html','club.html'];
 
 need(pwa.includes('beforeinstallprompt'), 'PWA: hook nativo de instalação ausente');
-need(pwa.includes('window.setTimeout(() => showInstallBanner(), 700)'), 'PWA: aviso de instalação não aparece em toda entrada');
+need(pwa.includes('window.setTimeout(() => showInstallBanner(), 450)'), 'PWA: aviso de instalação não aparece em toda entrada');
 need(!pwa.includes('INSTALL_DISMISS_KEY'), 'PWA: bloqueio persistente do aviso de instalação reapareceu');
 need(!pwa.includes('installDismissedRecently'), 'PWA: cooldown de instalação reapareceu');
 need(pwa.includes('pushManager.subscribe'), 'PWA: assinatura Web Push ausente');
 need(pwa.includes("Notification.requestPermission()"), 'PWA: pedido explícito de permissão push ausente');
 
-need(sw.includes("const CACHE_NAME = 'padoka-pwa-v7'"), 'Service Worker: versão de cache atual ausente');
+need(sw.includes("const CACHE_NAME = 'padoka-pwa-v8'"), 'Service Worker: versão de cache atual ausente');
 need(sw.includes("addEventListener('push'"), 'Service Worker: listener push ausente');
 need(sw.includes("addEventListener('notificationclick'"), 'Service Worker: clique em notificação ausente');
 
@@ -29,6 +29,8 @@ need(manifest.icons?.some(i=>i.src==='assets/icon-512.png'&&i.sizes==='512x512'&
 need(sw.includes("icon: './assets/icon-192.png'"),'Service Worker: notificação não usa ícone PNG');
 need(sw.includes("'./assets/icon-512.png'"),'Service Worker: ícone 512 não está no shell PWA');
 need(sw.includes("'./assets/runtime-security.css'"),'Service Worker: CSS crítico de segurança não está no shell');
+need(sw.includes("'./assets/app-shell.css'"),'Service Worker: shell visual do app não está em cache');
+need(sw.includes("'./assets/app-runtime.js'"),'Service Worker: runtime do app não está em cache');
 need(sw.includes("'./assets/frame-guard.js'"),'Service Worker: frame guard não está no shell');
 need(Array.isArray(manifest.shortcuts) && manifest.shortcuts.length >= 3, 'Manifest: atalhos do app ausentes');
 need(manifest.orientation === 'portrait-primary', 'Manifest: orientação mobile profissional ausente');
@@ -36,7 +38,7 @@ need(manifest.launch_handler?.client_mode?.includes('navigate-existing'), 'Manif
 
 for (const page of pages) {
   const source = read(page);
-  need(source.includes('assets/padoka-pwa.js?v=3'), `${page}: cliente PWA v3 ausente`);
+  need(source.includes('assets/padoka-pwa.js?v=4'), `${page}: cliente PWA v4 ausente`);
   need(source.includes('rel="manifest"'), `${page}: manifest PWA ausente`);
   need(source.includes('rel="apple-touch-icon"') && source.includes('assets/icon-192.png'), `${page}: Apple touch icon ausente`);
 }
