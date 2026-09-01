@@ -2,15 +2,21 @@
   const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
   if(!isGestao)return;
 
+  const PADOKA_SUPABASE_URL='https://yncspxfsvlqdnodlsosb.supabase.co';
   const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   const safeId=value=>/^[a-z0-9][a-z0-9_-]{0,79}$/i.test(String(value||'').trim());
   const missingRpc=error=>['PGRST202','42883'].includes(String(error?.code||''))||/padoka_list_products_admin|padoka_save_product|function .* does not exist|schema cache/i.test(String(error?.message||''));
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  const isExpectedBackend=candidate=>!!candidate&&candidate.supabaseUrl===PADOKA_SUPABASE_URL;
   let client=null,role='',rows=[],saving=false,activeUserId='',lifecycleEpoch=0,realtimeChannel=null,authBound=false;
 
   async function waitForContext(){
     for(let i=0;i<80;i++){
-      if(window.padokaSupabase&&window.padokaStaffRole)return {client:window.padokaSupabase,role:window.padokaStaffRole};
+      const candidate=window.padokaSupabase;
+      if(candidate&&window.padokaStaffRole){
+        if(!isExpectedBackend(candidate))return null;
+        return {client:candidate,role:window.padokaStaffRole};
+      }
       await sleep(100);
     }
     return null;
@@ -158,7 +164,7 @@
   async function init(){
     const initEpoch=lifecycleEpoch;
     const context=await waitForContext();
-    if(!context||!['owner','manager'].includes(context.role)||initEpoch!==lifecycleEpoch)return;
+    if(!context||!isExpectedBackend(context.client)||!['owner','manager'].includes(context.role)||initEpoch!==lifecycleEpoch)return;
     client=context.client;role=context.role;
     bindAuthLifecycle();
     const session=await safeSession();
