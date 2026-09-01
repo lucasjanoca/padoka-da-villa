@@ -51,6 +51,7 @@
     if($('rewards'))$('rewards').innerHTML='';
     if($('redemptions'))$('redemptions').innerHTML='';
     if($('history'))$('history').innerHTML='';
+    if($('progressFill'))$('progressFill').value=0;
     $('campaign')?.classList.add('hidden');
   }
   async function ensureSession(expectedUserId,epoch){
@@ -76,7 +77,7 @@
     const next=available.find(r=>Number(r.points_cost)>balance)||available[available.length-1]||null;
     if(!next){
       $('nextCopy').textContent='As recompensas aparecerão aqui quando estiverem disponíveis.';
-      $('progressFill').style.width='0%';
+      $('progressFill').value=0;
       $('progressText').textContent='0%';
       return;
     }
@@ -87,7 +88,7 @@
     }else{
       $('nextCopy').textContent='Faltam '+num(cost-balance)+' pontos para '+next.name+'.';
     }
-    $('progressFill').style.width=pct.toFixed(1)+'%';
+    $('progressFill').value=Number(pct.toFixed(1));
     $('progressText').textContent=Math.round(pct)+'%';
   }
   function renderCampaigns(campaigns){
