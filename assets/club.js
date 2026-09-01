@@ -226,8 +226,7 @@
   }
   async function start(){
     try{
-      const response=await fetch(CONFIG_URL,{cache:'no-store'});if(!response.ok)throw new Error('config');
-      const cfg=await response.json();
+      const cfg=window.PADOKA_RUNTIME?.getPublicConfig?await window.PADOKA_RUNTIME.getPublicConfig():await (async()=>{const response=await fetch(CONFIG_URL,{cache:'no-store'});if(!response.ok)throw new Error('config');return response.json()})();
       const publishableKey=validateConfig(cfg);
       sb=window.supabase.createClient(SUPABASE_URL,publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
       window.padokaSupabase=sb;
