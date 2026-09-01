@@ -1,0 +1,8 @@
+## 2026-09-01 08:30 — Cache da configuração pública reduzido para manter Auth atualizado
+- Relidos `README.md`, `CHANGELOG.md` e `AUTH_STATUS.md` antes da alteração; o backend correto permanece **Sites De Clientes!** (`yncspxfsvlqdnodlsosb`) e o projeto InfoTech.io não foi alterado.
+- Identificado que `assets/app-runtime.js` aceitava a configuração pública em cache por até 24 horas. Como essa configuração inclui o estado do provider Google, uma ativação/desativação real no Supabase poderia demorar horas para refletir na primeira leitura do frontend.
+- `PUBLIC_CONFIG_MAX_AGE` foi reduzido para 5 minutos. Dentro dessa janela o runtime continua usando stale-while-revalidate e dispara atualização em segundo plano; após a expiração, exige nova configuração válida antes de reutilizar o cache.
+- O bootstrap continua preso à origem `https://yncspxfsvlqdnodlsosb.supabase.co`, consulta `padoka-public-config` com `cache: no-store` e `credentials: omit`, e mantém o hint de sessão restrito à chave Auth do project ref PADOKA.
+- O tratamento amigável do Google desativado e `prompt=select_account` quando habilitado não foram alterados; nenhuma credencial Google foi criada ou inventada.
+- `tests/runtime-project-isolation-audit.mjs` passou a exigir a janela máxima de 5 minutos e preserva as garantias de isolamento do project ref e ausência de matcher genérico de tokens Supabase.
+- Nenhuma migration, RLS, policy, grant, trigger ou Edge Function foi alterada nesta execução; não foi necessário alterar ou consultar objetos não-`padoka_` para realizar a melhoria.
