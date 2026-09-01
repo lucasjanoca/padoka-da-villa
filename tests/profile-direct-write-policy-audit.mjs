@@ -2,7 +2,7 @@ import fs from 'node:fs';
 
 const migration=fs.readFileSync('supabase/071_remove_stale_profile_write_policies.sql','utf8');
 const profileRpc=fs.readFileSync('supabase/013_customer_profile_rpc.sql','utf8');
-const account=fs.readFileSync('conta.html','utf8');
+const account=fs.readFileSync('conta.html','utf8')+'\n'+fs.readFileSync('assets/account.js','utf8');
 
 const checks=[
   [migration.includes('Sites De Clientes! (yncspxfsvlqdnodlsosb)'), 'migration must target the PADOKA backend explicitly'],
