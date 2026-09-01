@@ -39,7 +39,8 @@ const PRIVATE_PATHS = new Set([
   'pdv.html',
   'gestao.html',
   'mfa.html',
-  'enterprise.html'
+  'enterprise.html',
+  'club-admin.html'
 ]);
 
 const NOTIFICATION_TARGETS = new Set([
