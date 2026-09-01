@@ -20,9 +20,7 @@
   };
   async function load(){
     try{
-      const r=await fetch(CONFIG_URL,{cache:'no-store'});
-      if(!r.ok)throw new Error('config unavailable');
-      const cfg=await r.json();
+      const cfg=window.PADOKA_RUNTIME?.getPublicConfig?await window.PADOKA_RUNTIME.getPublicConfig():await (async()=>{const r=await fetch(CONFIG_URL,{cache:'no-store'});if(!r.ok)throw new Error('config unavailable');return r.json()})();
       const origin=requirePadokaOrigin(cfg.url);
       if(typeof cfg.publishableKey!=='string'||!cfg.publishableKey.trim())throw new Error('publishable key unavailable');
       const url=origin+'/rest/v1/padoka_feature_flags?select=key,enabled,config&audience=eq.public';
