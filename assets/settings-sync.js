@@ -1,6 +1,7 @@
 (()=>{
   if(!(location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html')))return;
   const $=id=>document.getElementById(id);
+  const PADOKA_SUPABASE_URL='https://yncspxfsvlqdnodlsosb.supabase.co';
   let sb=null,active=false,channel=null,lifecycleEpoch=0,activeUserId='',authSubscription=null;
   const allowedRoles=new Set(['owner','manager']);
   const paymentToUi={pix:'Pix',cash:'Dinheiro',card:'Cartão'};
@@ -8,6 +9,7 @@
   function toast(t){const el=$('toast');if(!el)return;el.textContent=t;el.classList.remove('hidden');clearTimeout(window.__padokaSettingsToast);window.__padokaSettingsToast=setTimeout(()=>el.classList.add('hidden'),1800)}
   function functionMissing(error){return ['PGRST202','42883'].includes(error?.code)||/function .* does not exist|schema cache/i.test(error?.message||'')}
   function timeValue(v){return v?String(v).slice(0,5):''}
+  function isExpectedBackend(candidate){return Boolean(candidate&&candidate.supabaseUrl===PADOKA_SUPABASE_URL&&candidate.auth&&typeof candidate.rpc==='function'&&typeof candidate.channel==='function')}
   function ensureState(){let el=$('cfgServerState');if(el)return el;const panel=document.querySelector('[data-panel="configuracoes"] .card');if(!panel)return null;el=document.createElement('div');el.id='cfgServerState';el.className='notice padoka-mt-10';panel.appendChild(el);return el}
   function showState(t,ok=false){const el=ensureState();if(!el)return;el.textContent=t;el.classList.toggle('padoka-notice-ok',ok)}
   function setControlsEnabled(enabled){for(const id of ['cfgOpen','cfgClose','cfgNight','cfgPayment','cfgNote','cfgSave'])if($(id))$(id).disabled=!enabled}
@@ -120,7 +122,12 @@
   async function start(){
     blockLegacyFallback('Confirmando sessão e permissões internas…');
     for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));
-    sb=window.padokaSupabase;if(!sb)return;
+    const candidate=window.padokaSupabase;
+    if(!isExpectedBackend(candidate)){
+      blockLegacyFallback('Não foi possível validar o servidor da PADOKA. As configurações permanecem bloqueadas.');
+      return
+    }
+    sb=candidate;
     watchAuth();
     const session=await safeSession('startup');
     if(session?.user?.id)await activateForUser(session.user.id);else resetForIdentityChange('Não foi possível confirmar uma sessão interna autorizada. Verifique a conexão ou entre novamente.')
