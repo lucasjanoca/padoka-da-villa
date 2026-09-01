@@ -7,7 +7,7 @@
   const PADOKA_AUTH_STORAGE_KEY=`sb-${PADOKA_PROJECT_REF}-auth-token`;
   const PUBLIC_CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config';
   const PUBLIC_CONFIG_CACHE='padoka_public_config_v1';
-  const PUBLIC_CONFIG_MAX_AGE=24*60*60*1000;
+  const PUBLIC_CONFIG_MAX_AGE=5*60*1000;
   let configRefresh=null;
 
   function validPublicConfig(value){
