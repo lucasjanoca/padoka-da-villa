@@ -1,6 +1,7 @@
 (()=>{
   const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
   const CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config';
+  const PUBLIC_FETCH_OPTIONS=Object.freeze({cache:'no-store',credentials:'omit',redirect:'error'});
   window.PADOKA_FLAGS=Object.freeze({});
   window.PADOKA_FLAG_CONFIG=Object.freeze({});
   const apply=()=>{
@@ -20,11 +21,11 @@
   };
   async function load(){
     try{
-      const cfg=window.PADOKA_RUNTIME?.getPublicConfig?await window.PADOKA_RUNTIME.getPublicConfig():await (async()=>{const r=await fetch(CONFIG_URL,{cache:'no-store'});if(!r.ok)throw new Error('config unavailable');return r.json()})();
+      const cfg=window.PADOKA_RUNTIME?.getPublicConfig?await window.PADOKA_RUNTIME.getPublicConfig():await (async()=>{const r=await fetch(CONFIG_URL,{...PUBLIC_FETCH_OPTIONS,headers:{Accept:'application/json'}});if(!r.ok)throw new Error('config unavailable');return r.json()})();
       const origin=requirePadokaOrigin(cfg.url);
       if(typeof cfg.publishableKey!=='string'||!cfg.publishableKey.trim())throw new Error('publishable key unavailable');
       const url=origin+'/rest/v1/padoka_feature_flags?select=key,enabled,config&audience=eq.public';
-      const f=await fetch(url,{cache:'no-store',headers:{apikey:cfg.publishableKey}});
+      const f=await fetch(url,{...PUBLIC_FETCH_OPTIONS,headers:{Accept:'application/json',apikey:cfg.publishableKey}});
       if(!f.ok)throw new Error('flags unavailable');
       const rows=await f.json(),flags={},config={};
       for(const row of rows||[]){flags[row.key]=row.enabled===true;config[row.key]=row.config||{}}
