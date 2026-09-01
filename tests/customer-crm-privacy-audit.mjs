@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 const sql=fs.readFileSync('supabase/042_customer_crm_privacy.sql','utf8');
 const hard=fs.readFileSync('supabase/045_private_crm_trigger_functions.sql','utf8');
-const page=fs.readFileSync('conta.html','utf8');
+const page=fs.readFileSync('conta.html','utf8')+'\n'+fs.readFileSync('assets/account.js','utf8');
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 const need=(s,r,m)=>{if(!r.test(s))fail(m)};
 for(const table of ['padoka_loyalty_accounts','padoka_loyalty_ledger','padoka_customer_notifications','padoka_privacy_requests'])need(sql,new RegExp('create table if not exists public\\.'+table,'i'),table+' ausente');
