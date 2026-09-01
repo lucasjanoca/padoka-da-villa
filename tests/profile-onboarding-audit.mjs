@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 
 const migration = fs.readFileSync(new URL('../supabase/013_customer_profile_rpc.sql', import.meta.url), 'utf8');
-const account = fs.readFileSync(new URL('../conta.html', import.meta.url), 'utf8');
+const accountPage = fs.readFileSync(new URL('../conta.html', import.meta.url), 'utf8');
+const account = accountPage+'\n'+fs.readFileSync(new URL('../assets/account.js', import.meta.url), 'utf8');
 const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
 
