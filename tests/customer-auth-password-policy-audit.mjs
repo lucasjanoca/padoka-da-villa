@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const source=fs.readFileSync('conta.html','utf8');
+const source=fs.readFileSync('conta.html','utf8')+'\n'+fs.readFileSync('assets/account.js','utf8');
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 const need=(c,m)=>{if(!c)fail(m)};
 
