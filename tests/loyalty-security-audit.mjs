@@ -55,6 +55,23 @@ if(/from\(['"]padoka_loyalty_accounts['"]\)\.(insert|update|delete)/.test(custom
 if(/from\(['"]padoka_loyalty_ledger['"]\)\.(insert|update|delete)/.test(customer))fail('frontend do cliente tenta gravar extrato diretamente');
 
 for(const token of [
+  "EXPECTED_PROJECT_REF='yncspxfsvlqdnodlsosb'",
+  'parsed.origin!==SUPABASE_URL',
+  'createClient(SUPABASE_URL,publishableKey',
+  'lifecycleEpoch',
+  'clearCustomerState()',
+  'ensureSession(expectedUserId,epoch)',
+  'onAuthStateChange',
+  'handleAuthChange(nextSession)',
+  'currentIdentity(expectedUserId,epoch)'
+]){
+  if(!customer.includes(token))fail('cliente do PADOKA Club não contém proteção de lifecycle/backend: '+token);
+}
+if(customer.includes('createClient(cfg.url'))fail('PADOKA Club voltou a confiar diretamente em cfg.url');
+if(!/user=session\.user;[\s\S]{0,300}onAuthStateChange/.test(customer))fail('listener de Auth não é instalado após resolver a identidade inicial');
+if(!/if\(!user\)\{location\.replace\('conta\.html'\);return\}/.test(customer))fail('logout não fecha a tela do PADOKA Club');
+
+for(const token of [
   "sb.rpc('padoka_admin_lookup_loyalty_code'",
   "sb.rpc('padoka_admin_process_loyalty_code'",
   "sb.rpc('padoka_admin_adjust_loyalty'",
