@@ -13,6 +13,7 @@ A **PADOKA DA VILLA** reúne uma experiência mobile-first para clientes e uma b
 - retirada agendada;
 - autenticação e conta do cliente;
 - acompanhamento e histórico de pedidos;
+- PADOKA Club com pontos, recompensas, campanhas e resgates;
 - experiência otimizada para celular.
 
 ### Operação interna
@@ -22,7 +23,8 @@ A **PADOKA DA VILLA** reúne uma experiência mobile-first para clientes e uma b
 - estoque e movimentações;
 - produção e perdas;
 - base de PDV integrada ao estoque;
-- perfis e permissões para equipe.
+- perfis e permissões para equipe;
+- gestão segura do PADOKA Club, com auditoria e validação de resgates.
 
 ## 🛠️ Tecnologias
 
@@ -36,6 +38,7 @@ Princípios adotados:
 - nenhuma chave administrativa deve ficar no frontend;
 - operações sensíveis validam identidade e permissão no backend;
 - preços, estoque e totais não confiam apenas em valores enviados pelo navegador;
+- saldo de pontos não pode ser gravado pelo cliente: ganhos, resgates, estornos e ajustes são transacionais no banco;
 - RPCs públicas sensíveis usam wrappers `SECURITY INVOKER`, com implementação privilegiada fora do schema público;
 - `owner` e `manager` usam MFA/AAL2 para mutações administrativas sensíveis;
 - o GitHub Pages publica somente a aplicação web, excluindo migrations, testes e documentação técnica;
@@ -51,6 +54,8 @@ O PDV pode ser evoluído e testado operacionalmente, mas não deve substituir um
 
 - `index.html` — experiência pública do cliente;
 - `conta.html` — conta e autenticação;
+- `club.html` — fidelidade, recompensas e resgates do cliente;
+- `club-admin.html` — validação e gestão interna do PADOKA Club;
 - `pagamento.html` — checkout;
 - `acompanhamento.html` — pedidos do cliente;
 - `internal.html` / `pedidos.html` — operação interna;
