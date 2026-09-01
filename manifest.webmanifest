@@ -1,7 +1,7 @@
 {
   "name": "PADOKA DA VILLA",
   "short_name": "PADOKA",
-  "description": "Peça pelo celular, acompanhe o preparo em tempo real e receba avisos quando seu pedido avançar ou ficar pronto.",
+  "description": "Peça pelo celular, acompanhe o preparo, receba avisos e use o PADOKA Club para ganhar pontos e resgatar recompensas.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -83,6 +83,19 @@
         }
       ],
       "description": "Abrir sua conta PADOKA"
+    },
+    {
+      "name": "PADOKA Club",
+      "short_name": "Club",
+      "url": "./club.html",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ],
+      "description": "Abrir seus pontos e recompensas"
     }
   ],
   "orientation": "portrait-primary",
