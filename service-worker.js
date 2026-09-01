@@ -1,9 +1,10 @@
 'use strict';
 
-const CACHE_NAME = 'padoka-pwa-v6';
+const CACHE_NAME = 'padoka-pwa-v7';
 const APP_SHELL = [
   './index.html',
   './produto.html',
+  './club.html',
   './manifest.webmanifest',
   './assets/logo-padoka.svg',
   './assets/icon-192.png',
@@ -11,12 +12,15 @@ const APP_SHELL = [
   './assets/catalog.js',
   './assets/frame-guard.js',
   './assets/runtime-security.css',
+  './assets/club.css',
+  './assets/club.js',
   './assets/padoka-pwa.js?v=3'
 ];
 
 const PUBLIC_CACHE_PATHS = new Set([
   'index.html',
   'produto.html',
+  'club.html',
   'manifest.webmanifest',
   'assets/logo-padoka.svg',
   'assets/icon-192.png',
@@ -24,6 +28,8 @@ const PUBLIC_CACHE_PATHS = new Set([
   'assets/catalog.js',
   'assets/frame-guard.js',
   'assets/runtime-security.css',
+  'assets/club.css',
+  'assets/club.js',
   'assets/padoka-pwa.js'
 ]);
 
@@ -39,7 +45,8 @@ const PRIVATE_PATHS = new Set([
 const NOTIFICATION_TARGETS = new Set([
   'index.html',
   'conta.html',
-  'acompanhamento.html'
+  'acompanhamento.html',
+  'club.html'
 ]);
 
 function scopeRelativePath(url) {
