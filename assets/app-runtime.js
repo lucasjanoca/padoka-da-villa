@@ -2,7 +2,9 @@
   'use strict';
 
   const nativeFetch=window.fetch.bind(window);
-  const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
+  const PADOKA_PROJECT_REF='yncspxfsvlqdnodlsosb';
+  const PADOKA_ORIGIN=`https://${PADOKA_PROJECT_REF}.supabase.co`;
+  const PADOKA_AUTH_STORAGE_KEY=`sb-${PADOKA_PROJECT_REF}-auth-token`;
   const PUBLIC_CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config';
   const PUBLIC_CONFIG_CACHE='padoka_public_config_v1';
   const PUBLIC_CONFIG_MAX_AGE=24*60*60*1000;
@@ -76,13 +78,7 @@
   if(isAccountPage)root.classList.add('padoka-auth-booting');
 
   function hasPersistedSessionHint(){
-    try{
-      for(let i=0;i<localStorage.length;i++){
-        const key=localStorage.key(i)||'';
-        if(/^sb-.*-auth-token$/.test(key)&&localStorage.getItem(key))return true;
-      }
-    }catch{}
-    return false;
+    try{return !!localStorage.getItem(PADOKA_AUTH_STORAGE_KEY)}catch{return false}
   }
 
   function setupAccountBoot(){
