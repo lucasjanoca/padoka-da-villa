@@ -9,8 +9,10 @@
   const isAdmin=location.pathname.endsWith('/internal.html')||location.pathname.endsWith('internal.html');
   const isOrders=location.pathname.endsWith('/pedidos.html')||location.pathname.endsWith('pedidos.html');
   const isEnterprise=location.pathname.endsWith('/enterprise.html')||location.pathname.endsWith('enterprise.html');
+  const isClub=location.pathname.endsWith('/club-admin.html')||location.pathname.endsWith('club-admin.html');
   if(isGestao)current=params.get('tab')||'produtos';
   if(isEnterprise)current='enterprise';
+  if(isClub)current='club';
 
   const subtitle=root.dataset.subtitle||'GESTÃO INTERNA';
   const roleAccess={
@@ -23,6 +25,7 @@
     perdas:['owner','manager','stock','production'],
     relatorios:['owner','manager'],
     enterprise:['owner','manager'],
+    club:['owner','manager','cashier','attendant'],
     configuracoes:['owner','manager'],
     equipe:['owner']
   };
@@ -35,6 +38,7 @@
     ['gestao.html?tab=producao','producao','◷','Produção'],
     ['gestao.html?tab=perdas','perdas','↘','Perdas'],
     ['gestao.html?tab=relatorios','relatorios','◒','Relatórios'],
+    ['club-admin.html','club','★','PADOKA Club'],
     ['enterprise.html','enterprise','◉','Centro de Operações'],
     ['gestao.html?tab=configuracoes','configuracoes','⚙','Configurações']
   ];
@@ -81,6 +85,7 @@
       if(url.pathname.endsWith('/pedidos.html'))return 'pedidos';
       if(url.pathname.endsWith('/pdv.html'))return 'pdv';
       if(url.pathname.endsWith('/enterprise.html'))return 'enterprise';
+      if(url.pathname.endsWith('/club-admin.html'))return 'club';
       if(url.pathname.endsWith('/gestao.html'))return url.searchParams.get('tab')||'produtos';
     }catch{}
     return null;
