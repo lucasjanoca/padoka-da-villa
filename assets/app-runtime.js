@@ -1,6 +1,7 @@
 (()=>{
   'use strict';
 
+  const nativeFetch=window.fetch.bind(window);
   const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
   const PUBLIC_CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config';
   const PUBLIC_CONFIG_CACHE='padoka_public_config_v1';
@@ -27,7 +28,7 @@
   async function refreshPublicConfig(){
     if(configRefresh)return configRefresh;
     configRefresh=(async()=>{
-      const response=await fetch(PUBLIC_CONFIG_URL,{cache:'no-store',credentials:'omit'});
+      const response=await nativeFetch(PUBLIC_CONFIG_URL,{cache:'no-store',credentials:'omit'});
       if(!response.ok)throw new Error('PADOKA public config unavailable');
       const value=await response.json();
       if(!validPublicConfig(value))throw new Error('PADOKA public config invalid');
@@ -45,6 +46,23 @@
     }
     return refreshPublicConfig();
   }
+
+  window.fetch=(input,init={})=>{
+    let url='';
+    try{url=typeof input==='string'?new URL(input,location.href).href:new URL(input.url,location.href).href}catch{}
+    const method=String(init?.method||input?.method||'GET').toUpperCase();
+    if(url===PUBLIC_CONFIG_URL&&method==='GET'){
+      const cached=readPublicConfig();
+      if(cached){
+        refreshPublicConfig().catch(()=>{});
+        return Promise.resolve(new Response(JSON.stringify(cached),{
+          status:200,
+          headers:{'content-type':'application/json','cache-control':'no-store'}
+        }));
+      }
+    }
+    return nativeFetch(input,init);
+  };
 
   const root=document.documentElement;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
