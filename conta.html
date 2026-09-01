@@ -50,14 +50,20 @@
   <a class="btn soft full padoka-block-center" href="index.html#cardapio">Fazer novo pedido</a>
 </section>
 
-<section class="card feature-card" hidden data-feature="loyalty" id="clubCard">
-  <span class="eyebrow">PADOKA CLUB</span>
-  <h2>Seus pontos</h2>
-  <p class="sub">Pontos são creditados somente em pedidos reais, pagos e concluídos.</p>
-  <div class="club-grid">
-    <div class="club-stat"><small>SALDO</small><strong id="clubBalance">0</strong></div>
-    <div class="club-stat"><small>ACUMULADOS</small><strong id="clubLifetime">0</strong></div>
+<section class="card feature-card club-profile-card" hidden data-feature="loyalty" id="clubCard">
+  <div class="club-profile-head">
+    <div>
+      <span class="eyebrow">PADOKA CLUB</span>
+      <h2>Seus pontos</h2>
+      <p class="sub">Ganhe em pedidos reais, acompanhe seu saldo e troque por recompensas.</p>
+    </div>
+    <span class="club-profile-badge">FIDELIDADE</span>
   </div>
+  <div class="club-grid">
+    <div class="club-stat"><small>SALDO DISPONÍVEL</small><strong id="clubBalance">0</strong><span>pontos para usar</span></div>
+    <div class="club-stat"><small>ACUMULADOS</small><strong id="clubLifetime">0</strong><span>desde que entrou no Club</span></div>
+  </div>
+  <a class="club-open" href="club.html"><span><strong>Abrir PADOKA Club</strong><small>Recompensas, resgates e histórico completo</small></span><b aria-hidden="true">→</b></a>
   <div id="clubHistory"></div>
 </section>
 
