@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'padoka-pwa-v7';
+const CACHE_NAME = 'padoka-pwa-v8';
 const APP_SHELL = [
   './index.html',
   './produto.html',
@@ -12,9 +12,11 @@ const APP_SHELL = [
   './assets/catalog.js',
   './assets/frame-guard.js',
   './assets/runtime-security.css',
+  './assets/app-shell.css',
+  './assets/app-runtime.js',
   './assets/club.css',
   './assets/club.js',
-  './assets/padoka-pwa.js?v=3'
+  './assets/padoka-pwa.js?v=4'
 ];
 
 const PUBLIC_CACHE_PATHS = new Set([
@@ -28,6 +30,8 @@ const PUBLIC_CACHE_PATHS = new Set([
   'assets/catalog.js',
   'assets/frame-guard.js',
   'assets/runtime-security.css',
+  'assets/app-shell.css',
+  'assets/app-runtime.js',
   'assets/club.css',
   'assets/club.js',
   'assets/padoka-pwa.js'
@@ -76,6 +80,16 @@ function notificationTarget(candidate) {
   }
 }
 
+async function networkResponse(event, request) {
+  if (request.mode === 'navigate' && event.preloadResponse) {
+    try {
+      const preloaded = await event.preloadResponse;
+      if (preloaded) return preloaded;
+    } catch {}
+  }
+  return fetch(request);
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
@@ -88,6 +102,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)));
+    if (self.registration.navigationPreload) {
+      try { await self.registration.navigationPreload.enable(); } catch {}
+    }
     await self.clients.claim();
   })());
 });
@@ -98,19 +115,38 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  if (isCacheableRequest(request, url)) {
+    event.respondWith((async () => {
+      const cached = await caches.match(request);
+      const refresh = (async () => {
+        try {
+          const response = await networkResponse(event, request);
+          if (response && response.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(request, response.clone());
+          }
+          return response;
+        } catch {
+          return null;
+        }
+      })();
+
+      if (cached) {
+        event.waitUntil(refresh);
+        return cached;
+      }
+
+      const response = await refresh;
+      if (response) return response;
+      return Response.error();
+    })());
+    return;
+  }
+
   event.respondWith((async () => {
     try {
-      const response = await fetch(request);
-      if (response && response.ok && isCacheableRequest(request, url)) {
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(request, response.clone()).catch(() => {});
-      }
-      return response;
+      return await networkResponse(event, request);
     } catch {
-      if (isCacheableRequest(request, url)) {
-        const cached = await caches.match(request);
-        if (cached) return cached;
-      }
       if (request.mode === 'navigate') {
         const path = scopeRelativePath(url);
         if (path && NOTIFICATION_TARGETS.has(path)) {
