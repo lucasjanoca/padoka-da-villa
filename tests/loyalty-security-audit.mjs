@@ -13,6 +13,11 @@ for(const p of [
 
 const m82=read('supabase/082_padoka_loyalty_program_complete.sql');
 const m83=read('supabase/083_padoka_loyalty_security_tightening.sql');
+const migrationChain=fs.readdirSync('supabase')
+  .filter(p=>p.endsWith('.sql'))
+  .sort()
+  .map(p=>read('supabase/'+p))
+  .join('\n');
 const customer=read('assets/club.js');
 const admin=read('assets/club-admin.js');
 
@@ -21,7 +26,6 @@ for(const token of [
   "new.payment_status not in ('paid','paid_late')",
   "new.is_test",
   "for update",
-  "padoka_loyalty_order_earn_uidx",
   "padoka_redeem_reward",
   "padoka_cancel_loyalty_redemption",
   "padoka_loyalty_admin_audit",
@@ -31,6 +35,7 @@ for(const token of [
 ]){
   if(!m82.toLowerCase().includes(token.toLowerCase()))fail('migração 082 não contém proteção: '+token);
 }
+if(!migrationChain.includes('padoka_loyalty_order_earn_uidx'))fail('cadeia de migrations não protege ganho duplicado por pedido');
 
 for(const token of [
   'padoka_loyalty_security_check',
