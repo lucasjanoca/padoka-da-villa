@@ -10,11 +10,17 @@
   const PUBLIC_CONFIG_MAX_AGE=5*60*1000;
   let configRefresh=null;
 
+  function validPublicKey(value){
+    if(typeof value!=='string'||value.length<=20)return false;
+    if(/^sb_secret_/i.test(value)||/service_role/i.test(value))return false;
+    return value.startsWith('sb_publishable_')||value.startsWith('eyJ');
+  }
+
   function validPublicConfig(value){
-    if(!value||typeof value!=='object')return false;
+    if(!value||typeof value!=='object'||value.scope!=='padoka')return false;
     try{
       const url=new URL(String(value.url||''));
-      return url.origin===PADOKA_ORIGIN&&typeof value.publishableKey==='string'&&value.publishableKey.length>20;
+      return url.origin===PADOKA_ORIGIN&&url.pathname==='/'&&validPublicKey(value.publishableKey);
     }catch{return false}
   }
 
@@ -30,8 +36,10 @@
   async function refreshPublicConfig(){
     if(configRefresh)return configRefresh;
     configRefresh=(async()=>{
-      const response=await nativeFetch(PUBLIC_CONFIG_URL,{cache:'no-store',credentials:'omit'});
+      const response=await nativeFetch(PUBLIC_CONFIG_URL,{cache:'no-store',credentials:'omit',redirect:'error'});
       if(!response.ok)throw new Error('PADOKA public config unavailable');
+      const contentType=String(response.headers.get('content-type')||'').toLowerCase();
+      if(!contentType.includes('application/json'))throw new Error('PADOKA public config invalid content type');
       const value=await response.json();
       if(!validPublicConfig(value))throw new Error('PADOKA public config invalid');
       try{localStorage.setItem(PUBLIC_CONFIG_CACHE,JSON.stringify({savedAt:Date.now(),value}))}catch{}
