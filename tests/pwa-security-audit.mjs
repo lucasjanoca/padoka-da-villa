@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 const source = fs.readFileSync(new URL('../service-worker.js', import.meta.url), 'utf8');
 
-assert.match(source, /const CACHE_NAME = 'padoka-pwa-v6'/, 'PWA cache version must be bumped after security-policy changes');
+assert.match(source, /const CACHE_NAME = 'padoka-pwa-v7'/, 'PWA cache version must be bumped after security-policy changes');
 assert.match(source, /const PUBLIC_CACHE_PATHS = new Set\(/, 'PWA must use an explicit public cache allowlist');
 assert.match(source, /assets\/runtime-security\.css/, 'critical runtime security CSS must remain cacheable offline');
 assert.match(source, /assets\/frame-guard\.js/, 'frame guard must remain cacheable offline');
