@@ -10,7 +10,7 @@ const manifest = JSON.parse(read('manifest.webmanifest'));
 const pushFn = read('supabase/functions/padoka-push/index.ts');
 const vaultMigration = read('supabase/050_push_vault_and_internal_auth.sql');
 const dropMigration = read('supabase/051_push_remove_public_private_key.sql');
-const pages = ['index.html','produto.html','pagamento.html','conta.html','acompanhamento.html'];
+const pages = ['index.html','produto.html','pagamento.html','conta.html','acompanhamento.html','club.html'];
 
 need(pwa.includes('beforeinstallprompt'), 'PWA: hook nativo de instalação ausente');
 need(pwa.includes('window.setTimeout(() => showInstallBanner(), 700)'), 'PWA: aviso de instalação não aparece em toda entrada');
@@ -19,7 +19,7 @@ need(!pwa.includes('installDismissedRecently'), 'PWA: cooldown de instalação r
 need(pwa.includes('pushManager.subscribe'), 'PWA: assinatura Web Push ausente');
 need(pwa.includes("Notification.requestPermission()"), 'PWA: pedido explícito de permissão push ausente');
 
-need(sw.includes("const CACHE_NAME = 'padoka-pwa-v6'"), 'Service Worker: versão de cache atual ausente');
+need(sw.includes("const CACHE_NAME = 'padoka-pwa-v7'"), 'Service Worker: versão de cache atual ausente');
 need(sw.includes("addEventListener('push'"), 'Service Worker: listener push ausente');
 need(sw.includes("addEventListener('notificationclick'"), 'Service Worker: clique em notificação ausente');
 
