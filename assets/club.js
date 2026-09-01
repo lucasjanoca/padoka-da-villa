@@ -69,9 +69,9 @@
     const balance=Number(account?.points_balance||0),lifetime=Number(account?.lifetime_points||0);
     $('balance').innerHTML=num(balance)+' <small>pts</small>';
     $('lifetime').textContent=num(lifetime)+' acumulados';
-    $('ratePerk').textContent=(Number(settings?.points_per_brl||1)).toLocaleString('pt-BR',{maximumFractionDigits:2})+' pt / R$ 1';
+    $('ratePerk').textContent=(Number(settings?.points_per_brl||0)).toLocaleString('pt-BR',{maximumFractionDigits:2})+' pt / R$ 1';
     $('firstBonusPerk').textContent='+'+num(settings?.first_order_bonus_points||0)+' pts';
-    $('birthdayPerk').textContent=(Number(settings?.birthday_multiplier||1)).toLocaleString('pt-BR',{maximumFractionDigits:1})+'× pontos';
+    $('birthdayPerk').textContent=(Number(settings?.birthday_multiplier||0)).toLocaleString('pt-BR',{maximumFractionDigits:1})+'× pontos';
 
     const available=rewards.filter(rewardAvailable).sort((a,b)=>Number(a.points_cost)-Number(b.points_cost));
     const next=available.find(r=>Number(r.points_cost)>balance)||available[available.length-1]||null;
@@ -194,7 +194,8 @@
     ]);
     for(const x of [s,a,r,c,red,l])if(x.error)throw x.error;
     if(!currentIdentity(expectedUserId,epoch)||!await ensureSession(expectedUserId,epoch))return;
-    settings=s.data||{enabled:true,points_per_brl:1,first_order_bonus_points:20,birthday_multiplier:2,redemption_valid_days:30};
+    if(!s.data)throw new Error('loyalty settings unavailable');
+    settings=s.data;
     account=a.data||{points_balance:0,lifetime_points:0};
     rewards=r.data||[];redemptions=red.data||[];ledger=l.data||[];
     if(!settings.enabled){
