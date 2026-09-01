@@ -7,6 +7,7 @@ const catalog = read('assets/catalog.js');
 const orderIdempotency = read('assets/order-idempotency.js');
 const reportingSync = read('assets/reporting-sync.js');
 const settingsSync = read('assets/settings-sync.js');
+const accountClient = read('assets/account.js');
 const clubAdmin = read('assets/club-admin.js');
 const auth = read('AUTH_STATUS.md');
 const statusMigration = read('supabase/005_order_status_transition_rpc.sql');
@@ -73,8 +74,8 @@ ok(statusMigration.includes("when 'ready' then p_status in ('completed','cancell
 ok(/revoke\s+update\s+on\s+table\s+public\.padoka_orders\s+from\s+authenticated/i.test(statusMigration), 'migration 005: UPDATE direto de pedidos continua concedido após ativação');
 
 // Google OAuth must keep account selection and friendly disabled-provider handling.
-ok(html['conta.html'].includes('select_account'), 'conta.html: Google OAuth sem prompt select_account');
-ok(/googleEnabled\s*===\s*false/.test(html['conta.html']), 'conta.html: tratamento de provider Google desativado ausente');
+ok(accountClient.includes('select_account'), 'assets/account.js: Google OAuth sem prompt select_account');
+ok(/googleEnabled\s*===\s*false/.test(accountClient), 'assets/account.js: tratamento de provider Google desativado ausente');
 ok(auth.includes('yncspxfsvlqdnodlsosb'), 'AUTH_STATUS.md: project ref PADOKA ausente');
 
 // Beverage imagery must be distinct.
