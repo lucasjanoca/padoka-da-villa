@@ -64,6 +64,7 @@
   const privilegedMfaRoles=new Set(['owner','manager']);
   let staffValidationEpoch=0;
   let validatedStaffUserId='';
+  let staffRevalidationTimer=null;
 
   document.documentElement.classList.add('padoka-staff-pending');
   if(targetNeedsRole)document.documentElement.classList.add('padoka-role-pending');
@@ -186,6 +187,7 @@
   }
   async function applyStaffRole(expectedUserId=''){
     const epoch=++staffValidationEpoch;
+    const hadResolvedStaff=!!validatedStaffUserId;
     try{
       const client=await waitForClient();
       if(!client)throw new Error('staff client unavailable');
@@ -218,10 +220,16 @@
       if(epoch!==staffValidationEpoch)return;
       clearResolvedStaff();
       console.warn('PADOKA internal permissions:',error);
-      if(targetNeedsRole){
+      if(targetNeedsRole||hadResolvedStaff){
         location.replace('internal.html');
       }
     }
+  }
+  function startStaffRevalidation(){
+    clearInterval(staffRevalidationTimer);
+    staffRevalidationTimer=setInterval(()=>{
+      if(!document.hidden&&validatedStaffUserId)applyStaffRole(validatedStaffUserId);
+    },300000);
   }
   async function watchStaffAuth(){
     const client=await waitForClient();
@@ -239,6 +247,14 @@
       setTimeout(()=>applyStaffRole(nextUserId),0);
     });
   }
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&validatedStaffUserId)applyStaffRole(validatedStaffUserId);
+  });
+  window.addEventListener('pagehide',()=>{
+    clearInterval(staffRevalidationTimer);
+    staffRevalidationTimer=null;
+  },{once:true});
+  startStaffRevalidation();
   watchStaffAuth();
   applyStaffRole();
 })();
