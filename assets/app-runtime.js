@@ -10,10 +10,20 @@
   const PUBLIC_CONFIG_MAX_AGE=5*60*1000;
   let configRefresh=null;
 
+  function validLegacyAnonKey(value){
+    if(!value.startsWith('eyJ'))return false;
+    try{
+      const part=value.split('.')[1]||'';
+      const normalized=part.replace(/-/g,'+').replace(/_/g,'/');
+      const padded=normalized+'='.repeat((4-normalized.length%4)%4);
+      const payload=JSON.parse(atob(padded));
+      return payload?.role==='anon';
+    }catch{return false}
+  }
+
   function validPublicKey(value){
     if(typeof value!=='string'||value.length<=20)return false;
-    if(/^sb_secret_/i.test(value)||/service_role/i.test(value))return false;
-    return value.startsWith('sb_publishable_')||value.startsWith('eyJ');
+    return value.startsWith('sb_publishable_')||validLegacyAnonKey(value);
   }
 
   function validPublicConfig(value){
