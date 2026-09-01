@@ -43,6 +43,10 @@ jobs:
           node --check assets/pdv-idempotency.js
           node --check assets/pdv-scanner-fix.js
           node --check assets/orders-auth-lifecycle.js
+          node --check assets/app-runtime.js
+          node --check assets/padoka-pwa.js
+          node --check assets/account.js
+          node --check assets/club.js
 
       - name: Run every PADOKA audit
         shell: bash
