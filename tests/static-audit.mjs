@@ -1,19 +1,20 @@
 import fs from 'node:fs';
 
 const read = p => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
-const files = ['index.html','produto.html','conta.html','pagamento.html','acompanhamento.html','internal.html','pedidos.html','pdv.html','gestao.html','mfa.html','enterprise.html'];
+const files = ['index.html','produto.html','conta.html','pagamento.html','acompanhamento.html','club.html','internal.html','pedidos.html','pdv.html','gestao.html','mfa.html','enterprise.html','club-admin.html'];
 const html = Object.fromEntries(files.map(f => [f, read(f)]));
 const catalog = read('assets/catalog.js');
 const orderIdempotency = read('assets/order-idempotency.js');
 const reportingSync = read('assets/reporting-sync.js');
 const settingsSync = read('assets/settings-sync.js');
+const clubAdmin = read('assets/club-admin.js');
 const auth = read('AUTH_STATUS.md');
 const statusMigration = read('supabase/005_order_status_transition_rpc.sql');
 const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
 
 // Public pages must not advertise internal operational modules.
-for (const f of ['index.html','produto.html','conta.html','pagamento.html','acompanhamento.html']) {
+for (const f of ['index.html','produto.html','conta.html','pagamento.html','acompanhamento.html','club.html']) {
   ok(!/(href=["'][^"']*(?:internal|pdv|gestao|pedidos)\.html)/i.test(html[f]), `${f}: expõe link para módulo interno`);
 }
 
@@ -21,6 +22,11 @@ for (const f of ['index.html','produto.html','conta.html','pagamento.html','acom
 for (const f of ['internal.html','pedidos.html','pdv.html','gestao.html','enterprise.html']) {
   ok(html[f].includes('padoka_staff_users'), `${f}: não valida padoka_staff_users`);
 }
+
+ok(html['club-admin.html'].includes('assets/club-admin.js'), 'club-admin.html: controlador externo do Club ausente');
+ok(clubAdmin.includes("from('padoka_staff_users')"), 'club-admin: não valida padoka_staff_users');
+ok(clubAdmin.includes("['owner','manager','cashier','attendant']"), 'club-admin: allowlist de papéis ausente');
+ok(clubAdmin.includes('getAuthenticatorAssuranceLevel'), 'club-admin: owner/manager sem validação MFA');
 
 // Sensitive management modules must not even start server sync for unrelated staff roles.
 for (const [name, source] of [['reporting-sync.js', reportingSync], ['settings-sync.js', settingsSync]]) {
