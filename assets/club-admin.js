@@ -3,7 +3,7 @@
 const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
 const CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config';
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),num=v=>Number(v||0).toLocaleString('pt-BR'),date=v=>v?new Date(v).toLocaleString('pt-BR'):'—';
-let sb=null,role='',rewards=[],campaigns=[],selectedCustomer=null,lookupData=null,lifecycleEpoch=0,activeStaffUserId='';
+let sb=null,role='',rewards=[],campaigns=[],selectedCustomer=null,lookupData=null,lifecycleEpoch=0,activeStaffUserId='',loyaltySettingsLoaded=false;
 
 function notice(id,text,type=''){const e=$(id);if(!e)return;e.className='notice'+(type?' '+type:'');e.textContent=text}
 function pill(s){const cls=s==='used'||s==='ativo'?'ok':s==='reserved'||s==='pendente'?'warn':s==='cancelled'||s==='expired'||s==='inativo'?'danger':'';return '<span class="pill '+cls+'">'+esc(s)+'</span>'}
@@ -11,8 +11,12 @@ function friendly(e){const m=String(e?.message||e||'').toLowerCase();if(m.includ
 function toLocal(v){if(!v)return'';const d=new Date(v);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)}
 function fromLocal(v){return v?new Date(v).toISOString():null}
 function isCurrent(epoch,userId){return epoch===lifecycleEpoch&&!!userId&&userId===activeStaffUserId}
+function setSettingsAvailability(available){
+  loyaltySettingsLoaded=!!available;
+  for(const id of ['setEnabled','setRate','setFirst','setBirthday','setDays','setCap','saveSettings'])if($(id))$(id).disabled=!loyaltySettingsLoaded;
+}
 function clearAdminUi(){
-  role='';rewards=[];campaigns=[];selectedCustomer=null;lookupData=null;
+  role='';rewards=[];campaigns=[];selectedCustomer=null;lookupData=null;setSettingsAvailability(false);
   $('app')?.classList.add('hidden');$('gate')?.classList.remove('hidden');
   if($('roleBadge'))$('roleBadge').textContent='EQUIPE';
   if($('lookupResult'))$('lookupResult').innerHTML='<div class="empty">Nenhum resgate carregado.</div>';
@@ -78,11 +82,13 @@ async function loadManager(epoch=lifecycleEpoch,userId=activeStaffUserId){
   for(const x of [s,a,r,c,red])if(x.error)throw x.error;if(!isCurrent(epoch,userId))return;
   const accounts=a.data||[];rewards=r.data||[];campaigns=c.data||[];
   $('sCustomers').textContent=num(accounts.length);$('sBalance').textContent=num(accounts.reduce((z,x)=>z+Number(x.points_balance||0),0));$('sLifetime').textContent=num(accounts.reduce((z,x)=>z+Number(x.lifetime_points||0),0));$('sReserved').textContent=num((red.data||[]).filter(x=>x.status==='reserved').length);
-  fillSettings(s.data||{});renderRewards();renderCampaigns();renderRecent(red.data||[]);
+  if(s.data){fillSettings(s.data);setSettingsAvailability(true);notice('settingsNotice','Configurações carregadas do servidor.','ok')}
+  else{setSettingsAvailability(false);notice('settingsNotice','As regras de fidelidade não estão disponíveis no servidor. Nenhuma configuração local será usada.','error')}
+  renderRewards();renderCampaigns();renderRecent(red.data||[]);
 }
-function fillSettings(s){$('setEnabled').value=String(!!s.enabled);$('setRate').value=s.points_per_brl??1;$('setFirst').value=s.first_order_bonus_points??20;$('setBirthday').value=s.birthday_multiplier??2;$('setDays').value=s.redemption_valid_days??30;$('setCap').value=s.max_points_per_order??5000}
+function fillSettings(s){$('setEnabled').value=String(!!s.enabled);$('setRate').value=s.points_per_brl;$('setFirst').value=s.first_order_bonus_points;$('setBirthday').value=s.birthday_multiplier;$('setDays').value=s.redemption_valid_days;$('setCap').value=s.max_points_per_order}
 async function saveSettings(){
-  const {epoch,userId}=context();if(!await sessionStillCurrent(epoch,userId))return;
+  const {epoch,userId}=context();if(!loyaltySettingsLoaded)return notice('settingsNotice','As regras de fidelidade precisam ser carregadas do servidor antes de salvar.','error');if(!await sessionStillCurrent(epoch,userId))return;
   try{const {error}=await sb.rpc('padoka_admin_update_loyalty_settings',{p_enabled:$('setEnabled').value==='true',p_points_per_brl:Number($('setRate').value),p_first_order_bonus_points:Number($('setFirst').value),p_birthday_multiplier:Number($('setBirthday').value),p_redemption_valid_days:Number($('setDays').value),p_max_points_per_order:Number($('setCap').value)});if(error)throw error;if(!isCurrent(epoch,userId))return;notice('settingsNotice','Configurações salvas.','ok');await loadManager(epoch,userId)}catch(e){if(isCurrent(epoch,userId))notice('settingsNotice',friendly(e),'error')}
 }
 function renderRewards(){
