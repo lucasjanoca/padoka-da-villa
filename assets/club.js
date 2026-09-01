@@ -1,11 +1,13 @@
 (()=>{
   'use strict';
-  const CONFIG_URL='https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-public-config';
+  const EXPECTED_PROJECT_REF='yncspxfsvlqdnodlsosb';
+  const SUPABASE_URL=`https://${EXPECTED_PROJECT_REF}.supabase.co`;
+  const CONFIG_URL=`${SUPABASE_URL}/functions/v1/padoka-public-config`;
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=v=>Number(v||0).toLocaleString('pt-BR');
   const date=v=>v?new Date(v).toLocaleString('pt-BR'):'—';
-  let sb=null,user=null,settings=null,account=null,rewards=[],redemptions=[],ledger=[],selectedReward=null;
+  let sb=null,user=null,settings=null,account=null,rewards=[],redemptions=[],ledger=[],selectedReward=null,lifecycleEpoch=0;
 
   function toast(text){
     const el=$('toast');if(!el)return;
@@ -26,6 +28,36 @@
   }
   function statusLabel(s){
     return {reserved:'Disponível',used:'Utilizado',cancelled:'Cancelado',expired:'Expirado'}[s]||'Resgate';
+  }
+  function validateConfig(cfg){
+    const raw=String(cfg?.url||'').trim();
+    let parsed;
+    try{parsed=new URL(raw)}catch{throw new Error('invalid project config')}
+    if(parsed.protocol!=='https:'||parsed.origin!==SUPABASE_URL)throw new Error('unexpected project config');
+    if(typeof cfg?.publishableKey!=='string'||!cfg.publishableKey.trim())throw new Error('missing publishable key');
+    return cfg.publishableKey.trim();
+  }
+  function currentIdentity(expectedUserId,epoch){
+    return Boolean(user?.id&&user.id===expectedUserId&&lifecycleEpoch===epoch);
+  }
+  function clearCustomerState(){
+    settings=null;account=null;rewards=[];redemptions=[];ledger=[];selectedReward=null;
+    $('redeemModal')?.classList.add('hidden');
+    $('content')?.classList.add('hidden');
+    $('loading')?.classList.remove('hidden');
+    if($('loadingText'))$('loadingText').textContent='Validando sua conta…';
+    if($('balance'))$('balance').innerHTML='0 <small>pts</small>';
+    if($('lifetime'))$('lifetime').textContent='0 acumulados';
+    if($('rewards'))$('rewards').innerHTML='';
+    if($('redemptions'))$('redemptions').innerHTML='';
+    if($('history'))$('history').innerHTML='';
+    $('campaign')?.classList.add('hidden');
+  }
+  async function ensureSession(expectedUserId,epoch){
+    if(!currentIdentity(expectedUserId,epoch))return false;
+    const {data:{session},error}=await sb.auth.getSession();
+    if(error||!session?.user||session.user.id!==expectedUserId)return false;
+    return currentIdentity(expectedUserId,epoch);
   }
   function rewardAvailable(r){
     const now=Date.now(),from=r.valid_from?new Date(r.valid_from).getTime():0,to=r.valid_until?new Date(r.valid_until).getTime():Infinity;
@@ -122,37 +154,45 @@
   }
   function closeRedeem(){selectedReward=null;$('redeemModal').classList.add('hidden')}
   async function confirmRedeem(){
-    if(!selectedReward)return;
+    if(!selectedReward||!user?.id)return;
+    const expectedUserId=user.id,epoch=lifecycleEpoch,rewardId=selectedReward.id;
     const btn=$('confirmRedeem');btn.disabled=true;btn.textContent='Resgatando…';
     try{
-      const {data,error}=await sb.rpc('padoka_redeem_reward',{p_reward_id:selectedReward.id});
+      if(!await ensureSession(expectedUserId,epoch))return;
+      const {data,error}=await sb.rpc('padoka_redeem_reward',{p_reward_id:rewardId});
       if(error)throw error;
+      if(!currentIdentity(expectedUserId,epoch))return;
       closeRedeem();
       toast('Recompensa resgatada! Código '+data.code);
-      await loadData();
-    }catch(e){console.error(e);toast(friendly(e))}
-    finally{btn.disabled=false;btn.textContent='Confirmar resgate'}
+      await loadData(expectedUserId,epoch);
+    }catch(e){if(currentIdentity(expectedUserId,epoch)){console.error(e);toast(friendly(e))}}
+    finally{if(currentIdentity(expectedUserId,epoch)){btn.disabled=false;btn.textContent='Confirmar resgate'}}
   }
   async function cancelRedemption(id){
-    if(!confirm('Cancelar este resgate? Os pontos voltarão ao seu saldo.'))return;
+    if(!user?.id||!confirm('Cancelar este resgate? Os pontos voltarão ao seu saldo.'))return;
+    const expectedUserId=user.id,epoch=lifecycleEpoch;
     try{
+      if(!await ensureSession(expectedUserId,epoch))return;
       const {error}=await sb.rpc('padoka_cancel_loyalty_redemption',{p_redemption_id:id});
       if(error)throw error;
+      if(!currentIdentity(expectedUserId,epoch))return;
       toast('Resgate cancelado e pontos devolvidos.');
-      await loadData();
-    }catch(e){console.error(e);toast(friendly(e))}
+      await loadData(expectedUserId,epoch);
+    }catch(e){if(currentIdentity(expectedUserId,epoch)){console.error(e);toast(friendly(e))}}
   }
-  async function loadData(){
+  async function loadData(expectedUserId=user?.id,epoch=lifecycleEpoch){
+    if(!expectedUserId||!currentIdentity(expectedUserId,epoch))return;
     const nowIso=new Date().toISOString();
     const [s,a,r,c,red,l]=await Promise.all([
       sb.from('padoka_loyalty_settings').select('id,enabled,points_per_brl,first_order_bonus_points,birthday_multiplier,redemption_valid_days,max_points_per_order,updated_at').eq('id',true).maybeSingle(),
-      sb.from('padoka_loyalty_accounts').select('points_balance,lifetime_points,last_earned_at,last_redeemed_at').eq('user_id',user.id).maybeSingle(),
+      sb.from('padoka_loyalty_accounts').select('points_balance,lifetime_points,last_earned_at,last_redeemed_at').eq('user_id',expectedUserId).maybeSingle(),
       sb.from('padoka_loyalty_rewards').select('id,name,description,points_cost,active,stock_limit,stock_redeemed,per_customer_limit,valid_from,valid_until,badge,sort_order').eq('active',true).order('sort_order'),
       sb.from('padoka_loyalty_campaigns').select('id,name,description,multiplier,bonus_points,min_order_total,starts_at,ends_at,active').eq('active',true).lt('starts_at',nowIso).gt('ends_at',nowIso),
-      sb.from('padoka_loyalty_redemptions').select('id,reward_id,code,reward_name,points_spent,status,expires_at,used_at,cancelled_at,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(10),
-      sb.from('padoka_loyalty_ledger').select('id,entry_type,points,description,source,balance_after,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(20)
+      sb.from('padoka_loyalty_redemptions').select('id,reward_id,code,reward_name,points_spent,status,expires_at,used_at,cancelled_at,created_at').eq('user_id',expectedUserId).order('created_at',{ascending:false}).limit(10),
+      sb.from('padoka_loyalty_ledger').select('id,entry_type,points,description,source,balance_after,created_at').eq('user_id',expectedUserId).order('created_at',{ascending:false}).limit(20)
     ]);
     for(const x of [s,a,r,c,red,l])if(x.error)throw x.error;
+    if(!currentIdentity(expectedUserId,epoch)||!await ensureSession(expectedUserId,epoch))return;
     settings=s.data||{enabled:true,points_per_brl:1,first_order_bonus_points:20,birthday_multiplier:2,redemption_valid_days:30};
     account=a.data||{points_balance:0,lifetime_points:0};
     rewards=r.data||[];redemptions=red.data||[];ledger=l.data||[];
@@ -165,16 +205,38 @@
     }
     renderSummary();renderCampaigns(c.data||[]);renderRewards();renderRedemptions();renderHistory();
   }
+  async function handleAuthChange(session){
+    const nextUser=session?.user||null;
+    if(nextUser?.id===user?.id)return;
+    const epoch=++lifecycleEpoch;
+    user=nextUser;
+    clearCustomerState();
+    if(!user){location.replace('conta.html');return}
+    const expectedUserId=user.id;
+    try{
+      await loadData(expectedUserId,epoch);
+      if(!currentIdentity(expectedUserId,epoch))return;
+      $('loading').classList.add('hidden');$('content').classList.remove('hidden');
+    }catch(e){
+      if(!currentIdentity(expectedUserId,epoch))return;
+      console.error(e);
+      $('loadingText').textContent='Não foi possível abrir o PADOKA Club agora. Tente novamente em instantes.';
+    }
+  }
   async function start(){
     try{
       const response=await fetch(CONFIG_URL,{cache:'no-store'});if(!response.ok)throw new Error('config');
       const cfg=await response.json();
-      sb=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
+      const publishableKey=validateConfig(cfg);
+      sb=window.supabase.createClient(SUPABASE_URL,publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
       window.padokaSupabase=sb;
       const {data:{session},error}=await sb.auth.getSession();if(error)throw error;
       if(!session){location.replace('conta.html');return}
       user=session.user;
-      await loadData();
+      const epoch=++lifecycleEpoch,expectedUserId=user.id;
+      sb.auth.onAuthStateChange((_event,nextSession)=>{setTimeout(()=>handleAuthChange(nextSession),0)});
+      await loadData(expectedUserId,epoch);
+      if(!currentIdentity(expectedUserId,epoch))return;
       $('loading').classList.add('hidden');$('content').classList.remove('hidden');
     }catch(e){
       console.error(e);
