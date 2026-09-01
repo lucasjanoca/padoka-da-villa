@@ -47,6 +47,12 @@ const PRIVATE_PATHS = new Set([
   'club-admin.html'
 ]);
 
+const PADOKA_BACKEND_ORIGIN = 'https://yncspxfsvlqdnodlsosb.supabase.co';
+const PUBLIC_REMOTE_PATHS = new Set([
+  '/functions/v1/padoka-public-config',
+  '/auth/v1/settings'
+]);
+
 const NOTIFICATION_TARGETS = new Set([
   'index.html',
   'conta.html',
@@ -65,6 +71,12 @@ function isCacheableRequest(request, url) {
   const path = scopeRelativePath(url);
   if (!path || PRIVATE_PATHS.has(path)) return false;
   return PUBLIC_CACHE_PATHS.has(path);
+}
+
+function isCacheableRemoteRequest(request, url) {
+  if (request.method !== 'GET' || url.origin !== PADOKA_BACKEND_ORIGIN) return false;
+  if (request.headers.has('authorization')) return false;
+  return PUBLIC_REMOTE_PATHS.has(url.pathname);
 }
 
 function notificationTarget(candidate) {
@@ -113,6 +125,32 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
+
+  if (isCacheableRemoteRequest(request, url)) {
+    event.respondWith((async () => {
+      const cached = await caches.match(request);
+      const refresh = (async () => {
+        try {
+          const response = await fetch(request);
+          if (response && response.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(request, response.clone());
+          }
+          return response;
+        } catch {
+          return null;
+        }
+      })();
+      if (cached) {
+        event.waitUntil(refresh);
+        return cached;
+      }
+      const response = await refresh;
+      return response || Response.error();
+    })());
+    return;
+  }
+
   if (url.origin !== self.location.origin) return;
 
   if (isCacheableRequest(request, url)) {
