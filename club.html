@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: blob: https://*.googleusercontent.com https://yncspxfsvlqdnodlsosb.supabase.co; font-src 'self' data:; connect-src 'self' https://yncspxfsvlqdnodlsosb.supabase.co wss://yncspxfsvlqdnodlsosb.supabase.co; media-src 'self' data: blob:; frame-src 'none'; manifest-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#17130f">
+  <script src="assets/frame-guard.js"></script>
+  <title>PADOKA Club • PADOKA DA VILLA</title>
+  <link rel="stylesheet" href="assets/runtime-security.css">
+  <link rel="stylesheet" href="assets/club.css">
+  <link rel="stylesheet" href="assets/accessibility.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/logo-padoka.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png">
+  <script src="vendor/supabase-js-2.112.4.js" integrity="sha256-+M5/q3ma8ZFgGcvQtIWzm7gNvbxtwGKQmnUcnlGY4Ew="></script>
+  <script src="assets/accessibility.js" defer></script>
+  <script src="assets/telemetry.js" defer></script>
+  <script src="assets/padoka-pwa.js?v=3" defer></script>
+  <script src="assets/club.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap bar">
+      <a class="brand-home" href="index.html#cardapio" aria-label="Ir ao cardápio">
+        <img class="logo" src="assets/logo-padoka.svg" alt="PADOKA DA VILLA">
+        <div class="brand">PADOKA DA VILLA<small>PADOKA Club</small></div>
+      </a>
+      <a class="back" href="conta.html">Minha conta</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <span class="eyebrow">PROGRAMA DE FIDELIDADE</span>
+      <h1>PADOKA Club</h1>
+      <p>Ganhe pontos em pedidos reais, desbloqueie recompensas e acompanhe cada movimentação.</p>
+    </section>
+
+    <section class="card" id="loading">
+      <div class="empty" id="loadingText">Carregando seu PADOKA Club…</div>
+    </section>
+
+    <div class="hidden" id="content">
+      <section class="balance-card" aria-label="Resumo dos pontos">
+        <div class="balance-top">
+          <div>
+            <div class="balance-label">SEU SALDO</div>
+            <div class="balance" id="balance">0 <small>pts</small></div>
+          </div>
+          <div class="level" id="lifetime">0 acumulados</div>
+        </div>
+
+        <div class="progress-copy">
+          <span id="nextCopy">Carregando próxima recompensa…</span>
+          <strong id="progressText">0%</strong>
+        </div>
+        <div class="progress" aria-label="Progresso para a próxima recompensa"><span id="progressFill"></span></div>
+
+        <div class="perks">
+          <div class="perk"><strong id="ratePerk">1 pt / R$ 1</strong><small>em pedidos elegíveis</small></div>
+          <div class="perk"><strong id="firstBonusPerk">+20 pts</strong><small>na primeira compra elegível</small></div>
+          <div class="perk"><strong id="birthdayPerk">2× pontos</strong><small>no seu aniversário</small></div>
+        </div>
+      </section>
+
+      <section class="campaign hidden" id="campaign">
+        <div class="ico" aria-hidden="true">✦</div>
+        <div><strong id="campaignTitle">Campanha ativa</strong><small id="campaignText"></small></div>
+      </section>
+
+      <section class="card hidden" id="paused">
+        <div class="section-head"><div><h2>Club temporariamente pausado</h2><p>Seu saldo continua protegido. Novos resgates voltam quando o programa for reativado.</p></div></div>
+      </section>
+
+      <section class="card" id="rewardCard">
+        <div class="section-head">
+          <div><h2>Recompensas</h2><p>Escolha uma recompensa e troque seus pontos com segurança.</p></div>
+          <span class="hint">RESGATE IMEDIATO</span>
+        </div>
+        <div class="rewards" id="rewards"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <div><h2>Seus resgates</h2><p>Mostre o código de um resgate disponível para a equipe da PADOKA.</p></div>
+        </div>
+        <div class="redemptions" id="redemptions"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <div><h2>Histórico de pontos</h2><p>Ganhos, resgates e estornos ficam registrados aqui.</p></div>
+        </div>
+        <div class="history" id="history"></div>
+      </section>
+
+      <section class="card">
+        <span class="eyebrow">COMO FUNCIONA</span>
+        <div class="rules">
+          <div class="rule"><b>1</b><span>Os pontos são calculados no servidor e só entram depois de um pedido real, pago e concluído.</span></div>
+          <div class="rule"><b>2</b><span>Ao resgatar uma recompensa, os pontos são descontados e você recebe um código único.</span></div>
+          <div class="rule"><b>3</b><span>Se um resgate reservado for cancelado ou expirar sem uso, os pontos retornam automaticamente ao saldo.</span></div>
+          <div class="rule"><b>4</b><span>Campanhas podem oferecer pontos extras ou multiplicadores, sem alterar manualmente o saldo no aplicativo.</span></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <nav class="bottom" aria-label="Navegação principal">
+    <a href="index.html#inicio"><b>⌂</b>Início</a>
+    <a href="index.html#cardapio"><b>▦</b>Cardápio</a>
+    <a href="acompanhamento.html"><b>◎</b>Pedidos</a>
+    <a class="active" href="conta.html"><b>♙</b>Conta</a>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal hidden" id="redeemModal" role="dialog" aria-modal="true" aria-labelledby="modalReward">
+    <div class="modal-card">
+      <span class="eyebrow">CONFIRMAR RESGATE</span>
+      <h3 id="modalReward">Recompensa</h3>
+      <p id="modalText"></p>
+      <div class="modal-cost" id="modalCost">0 pontos</div>
+      <div class="modal-actions">
+        <button class="soft" id="closeRedeem" type="button">Voltar</button>
+        <button class="dark" id="confirmRedeem" type="button">Confirmar resgate</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
