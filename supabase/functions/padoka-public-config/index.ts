@@ -4,6 +4,7 @@ const ALLOWED_ORIGINS = new Set([
   "https://lucasjanoca.github.io",
   "https://padoka-da-villa.pages.dev",
 ]);
+const PADOKA_PROJECT_URL = "https://yncspxfsvlqdnodlsosb.supabase.co";
 
 const corsHeaders = (origin: string | null) => ({
   ...(origin && ALLOWED_ORIGINS.has(origin) ? { "access-control-allow-origin": origin } : {}),
@@ -35,6 +36,17 @@ const readPublishableKey = () => {
   return typeof legacy === "string" && legacy.length > 20 ? legacy : null;
 };
 
+const readPadokaProjectUrl = () => {
+  const raw = Deno.env.get("SUPABASE_URL");
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    return parsed.origin === PADOKA_PROJECT_URL && parsed.pathname === "/" ? PADOKA_PROJECT_URL : null;
+  } catch {
+    return null;
+  }
+};
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   const cors = corsHeaders(origin);
@@ -43,7 +55,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "GET") return json(405, { error: "method_not_allowed" }, origin);
 
-  const url = Deno.env.get("SUPABASE_URL");
+  const url = readPadokaProjectUrl();
   const publishableKey = readPublishableKey();
   if (!url || !publishableKey) return json(503, { error: "config_unavailable" }, origin);
 
