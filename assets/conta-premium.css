@@ -593,3 +593,15 @@ body:has(#accountView:not(.hidden)) .hero p{
     grid-template-columns:1fr;
   }
 }
+
+
+/* Integração visual com o PADOKA Club */
+.club-profile-card{position:relative;overflow:hidden}
+.club-profile-card:before{content:"";position:absolute;width:150px;height:150px;border-radius:50%;right:-65px;top:-78px;background:rgba(164,106,57,.07);pointer-events:none}
+.club-profile-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.club-profile-badge{flex:0 0 auto;border-radius:999px;padding:6px 9px;background:#f2e7dc;color:#7a4d29;border:1px solid #e7d5c4;font-size:8px;font-weight:950;letter-spacing:.04em}
+.club-stat span{display:block;color:var(--account-muted);font-size:8.5px;margin-top:5px}
+.club-open{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:13px 14px;border-radius:16px;background:linear-gradient(135deg,#1c1713,#34251b);color:#fff;box-shadow:0 10px 24px rgba(30,21,15,.12)}
+.club-open strong{display:block;font-size:11px}.club-open small{display:block;color:#cfc1b6;font-size:8.5px;margin-top:3px}.club-open b{font-size:21px;color:#e2c49e}
+#clubHistory{margin-top:10px}
+@media(max-width:480px){.club-profile-head{align-items:flex-start}.club-profile-badge{font-size:7.5px}.club-open{padding:12px 13px}}
