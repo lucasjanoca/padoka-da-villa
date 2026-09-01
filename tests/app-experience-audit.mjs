@@ -20,7 +20,9 @@ need(accountPage.includes('assets/app-runtime.js'),'Conta: runtime do app ausent
 need(account.includes('persistSession:true'),'Conta: sessão persistente deve permanecer habilitada');
 need(account.includes('autoRefreshToken:true'),'Conta: refresh automático do token deve permanecer habilitado');
 need(account.includes("event==='INITIAL_SESSION'"),'Conta: evento INITIAL_SESSION deve ser deduplicado');
-need(account.includes('await load(session);checkGoogle()'),'Conta: sessão deve ser resolvida antes da verificação não crítica do Google');
+const googleCheck=account.indexOf('checkGoogle();');
+const sessionLoad=Math.max(account.indexOf('await load(session);'),account.indexOf('await loadPrepared(session,lifecycle);'));
+need(sessionLoad>=0&&googleCheck>sessionLoad,'Conta: sessão deve ser resolvida antes da verificação não crítica do Google');
 need(!account.includes('await checkGoogle();'),'Conta: verificação do Google voltou a bloquear a restauração da sessão');
 
 need(runtime.includes("padoka-auth-booting"),'Runtime: proteção contra flicker de autenticação ausente');
