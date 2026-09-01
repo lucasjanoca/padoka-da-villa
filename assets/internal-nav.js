@@ -2,6 +2,19 @@
   const root=document.getElementById('padokaInternalNav');
   if(!root)return;
 
+  const PADOKA_SUPABASE_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
+  const supabaseLib=window.supabase;
+  if(supabaseLib?.createClient&&!supabaseLib.__padokaBackendPinned){
+    const originalCreateClient=supabaseLib.createClient.bind(supabaseLib);
+    supabaseLib.createClient=(url,key,options)=>{
+      let origin='';
+      try{origin=new URL(String(url||'')).origin}catch{}
+      if(origin!==PADOKA_SUPABASE_ORIGIN)throw new Error('PADOKA backend mismatch');
+      return originalCreateClient(PADOKA_SUPABASE_ORIGIN,key,options);
+    };
+    Object.defineProperty(supabaseLib,'__padokaBackendPinned',{value:true,configurable:false,enumerable:false,writable:false});
+  }
+
   let current=root.dataset.current||'';
   const params=new URLSearchParams(location.search);
   const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
