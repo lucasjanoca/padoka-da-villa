@@ -26,7 +26,9 @@ need(sessionLoad>=0&&googleCheck>sessionLoad,'Conta: sessão deve ser resolvida 
 need(!account.includes('await checkGoogle();'),'Conta: verificação do Google voltou a bloquear a restauração da sessão');
 
 need(runtime.includes("padoka-auth-booting"),'Runtime: proteção contra flicker de autenticação ausente');
-need(runtime.includes("sb-.*-auth-token"),'Runtime: dica visual de sessão persistida ausente');
+need(runtime.includes("PADOKA_AUTH_STORAGE_KEY=`sb-${PADOKA_PROJECT_REF}-auth-token`"),'Runtime: dica visual de sessão precisa usar somente a chave Auth do projeto PADOKA');
+need(runtime.includes("localStorage.getItem(PADOKA_AUTH_STORAGE_KEY)"),'Runtime: restauração visual precisa consultar a chave Auth PADOKA fixada');
+need(!runtime.includes("sb-.*-auth-token"),'Runtime: matcher genérico de tokens Supabase não pode voltar');
 need(runtime.includes('getPublicConfig'),'Runtime: cache da configuração pública ausente');
 need(runtime.includes('nativeFetch'),'Runtime: fast-path de config deve preservar fetch nativo');
 need(runtime.includes("url===PUBLIC_CONFIG_URL&&method==='GET'"),'Runtime: interceptação de fetch deve ficar limitada à config pública');
