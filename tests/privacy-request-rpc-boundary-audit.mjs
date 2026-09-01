@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
 const migration=fs.readFileSync('supabase/074_privacy_request_rpc_boundary.sql','utf8');
-const page=fs.readFileSync('conta.html','utf8');
+const page=fs.readFileSync('conta.html','utf8')+'\n'+fs.readFileSync('assets/account.js','utf8');
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 const need=(s,r,m)=>{if(!r.test(s))fail(m)};
 const forbid=(s,r,m)=>{if(r.test(s))fail(m)};
