@@ -9,7 +9,7 @@ assert.match(source, /assets\/runtime-security\.css/, 'critical runtime security
 assert.match(source, /assets\/frame-guard\.js/, 'frame guard must remain cacheable offline');
 for (const page of ['conta.html','acompanhamento.html','pagamento.html']) assert.doesNotMatch(source.split('const PUBLIC_CACHE_PATHS = new Set([')[1].split(']);')[0], new RegExp(`'${page.replace('.', '\\.')}'`), `${page} must not be cached as public shell`);
 assert.match(source, /const PRIVATE_PATHS = new Set\(/, 'PWA must keep an explicit internal-path denylist as defense in depth');
-for (const page of ['internal.html', 'pedidos.html', 'pdv.html', 'gestao.html', 'mfa.html', 'enterprise.html']) {
+for (const page of ['internal.html', 'pedidos.html', 'pdv.html', 'gestao.html', 'mfa.html', 'enterprise.html', 'club-admin.html']) {
   assert.match(source, new RegExp(`'${page.replace('.', '\\.')}'`), `${page} must remain classified as private`);
 }
 assert.match(
