@@ -10,6 +10,7 @@ if(!runtime.includes('localStorage.getItem(PADOKA_AUTH_STORAGE_KEY)'))fail('Boot
 if(!runtime.includes('return url.origin===PADOKA_ORIGIN'))fail('Configuração pública deve continuar presa à origem PADOKA.');
 if(!runtime.includes("const PUBLIC_CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config'"))fail('Configuração pública deve continuar carregada somente do backend PADOKA.');
 if(!runtime.includes('const PUBLIC_CONFIG_MAX_AGE=5*60*1000;'))fail('Cache da configuração pública deve expirar em até 5 minutos para não manter estado de providers desatualizado por horas.');
-if(!runtime.includes("nativeFetch(PUBLIC_CONFIG_URL,{cache:'no-store',credentials:'omit'})"))fail('Atualização da configuração pública deve continuar sem cookies e sem cache HTTP.');
+const fetchCall=runtime.match(/nativeFetch\(PUBLIC_CONFIG_URL,\{([^}]*)\}\)/)?.[1]||'';
+if(!fetchCall.includes("cache:'no-store'")||!fetchCall.includes("credentials:'omit'")||!fetchCall.includes("redirect:'error'"))fail('Atualização da configuração pública deve continuar sem cookies, sem cache HTTP e sem seguir redirects.');
 
 console.log('runtime-project-isolation-audit: ok');
