@@ -2,7 +2,7 @@
 const TZ='America/Sao_Paulo';
 const INVENTORY_ROLES=new Set(['owner','manager','stock']);
 const PRODUCTION_ROLES=new Set(['owner','manager','production']);
-let orderChannel=null,inventoryChannel=null,productionChannel=null,orderBusy=false,opsBusy=false,orderTimer=null,opsTimer=null,orderInterval=null,opsInterval=null,lifecycleEpoch=0,activeUserId='';
+let orderChannel=null,inventoryChannel=null,productionChannel=null,orderBusy=false,opsBusy=false,orderTimer=null,opsTimer=null,orderInterval=null,opsInterval=null,lifecycleEpoch=0,activeUserId='',observedStaffRole='';
 const get=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -182,6 +182,24 @@ async function init(expectedUserId='',expectedEpoch=currentEpoch()){
   clearInterval(orderInterval);orderInterval=setInterval(()=>refreshOrders(epoch,userId),60000);
   clearInterval(opsInterval);opsInterval=setInterval(async()=>{if(await refreshOperational(epoch,userId))enableOperationalRealtime(epoch,userId)},60000);
 }
+function watchStaffRole(){
+  const root=document.getElementById('padokaInternalNav');
+  if(!root)return;
+  observedStaffRole=staffRole();
+  const observer=new MutationObserver(()=>{
+    const nextRole=staffRole();
+    if(nextRole===observedStaffRole)return;
+    observedStaffRole=nextRole;
+    const userId=activeUserId;
+    clearDashboardState();
+    if(nextRole&&userId){
+      const epoch=currentEpoch();
+      setTimeout(()=>init(userId,epoch),0);
+    }
+  });
+  observer.observe(root,{attributes:true,attributeFilter:['data-staff-role']});
+  window.addEventListener('pagehide',()=>observer.disconnect(),{once:true});
+}
 async function watchAuth(){
   for(let i=0;i<80&&!window.padokaSupabase;i++)await new Promise(resolve=>setTimeout(resolve,100));
   const client=window.padokaSupabase;
@@ -196,6 +214,7 @@ async function watchAuth(){
   });
 }
 window.addEventListener('pagehide',clearDashboardState,{once:true});
+watchStaffRole();
 watchAuth();
 setTimeout(()=>init('',currentEpoch()),0);
 })();
