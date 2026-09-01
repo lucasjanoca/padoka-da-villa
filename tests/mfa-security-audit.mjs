@@ -1,19 +1,29 @@
 import fs from 'node:fs';
 
 const page=fs.readFileSync('mfa.html','utf8');
+const mfa=fs.readFileSync('assets/mfa.js','utf8');
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 const internal=fs.readFileSync('internal.html','utf8');
 const migration=fs.readFileSync('supabase/038_privileged_mfa_hardening.sql','utf8');
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 const need=(src,re,m)=>{if(!re.test(src))fail(m)};
 
-need(page,/auth\.mfa\.getAuthenticatorAssuranceLevel\(\)/,'MFA: deve consultar o AAL atual');
-need(page,/auth\.mfa\.listFactors\(\)/,'MFA: deve listar fatores existentes');
-need(page,/auth\.mfa\.enroll\(\{factorType:['"]totp['"]/,'MFA: deve permitir enrolamento TOTP');
-need(page,/auth\.mfa\.challenge\(\{factorId/,'MFA: deve criar challenge');
-need(page,/auth\.mfa\.verify\(\{factorId,challengeId:challenge\.id,code/,'MFA: deve verificar challenge com código');
-need(page,/\['owner','manager'\]/,'MFA: somente perfis privilegiados devem ser obrigados nesta tela');
-need(page,/safeReturn\(\)/,'MFA: retorno precisa ser sanitizado');
+need(page,/src=['"]assets\/mfa\.js['"]/,'MFA: lógica deve ficar em módulo externo compatível com CSP estrita');
+if(/<script>(?:.|\n)*?auth\.mfa\./.test(page))fail('MFA: não deve voltar a depender de lógica Auth inline');
+
+need(mfa,/const SUPABASE_URL=['"]https:\/\/yncspxfsvlqdnodlsosb\.supabase\.co['"]/,'MFA: backend deve ficar fixado no projeto PADOKA correto');
+need(mfa,/url\.origin===SUPABASE_URL/,'MFA: configuração remota deve validar a origem esperada');
+need(mfa,/createClient\(SUPABASE_URL,cfg\.publishableKey/,'MFA: cliente não deve confiar diretamente em cfg.url');
+if(/createClient\(cfg\.url/.test(mfa))fail('MFA: createClient não pode usar cfg.url diretamente');
+
+need(mfa,/auth\.mfa\.getAuthenticatorAssuranceLevel\(\)/,'MFA: deve consultar o AAL atual');
+need(mfa,/auth\.mfa\.listFactors\(\)/,'MFA: deve listar fatores existentes');
+need(mfa,/auth\.mfa\.enroll\(\{factorType:['"]totp['"]/,'MFA: deve permitir enrolamento TOTP');
+need(mfa,/auth\.mfa\.challenge\(\{factorId/,'MFA: deve criar challenge');
+need(mfa,/auth\.mfa\.verify\(\{factorId,challengeId:challenge\.id,code/,'MFA: deve verificar challenge com código');
+need(mfa,/\['owner','manager'\]/,'MFA: somente perfis privilegiados devem ser obrigados nesta tela');
+need(mfa,/safeReturn\(\)/,'MFA: retorno precisa ser sanitizado');
+need(mfa,/from\(['"]padoka_staff_users['"]\)/,'MFA: autorização deve continuar baseada no staff isolado da PADOKA');
 
 need(nav,/privilegedMfaRoles=new Set\(\['owner','manager'\]\)/,'Navegação: owner/manager precisam de MFA');
 need(nav,/getAuthenticatorAssuranceLevel\(\)/,'Navegação: deve validar AAL antes de liberar');
