@@ -77,9 +77,7 @@ function loadPickupValidation(){
 }
 async function load(){
   try{
-    const configResponse=await fetch(CONFIG_URL,{cache:'no-store'});
-    if(!configResponse.ok)throw new Error('public config unavailable');
-    const cfg=await configResponse.json();
+    const cfg=window.PADOKA_RUNTIME?.getPublicConfig?await window.PADOKA_RUNTIME.getPublicConfig():await (async()=>{const configResponse=await fetch(CONFIG_URL,{cache:'no-store'});if(!configResponse.ok)throw new Error('public config unavailable');return configResponse.json()})();
     const origin=requirePadokaOrigin(cfg.url);
     if(typeof cfg.publishableKey!=='string'||!cfg.publishableKey.trim())throw new Error('publishable key unavailable');
     const endpoint=`${origin}/rest/v1/padoka_products?select=id,name,category,price,is_demo,sort_order&active=eq.true&order=sort_order.asc`;
