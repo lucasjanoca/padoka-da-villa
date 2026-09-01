@@ -261,9 +261,11 @@
     syncPush: () => syncExistingSubscription(lastSession)
   };
 
+  registerServiceWorker();
+
   document.addEventListener('DOMContentLoaded', () => {
-    registerServiceWorker();
-    if (!isStandalone()) window.setTimeout(() => showInstallBanner(), 700);
+    if (!serviceWorkerRegistration) registerServiceWorker();
+    if (!isStandalone()) window.setTimeout(() => showInstallBanner(), 450);
     if (window.padokaSupabase) bindSupabase(window.padokaSupabase);
   });
 
