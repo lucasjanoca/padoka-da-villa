@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: blob: https://yncspxfsvlqdnodlsosb.supabase.co; font-src 'self' data:; connect-src 'self' https://yncspxfsvlqdnodlsosb.supabase.co wss://yncspxfsvlqdnodlsosb.supabase.co; media-src 'self' data: blob:; frame-src 'none'; manifest-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#15120f">
+  <script src="assets/frame-guard.js"></script>
+  <title>Gestão PADOKA Club • PADOKA DA VILLA</title>
+  <link rel="stylesheet" href="assets/runtime-security.css">
+  <link rel="stylesheet" href="assets/internal-nav.css">
+  <link rel="stylesheet" href="assets/club-admin.css">
+  <link rel="stylesheet" href="assets/accessibility.css">
+  <script src="vendor/supabase-js-2.112.4.js" integrity="sha256-+M5/q3ma8ZFgGcvQtIWzm7gNvbxtwGKQmnUcnlGY4Ew="></script>
+  <script src="assets/accessibility.js" defer></script>
+</head>
+<body>
+  <section class="gate" id="gate">
+    <div class="gate-card">
+      <strong>PADOKA DA VILLA • FIDELIDADE</strong>
+      <h1 id="gateTitle">Validando acesso…</h1>
+      <p id="gateText">A conferência de resgates é restrita à equipe autorizada. Configurações e ajustes exigem owner/manager com MFA.</p>
+    </div>
+  </section>
+
+  <div class="hidden" id="app">
+    <div id="padokaInternalNav" data-current="club" data-subtitle="PADOKA CLUB"></div>
+    <main class="wrap page">
+      <div class="hero">
+        <div><small>FIDELIDADE E RECOMPENSAS</small><h1>Gestão do PADOKA Club</h1><p>Valide códigos, configure recompensas, campanhas e pontos sem expor o saldo ao navegador.</p></div>
+        <span class="badge" id="roleBadge">EQUIPE</span>
+      </div>
+
+      <section class="card">
+        <div class="section-head"><div><h2>Validar resgate</h2><p class="sub">Digite o código mostrado pelo cliente. O servidor confirma status, validade e recompensa.</p></div></div>
+        <div class="toolbar">
+          <input class="search" id="codeInput" maxlength="16" autocomplete="off" placeholder="PDK-XXXXXXXXXXXX">
+          <button class="btn dark" id="lookupBtn" type="button">Consultar código</button>
+        </div>
+        <div id="counterNotice" class="notice">Nenhum código consultado.</div>
+        <div id="lookupResult"><div class="empty">O resgate aparecerá aqui.</div></div>
+      </section>
+
+      <section class="manager-only">
+        <section class="stats">
+          <div class="stat"><small>CLIENTES COM SALDO</small><strong id="sCustomers">0</strong></div>
+          <div class="stat"><small>PONTOS EM ABERTO</small><strong id="sBalance">0</strong></div>
+          <div class="stat"><small>PONTOS GERADOS</small><strong id="sLifetime">0</strong></div>
+          <div class="stat"><small>RESGATES PENDENTES</small><strong id="sReserved">0</strong></div>
+        </section>
+
+        <section class="grid">
+          <div>
+            <section class="card">
+              <h2>Configurações do Club</h2>
+              <p class="sub">Estas regras são usadas no backend para calcular os pontos.</p>
+              <div class="formgrid">
+                <label>Pontos por R$ 1<input id="setRate" type="number" min="0.01" max="10" step="0.01"></label>
+                <label>Bônus da 1ª compra<input id="setFirst" type="number" min="0" max="5000" step="1"></label>
+                <label>Multiplicador de aniversário<input id="setBirthday" type="number" min="1" max="5" step="0.1"></label>
+                <label>Validade do resgate (dias)<input id="setDays" type="number" min="1" max="365" step="1"></label>
+                <label>Limite de pontos por pedido<input id="setCap" type="number" min="1" max="100000" step="1"></label>
+                <label>Programa ativo<select id="setEnabled"><option value="true">Ativo</option><option value="false">Pausado</option></select></label>
+              </div>
+              <div class="toolbar"><button class="btn dark" id="saveSettings" type="button">Salvar regras</button></div>
+              <div id="settingsNotice" class="notice">Alterações administrativas são auditadas.</div>
+            </section>
+
+            <section class="card">
+              <h2>Recompensas</h2>
+              <p class="sub">Crie itens que o cliente pode trocar usando o saldo.</p>
+              <input id="rewardId" type="hidden">
+              <div class="formgrid">
+                <label>Nome<input id="rewardName" maxlength="120"></label>
+                <label>Custo em pontos<input id="rewardCost" type="number" min="1" max="1000000"></label>
+                <label class="full">Descrição<textarea id="rewardDesc" rows="2" maxlength="360"></textarea></label>
+                <label>Estoque máximo<input id="rewardStock" type="number" min="0" placeholder="vazio = ilimitado"></label>
+                <label>Limite por cliente<input id="rewardLimit" type="number" min="1" placeholder="vazio = sem limite"></label>
+                <label>Disponível a partir de<input id="rewardFrom" type="datetime-local"></label>
+                <label>Disponível até<input id="rewardUntil" type="datetime-local"></label>
+                <label>Selo<input id="rewardBadge" maxlength="40" placeholder="Popular"></label>
+                <label>Ordem<input id="rewardSort" type="number" value="0"></label>
+                <label>Ativa<select id="rewardActive"><option value="true">Sim</option><option value="false">Não</option></select></label>
+              </div>
+              <div class="toolbar"><button class="btn dark" id="saveReward" type="button">Salvar recompensa</button><button class="btn soft" id="clearReward" type="button">Nova</button></div>
+              <div id="rewardNotice" class="notice">O saldo do cliente nunca é alterado por esta tela diretamente.</div>
+              <div class="item-list" id="rewardList"></div>
+            </section>
+          </div>
+
+          <div>
+            <section class="card">
+              <h2>Campanhas</h2>
+              <p class="sub">Ative pontos em dobro ou bônus por período. Se campanhas se sobrepuserem, o backend escolhe a melhor.</p>
+              <input id="campaignId" type="hidden">
+              <div class="formgrid">
+                <label>Nome<input id="campaignName" maxlength="120"></label>
+                <label>Multiplicador<input id="campaignMultiplier" type="number" min="1" max="5" step="0.1" value="2"></label>
+                <label>Bônus fixo<input id="campaignBonus" type="number" min="0" max="5000" value="0"></label>
+                <label>Pedido mínimo<input id="campaignMin" type="number" min="0" step="0.01" value="0"></label>
+                <label>Início<input id="campaignStart" type="datetime-local"></label>
+                <label>Fim<input id="campaignEnd" type="datetime-local"></label>
+                <label class="full">Descrição<textarea id="campaignDesc" rows="2" maxlength="360"></textarea></label>
+                <label>Ativa<select id="campaignActive"><option value="false">Não</option><option value="true">Sim</option></select></label>
+              </div>
+              <div class="toolbar"><button class="btn dark" id="saveCampaign" type="button">Salvar campanha</button><button class="btn soft" id="clearCampaign" type="button">Nova</button></div>
+              <div id="campaignNotice" class="notice">Campanhas só afetam pedidos reais, pagos e concluídos.</div>
+              <div class="item-list" id="campaignList"></div>
+            </section>
+
+            <section class="card">
+              <h2>Ajuste administrativo</h2>
+              <p class="sub">Use apenas para correções reais. Todo ajuste exige motivo, MFA e entra no histórico de auditoria.</p>
+              <div class="toolbar"><input class="search" id="customerSearch" placeholder="Nome, e-mail ou telefone"><button class="btn soft" id="customerBtn" type="button">Buscar</button></div>
+              <div id="customerNotice" class="notice">Selecione um cliente abaixo.</div>
+              <div class="item-list" id="customerList"></div>
+              <div class="hidden" id="adjustBox">
+                <div class="notice"><strong id="selectedCustomer">Cliente</strong></div>
+                <div class="formgrid">
+                  <label>Pontos (+ ou -)<input id="adjustPoints" type="number" min="-10000" max="10000"></label>
+                  <label class="full">Motivo<input id="adjustReason" maxlength="180" placeholder="Ex.: correção aprovada do pedido..."></label>
+                </div>
+                <div class="toolbar"><button class="btn dark" id="adjustBtn" type="button">Aplicar ajuste</button></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Resgates recentes</h2>
+          <p class="sub">Histórico operacional para conferência da administração.</p>
+          <div class="tablewrap" id="recentTable"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="assets/internal-nav.js"></script>
+  <script src="assets/club-admin.js"></script>
+</body>
+</html>
