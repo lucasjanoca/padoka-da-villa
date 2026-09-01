@@ -1,0 +1,44 @@
+/* PADOKA app shell — sensação nativa sem sacrificar segurança */
+html{background:#f4eee7}
+html.padoka-app,html.padoka-app body{min-height:100%}
+html.padoka-standalone body{
+  min-height:100dvh;
+  overscroll-behavior-y:none;
+  -webkit-overflow-scrolling:touch;
+}
+html.padoka-standalone{
+  overscroll-behavior:none;
+}
+a,button,[role="button"]{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+button:active,a:active{transition-duration:.04s}
+@media (hover:none) and (pointer:coarse){
+  button:active,.btn:active,.primary:active,.ghost:active,.module:active,.club-open:active{
+    transform:scale(.985);
+  }
+}
+.padoka-auth-boot{
+  min-height:168px;
+  display:grid;
+  place-items:center;
+  text-align:center;
+}
+.padoka-auth-boot-inner{display:grid;justify-items:center;gap:9px;padding:14px}
+.padoka-auth-spinner{
+  width:34px;height:34px;border-radius:50%;
+  border:3px solid rgba(120,111,103,.18);
+  border-top-color:#a46a39;
+  animation:padoka-spin .7s linear infinite;
+}
+.padoka-auth-boot strong{font-size:13px}
+.padoka-auth-boot span{font-size:9.5px;color:#786f67;line-height:1.45}
+@keyframes padoka-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .padoka-auth-spinner{animation-duration:1.4s}
+}
+html.padoka-auth-booting #loginView,
+html.padoka-auth-booting #onboardingView,
+html.padoka-auth-booting #accountView{display:none!important}
+html:not(.padoka-auth-booting) #sessionBoot{display:none!important}
