@@ -2,9 +2,11 @@
   const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
   if(!isGestao)return;
   const $=id=>document.getElementById(id),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),num=v=>Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:3}),esc=v=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
+  const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
   let sb=null,enabled=false,channel=null,refreshTimer=null,lifecycleEpoch=0,activeUserId='',authSubscription=null;
   const allowedRoles=new Set(['owner','manager']);
   const REPORT_TZ='America/Sao_Paulo';
+  function isPadokaClient(candidate){try{return new URL(candidate?.supabaseUrl||'').origin===PADOKA_ORIGIN}catch{return false}}
   const today=()=>{
     const parts=new Intl.DateTimeFormat('en-US',{timeZone:REPORT_TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
     const pick=type=>parts.find(part=>part.type===type)?.value||'';
@@ -102,7 +104,7 @@
   }
   async function start(){
     for(let n=0;n<100&&!window.padokaSupabase;n++)await new Promise(r=>setTimeout(r,100));
-    sb=window.padokaSupabase;if(!sb)return;
+    const candidate=window.padokaSupabase;if(!isPadokaClient(candidate)){clearReporting();return}sb=candidate;
     watchAuth();
     const epoch=lifecycleEpoch;
     let session=null;
