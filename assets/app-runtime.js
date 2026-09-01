@@ -68,6 +68,9 @@
   const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
   root.classList.add('padoka-app');
   root.classList.toggle('padoka-standalone',standalone);
+  if(standalone&&navigator.storage&&typeof navigator.storage.persist==='function'){
+    navigator.storage.persist().catch(()=>{});
+  }
 
   const isAccountPage=location.pathname.endsWith('/conta.html')||location.pathname.endsWith('conta.html');
   if(isAccountPage)root.classList.add('padoka-auth-booting');
