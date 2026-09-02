@@ -25,11 +25,13 @@ for (const rel of runtimeFiles) {
 }
 
 // Public config is allowed to transport a publishable key, but consumers that use
-// its URL must not silently follow a response to another Supabase project.
+// it must validate the complete PADOKA contract before issuing backend requests.
 const featureFlags = fs.readFileSync(new URL('assets/feature-flags.js', root), 'utf8');
 ok(featureFlags.includes(`const PADOKA_ORIGIN='${PADOKA_ORIGIN}'`), 'assets/feature-flags.js: origem PADOKA precisa estar fixada');
-ok(/url\.origin!==PADOKA_ORIGIN/.test(featureFlags), 'assets/feature-flags.js: cfg.url precisa ser validado contra a origem PADOKA');
-ok(/const origin=requirePadokaOrigin\(cfg\.url\)/.test(featureFlags), 'assets/feature-flags.js: feature flags não podem usar cfg.url sem validação');
+ok(/value\.scope!=='padoka'/.test(featureFlags), 'assets/feature-flags.js: configuração precisa permanecer limitada ao escopo PADOKA');
+ok(/url\.origin!==PADOKA_ORIGIN\|\|url\.pathname!=='\/'/.test(featureFlags), 'assets/feature-flags.js: backend precisa ser validado contra a raiz exata da PADOKA');
+ok(/const cfg=validateConfig\(await window\.PADOKA_RUNTIME\.getPublicConfig\(\)\)/.test(featureFlags), 'assets/feature-flags.js: configuração do runtime precisa ser validada antes do uso');
+ok(/return \{origin:PADOKA_ORIGIN,publishableKey:value\.publishableKey\}/.test(featureFlags), 'assets/feature-flags.js: consultas devem usar somente a origem PADOKA validada');
 ok(!/const url=cfg\.url\s*\+/.test(featureFlags), 'assets/feature-flags.js: acesso direto por cfg.url pode escapar do backend PADOKA');
 
 // Migrations may document forbidden destinations (for example, "não aplicar no
