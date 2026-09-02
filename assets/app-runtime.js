@@ -93,6 +93,7 @@
   }
 
   const isAccountPage=location.pathname.endsWith('/conta.html')||location.pathname.endsWith('conta.html');
+  const isCheckoutPage=location.pathname.endsWith('/pagamento.html')||location.pathname.endsWith('pagamento.html');
   if(isAccountPage)root.classList.add('padoka-auth-booting');
 
   function hasPersistedSessionHint(){
@@ -138,14 +139,36 @@
     },5000);
   }
 
+  function setupCheckoutRecovery(){
+    if(!isCheckoutPage)return;
+    window.setTimeout(()=>{
+      const loading=document.getElementById('loading');
+      if(!loading||loading.classList.contains('hidden'))return;
+      const script=document.createElement('script');
+      script.src='assets/checkout-recovery.js?v=1';
+      script.async=true;
+      script.onerror=()=>{
+        loading.classList.add('hidden');
+        const summary=document.getElementById('summary');
+        if(summary)summary.innerHTML='<div class="notice warn"><strong>Não foi possível abrir o fechamento do pedido.</strong><br>Atualize a página e tente novamente.</div>';
+      };
+      document.head.appendChild(script);
+    },6500);
+  }
+
   const onModeChange=event=>root.classList.toggle('padoka-standalone',event.matches);
   try{
     const query=window.matchMedia('(display-mode: standalone)');
     if(typeof query.addEventListener==='function')query.addEventListener('change',onModeChange);
   }catch{}
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupAccountBoot,{once:true});
-  else setupAccountBoot();
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',setupAccountBoot,{once:true});
+    document.addEventListener('DOMContentLoaded',setupCheckoutRecovery,{once:true});
+  }else{
+    setupAccountBoot();
+    setupCheckoutRecovery();
+  }
 
   window.PADOKA_RUNTIME=Object.freeze({
     getPublicConfig,
