@@ -2,6 +2,8 @@
   const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
   if(!isGestao)return;
 
+  const PADOKA_SUPABASE_URL='https://yncspxfsvlqdnodlsosb.supabase.co';
+  const isPadokaClient=candidate=>!!candidate&&String(candidate.supabaseUrl||'').replace(/\/+$/,'')===PADOKA_SUPABASE_URL;
   const roles=[
     ['owner','Proprietário'],
     ['manager','Gerente'],
@@ -19,7 +21,7 @@
 
   async function waitForContext(){
     for(let i=0;i<80;i++){
-      if(window.padokaSupabase&&window.padokaStaffRole)return {client:window.padokaSupabase,role:window.padokaStaffRole};
+      if(isPadokaClient(window.padokaSupabase)&&window.padokaStaffRole)return {client:window.padokaSupabase,role:window.padokaStaffRole};
       await sleep(100);
     }
     return null;
