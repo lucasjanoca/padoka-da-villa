@@ -1,4 +1,7 @@
 (()=>{
+const PADOKA_SUPABASE_URL='https://yncspxfsvlqdnodlsosb.supabase.co';
+const isPadokaClient=candidate=>!!candidate&&String(candidate.supabaseUrl||'').replace(/\/+$/,'')===PADOKA_SUPABASE_URL;
+const padokaClient=()=>{const candidate=window.padokaSupabase;return isPadokaClient(candidate)?candidate:null};
 const TZ='America/Sao_Paulo';
 const INVENTORY_ROLES=new Set(['owner','manager','stock']);
 const PRODUCTION_ROLES=new Set(['owner','manager','production']);
@@ -14,8 +17,10 @@ const staffGuardPending=()=>document.documentElement.classList.contains('padoka-
 const currentEpoch=()=>lifecycleEpoch;
 const lifecycleCurrent=(epoch,userId=activeUserId)=>epoch===lifecycleEpoch&&!!userId&&userId===activeUserId&&!staffGuardPending();
 async function safeSession(){
+  const client=padokaClient();
+  if(!client)return null;
   try{
-    const {data,error}=await window.padokaSupabase.auth.getSession();
+    const {data,error}=await client.auth.getSession();
     if(error){console.error('Falha ao confirmar sessão do dashboard PADOKA',error);return null}
     return data?.session||null;
   }catch(error){
@@ -56,7 +61,7 @@ function clearDashboardState(){
   clearTimeout(opsTimer);opsTimer=null;
   clearInterval(orderInterval);orderInterval=null;
   clearInterval(opsInterval);opsInterval=null;
-  const client=window.padokaSupabase;
+  const client=padokaClient();
   for(const channel of [orderChannel,inventoryChannel,productionChannel]){
     if(channel&&client?.removeChannel)client.removeChannel(channel).catch(()=>undefined);
   }
@@ -106,12 +111,13 @@ function renderOperational(inventory,plans,access=operationalAccess()){
   }
 }
 async function refreshOrders(epoch=currentEpoch(),userId=activeUserId){
-  if(orderBusy||!window.padokaSupabase||get('panelView')?.classList.contains('hidden')||!lifecycleCurrent(epoch,userId))return;
+  const client=padokaClient();
+  if(orderBusy||!client||get('panelView')?.classList.contains('hidden')||!lifecycleCurrent(epoch,userId))return;
   if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return}
   orderBusy=true;
   try{
     const since=new Date(Date.now()-36*60*60*1000).toISOString();
-    const {data,error}=await window.padokaSupabase.from('padoka_orders').select('code,status,pickup_name,total,created_at').gte('created_at',since).order('created_at',{ascending:false});
+    const {data,error}=await client.from('padoka_orders').select('code,status,pickup_name,total,created_at').gte('created_at',since).order('created_at',{ascending:false});
     if(error)throw error;
     if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return}
     const today=dayKey();
@@ -119,7 +125,8 @@ async function refreshOrders(epoch=currentEpoch(),userId=activeUserId){
   }catch(e){if(lifecycleCurrent(epoch,userId))console.error('Falha ao atualizar visão geral PADOKA',e)}finally{if(epoch===lifecycleEpoch)orderBusy=false}
 }
 async function refreshOperational(epoch=currentEpoch(),userId=activeUserId){
-  if(opsBusy||!window.padokaSupabase||get('panelView')?.classList.contains('hidden')||!lifecycleCurrent(epoch,userId))return false;
+  const client=padokaClient();
+  if(opsBusy||!client||get('panelView')?.classList.contains('hidden')||!lifecycleCurrent(epoch,userId))return false;
   if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return false}
   const access=operationalAccess();
   if(!access.inventory&&!access.production){get('adminOperationalHealth')?.remove();return false}
@@ -128,13 +135,13 @@ async function refreshOperational(epoch=currentEpoch(),userId=activeUserId){
     const today=dayKey();
     let inventory=[],plans=[];
     if(access.inventory){
-      const result=await window.padokaSupabase.from('padoka_inventory').select('product_id,quantity,min_quantity,padoka_products(name)').order('quantity',{ascending:true});
+      const result=await client.from('padoka_inventory').select('product_id,quantity,min_quantity,padoka_products(name)').order('quantity',{ascending:true});
       if(result.error){if(missingOperationalLayer(result.error)){get('adminOperationalHealth')?.remove();return false}throw result.error}
       if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return false}
       inventory=result.data||[];
     }
     if(access.production){
-      const result=await window.padokaSupabase.from('padoka_production_plans').select('id,plan_date,status,planned_quantity,produced_quantity').eq('plan_date',today);
+      const result=await client.from('padoka_production_plans').select('id,plan_date,status,planned_quantity,produced_quantity').eq('plan_date',today);
       if(result.error){if(missingOperationalLayer(result.error)){get('adminOperationalHealth')?.remove();return false}throw result.error}
       if(!await sessionStillCurrent(epoch,userId)){if(epoch===lifecycleEpoch)failClosedAndRetry(userId);return false}
       plans=result.data||[];
@@ -148,9 +155,11 @@ function scheduleOrders(){const epoch=currentEpoch(),userId=activeUserId;clearTi
 function scheduleOperational(){const epoch=currentEpoch(),userId=activeUserId;clearTimeout(opsTimer);opsTimer=setTimeout(()=>refreshOperational(epoch,userId),180)}
 function enableOperationalRealtime(epoch=currentEpoch(),userId=activeUserId){
   if(!lifecycleCurrent(epoch,userId))return;
+  const client=padokaClient();
+  if(!client)return;
   const access=operationalAccess();
-  if(access.inventory&&!inventoryChannel)inventoryChannel=window.padokaSupabase.channel('padoka-admin-inventory-live').on('postgres_changes',{event:'*',schema:'public',table:'padoka_inventory'},scheduleOperational).subscribe();
-  if(access.production&&!productionChannel)productionChannel=window.padokaSupabase.channel('padoka-admin-production-live').on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},scheduleOperational).subscribe();
+  if(access.inventory&&!inventoryChannel)inventoryChannel=client.channel('padoka-admin-inventory-live').on('postgres_changes',{event:'*',schema:'public',table:'padoka_inventory'},scheduleOperational).subscribe();
+  if(access.production&&!productionChannel)productionChannel=client.channel('padoka-admin-production-live').on('postgres_changes',{event:'*',schema:'public',table:'padoka_production_plans'},scheduleOperational).subscribe();
 }
 async function waitForValidatedStaff(expectedUserId='',expectedEpoch=currentEpoch()){
   for(let i=0;i<80;i++){
@@ -167,7 +176,8 @@ async function waitForValidatedStaff(expectedUserId='',expectedEpoch=currentEpoc
 }
 async function init(expectedUserId='',expectedEpoch=currentEpoch()){
   if(expectedEpoch!==lifecycleEpoch)return;
-  if(!window.padokaSupabase||get('panelView')?.classList.contains('hidden'))return setTimeout(()=>init(expectedUserId,expectedEpoch),180);
+  const client=padokaClient();
+  if(!client||get('panelView')?.classList.contains('hidden'))return setTimeout(()=>init(expectedUserId,expectedEpoch),180);
   const userId=await waitForValidatedStaff(expectedUserId,expectedEpoch);
   if(expectedEpoch!==lifecycleEpoch||!userId)return;
   if(expectedUserId&&userId!==expectedUserId)return;
@@ -177,7 +187,9 @@ async function init(expectedUserId='',expectedEpoch=currentEpoch()){
   if(!lifecycleCurrent(epoch,userId))return;
   const operationalReady=await refreshOperational(epoch,userId);
   if(!lifecycleCurrent(epoch,userId))return;
-  if(!orderChannel)orderChannel=window.padokaSupabase.channel('padoka-admin-dashboard-live').on('postgres_changes',{event:'*',schema:'public',table:'padoka_orders'},scheduleOrders).subscribe();
+  const realtimeClient=padokaClient();
+  if(!realtimeClient)return failClosedAndRetry(userId);
+  if(!orderChannel)orderChannel=realtimeClient.channel('padoka-admin-dashboard-live').on('postgres_changes',{event:'*',schema:'public',table:'padoka_orders'},scheduleOrders).subscribe();
   if(operationalReady)enableOperationalRealtime(epoch,userId);
   clearInterval(orderInterval);orderInterval=setInterval(()=>refreshOrders(epoch,userId),60000);
   clearInterval(opsInterval);opsInterval=setInterval(async()=>{if(await refreshOperational(epoch,userId))enableOperationalRealtime(epoch,userId)},60000);
@@ -201,8 +213,8 @@ function watchStaffRole(){
   window.addEventListener('pagehide',()=>observer.disconnect(),{once:true});
 }
 async function watchAuth(){
-  for(let i=0;i<80&&!window.padokaSupabase;i++)await new Promise(resolve=>setTimeout(resolve,100));
-  const client=window.padokaSupabase;
+  for(let i=0;i<80&&!padokaClient();i++)await new Promise(resolve=>setTimeout(resolve,100));
+  const client=padokaClient();
   if(!client)return;
   client.auth.onAuthStateChange((event,session)=>{
     if(event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')return;
