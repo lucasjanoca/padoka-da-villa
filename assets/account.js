@@ -1,10 +1,9 @@
 const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
-const CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config';
 const $=id=>document.getElementById(id);
 let sb,user,profile,cfg,googleEnabled=null,lifecycleEpoch=0,activeUserId=null;
 const labels={received:'Recebido',seen:'Visto',confirmed:'Confirmado',preparing:'Em preparo',ready:'Pronto',completed:'Concluído',cancelled:'Cancelado'};
 
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
 function safeAvatarUrl(v){if(!v)return '';try{const u=new URL(String(v),location.href);return u.protocol==='https:'?u.href:''}catch{return ''}}
 function show(id){['loginView','onboardingView','accountView'].forEach(x=>$(x).classList.toggle('hidden',x!==id));const boot=$('sessionBoot');if(boot)boot.hidden=true;document.documentElement.classList.remove('padoka-auth-booting')}
 function notice(t,type='error'){$('authMessage').innerHTML=`<div class="notice ${type}">${t}</div>`}
@@ -31,12 +30,22 @@ function beginLifecycle(session){
   document.documentElement.classList.add('padoka-auth-booting');
   return {epoch:lifecycleEpoch,userId:activeUserId};
 }
+function decodeJwtPayload(token){
+  const parts=String(token||'').split('.');
+  if(parts.length!==3)throw new Error('Chave pública inválida');
+  const raw=parts[1].replace(/-/g,'+').replace(/_/g,'/');
+  const padded=raw+'='.repeat((4-raw.length%4)%4);
+  try{return JSON.parse(atob(padded))}catch{throw new Error('Chave pública inválida')}
+}
 function assertPublicConfig(value){
-  if(!value||typeof value!=='object')throw new Error('Configuração inválida');
-  const url=new URL(String(value.url||''));
-  if(url.origin!==PADOKA_ORIGIN)throw new Error('Backend PADOKA inválido');
-  if(typeof value.publishableKey!=='string'||value.publishableKey.length<20)throw new Error('Chave pública inválida');
-  return {...value,url:PADOKA_ORIGIN};
+  if(!value||typeof value!=='object'||value.scope!=='padoka')throw new Error('Configuração inválida');
+  let url;
+  try{url=new URL(String(value.url||''))}catch{throw new Error('Backend PADOKA inválido')}
+  if(url.protocol!=='https:'||url.origin!==PADOKA_ORIGIN||url.pathname!=='/')throw new Error('Backend PADOKA inválido');
+  const key=typeof value.publishableKey==='string'?value.publishableKey.trim():'';
+  if(!key)throw new Error('Chave pública inválida');
+  if(!key.startsWith('sb_publishable_')&&!(key.startsWith('eyJ')&&decodeJwtPayload(key)?.role==='anon'))throw new Error('Chave pública inválida');
+  return {...value,url:PADOKA_ORIGIN,publishableKey:key};
 }
 
 async function checkGoogle(){
@@ -51,9 +60,11 @@ async function checkGoogle(){
 
 async function init(){
   try{
-    const raw=window.PADOKA_RUNTIME?.getPublicConfig?await window.PADOKA_RUNTIME.getPublicConfig():await (async()=>{const r=await fetch(CONFIG_URL,{cache:'no-store',credentials:'omit'});if(!r.ok)throw new Error('Configuração indisponível');return r.json()})();
-    cfg=assertPublicConfig(raw);
+    if(typeof window.PADOKA_RUNTIME?.getPublicConfig!=='function')throw new Error('Runtime PADOKA indisponível');
+    cfg=assertPublicConfig(await window.PADOKA_RUNTIME.getPublicConfig());
     sb=window.supabase.createClient(PADOKA_ORIGIN,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
+    const clientOrigin=new URL(String(sb?.supabaseUrl||'')).origin;
+    if(clientOrigin!==PADOKA_ORIGIN)throw new Error('Cliente Supabase inválido');
     window.padokaSupabase=sb;
     window.dispatchEvent(new CustomEvent('padoka:supabase-ready',{detail:{client:sb}}));
     const {data:{session}}=await sb.auth.getSession();
