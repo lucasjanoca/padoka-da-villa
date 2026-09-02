@@ -1,7 +1,6 @@
 (()=>{
 'use strict';
 const SUPABASE_URL='https://yncspxfsvlqdnodlsosb.supabase.co';
-const CONFIG_URL=SUPABASE_URL+'/functions/v1/padoka-public-config';
 const $=id=>document.getElementById(id);
 let sb=null,factorId='',returnTo='internal.html';
 
@@ -23,11 +22,26 @@ function safeReturn(){
   return 'internal.html';
 }
 
+function validLegacyAnonKey(value){
+  if(!value.startsWith('eyJ'))return false;
+  try{
+    const part=value.split('.')[1]||'';
+    const normalized=part.replace(/-/g,'+').replace(/_/g,'/');
+    const padded=normalized+'='.repeat((4-normalized.length%4)%4);
+    const payload=JSON.parse(atob(padded));
+    return payload?.role==='anon';
+  }catch{return false;}
+}
+
+function validPublicKey(value){
+  return typeof value==='string'&&value.length>20&&(value.startsWith('sb_publishable_')||validLegacyAnonKey(value));
+}
+
 function validConfig(cfg){
-  if(!cfg||typeof cfg.publishableKey!=='string'||!cfg.publishableKey.trim())return false;
+  if(!cfg||cfg.scope!=='padoka'||!validPublicKey(cfg.publishableKey))return false;
   try{
     const url=new URL(String(cfg.url||''));
-    return url.origin===SUPABASE_URL&&url.pathname.replace(/\/+$/,'')==='';
+    return url.origin===SUPABASE_URL&&url.pathname==='/'&&url.search===''&&url.hash==='';
   }catch{return false;}
 }
 
@@ -40,9 +54,9 @@ async function currentAal(){
 async function start(){
   returnTo=safeReturn();
   try{
-    const r=await fetch(CONFIG_URL,{cache:'no-store'});
-    if(!r.ok)throw new Error('config unavailable');
-    const cfg=await r.json();
+    const getPublicConfig=window.PADOKA_RUNTIME?.getPublicConfig;
+    if(typeof getPublicConfig!=='function')throw new Error('PADOKA runtime unavailable');
+    const cfg=await getPublicConfig();
     if(!validConfig(cfg))throw new Error('unexpected PADOKA backend');
     sb=window.supabase.createClient(SUPABASE_URL,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true}});
 
