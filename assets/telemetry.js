@@ -1,9 +1,12 @@
 (()=>{
+  'use strict';
+
+  const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
   const INTERNAL_PAGES=new Set(['internal.html','pedidos.html','pdv.html','gestao.html','enterprise.html','mfa.html']);
   const currentPage=String(location.pathname||'/').split('/').pop()||'index.html';
   if(INTERNAL_PAGES.has(currentPage))return;
 
-  const ENDPOINT='https://yncspxfsvlqdnodlsosb.supabase.co/functions/v1/padoka-telemetry';
+  const ENDPOINT=PADOKA_ORIGIN+'/functions/v1/padoka-telemetry';
   const KEY='padoka_telemetry_session_v1';
   const allowed=new Set(['page_view','product_view','add_to_cart','remove_from_cart','checkout_start','checkout_review','checkout_submit','checkout_success','auth_login','order_view','client_error','web_vital','feature_exposure','reorder']);
   let sessionId='';
@@ -28,9 +31,9 @@
     const n=metricValue==null?null:Number(metricValue);
     if(n!=null&&!Number.isFinite(n))return;
     const body=JSON.stringify({session_id:sessionId,event_name:eventName,page:page(),metric_value:n,metadata:cleanMeta(metadata)});
-    try{fetch(ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body,keepalive:true,cache:'no-store',credentials:'omit'}).catch(()=>{})}catch{}
+    try{fetch(ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},body,keepalive:true,cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer'}).catch(()=>{})}catch{}
   }
-  window.PADOKA_TELEMETRY={track,sessionId};
+  window.PADOKA_TELEMETRY=Object.freeze({track,sessionId});
 
   track('page_view',{device:matchMedia('(pointer:coarse)').matches?'touch':'pointer',connection:navigator.connection?.effectiveType||''});
 
