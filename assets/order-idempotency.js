@@ -1,4 +1,5 @@
 (()=>{
+const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
 const KEY_PREFIX='padoka_pending_order_v2:';
 const LEGACY_KEY='padoka_pending_order_v1';
 // Automatic Pix is intentionally fail-closed until a real provider adapter + authenticated webhook are deployed.
@@ -13,6 +14,9 @@ const clear=userId=>{const key=keyFor(userId);if(key)sessionStorage.removeItem(k
 sessionStorage.removeItem(LEGACY_KEY);
 const initialButton=el('sendOrder');
 if(initialButton){initialButton.onclick=null;initialButton.disabled=true;}
+function isPadokaClient(){
+  try{return new URL(String(sb?.supabaseUrl||'')).origin===PADOKA_ORIGIN}catch{return false}
+}
 function notice(text,type='warn'){
   let box=el('orderRetryNotice');
   if(!box){
@@ -35,6 +39,7 @@ function disableCheckout(text='Sua sessão mudou. Entre novamente para continuar
   notice(text);
 }
 async function safeSession(){
+  if(!isPadokaClient())return null;
   try{
     const {data,error}=await sb.auth.getSession();
     if(error)return null;
@@ -44,12 +49,12 @@ async function safeSession(){
   }
 }
 async function identityStillCurrent(expectedUserId,epoch){
-  if(epoch!==lifecycleEpoch||expectedUserId!==activeUserId)return false;
+  if(epoch!==lifecycleEpoch||expectedUserId!==activeUserId||!isPadokaClient())return false;
   const session=await safeSession();
   return !!session?.user?.id&&session.user.id===expectedUserId&&epoch===lifecycleEpoch&&expectedUserId===activeUserId;
 }
 function bindAuthLifecycle(){
-  if(authLifecycleBound||!sb?.auth?.onAuthStateChange)return;
+  if(authLifecycleBound||!isPadokaClient()||!sb?.auth?.onAuthStateChange)return;
   authLifecycleBound=true;
   activeUserId=user?.id||null;
   sb.auth.onAuthStateChange((event,session)=>{
@@ -100,6 +105,10 @@ function ambiguous(error){
 }
 async function sendOnce(){
   if(enforceAutomaticPaymentOnly())return;
+  if(!isPadokaClient()){
+    disableCheckout('Não foi possível validar o serviço PADOKA. Atualize a página antes de continuar.');
+    return;
+  }
   if(!sb||!user||!profile?.onboarding_completed||!pickup)return;
   const epoch=lifecycleEpoch;
   const requestUserId=user.id;
@@ -123,6 +132,7 @@ async function sendOnce(){
   const p=pending.payload;
   let result;
   try{
+    if(!isPadokaClient())throw new Error('PADOKA backend mismatch');
     if(p.coupon_code){
       result=await sb.rpc('padoka_create_order_once_v2',{
         p_request_id:pending.request_id,
@@ -176,14 +186,15 @@ async function sendOnce(){
   clear(requestUserId);
   localStorage.removeItem(CART_KEY);
   localStorage.removeItem(PICKUP_KEY);
-  window.PADOKA_TELEMETRY?.track('checkout_success',{order_stage:'order_created'});\n  location.href='acompanhamento.html?code='+encodeURIComponent(order.code);
+  window.PADOKA_TELEMETRY?.track('checkout_success',{order_stage:'order_created'});
+  location.href='acompanhamento.html?code='+encodeURIComponent(order.code);
 }
 function detect(){
   if(active)return;
   detectAttempts+=1;
-  const ready=typeof sb!=='undefined'&&sb&&user&&profile?.onboarding_completed;
+  const ready=typeof sb!=='undefined'&&sb&&isPadokaClient()&&user&&profile?.onboarding_completed;
   if(!ready){
-    if(typeof sb!=='undefined'&&sb)bindAuthLifecycle();
+    if(typeof sb!=='undefined'&&sb&&isPadokaClient())bindAuthLifecycle();
     enforceAutomaticPaymentOnly();
     if(detectAttempts<100)setTimeout(detect,120);
     return;
