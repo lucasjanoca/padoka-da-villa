@@ -1,5 +1,6 @@
 (()=>{
 'use strict';
+const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
 const isCheckout=()=>location.pathname.endsWith('/pagamento.html')||location.pathname.endsWith('pagamento.html');
 if(!isCheckout())return;
 const $=id=>document.getElementById(id);
@@ -7,6 +8,10 @@ const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'B
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const get=(k,f=null)=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(f))}catch{return f}};
 const timeout=(promise,ms=5000)=>Promise.race([Promise.resolve(promise),new Promise((_,reject)=>setTimeout(()=>reject(new Error('checkout_recovery_timeout')),ms))]);
+function validLegacyAnonKey(value){if(typeof value!=='string'||!value.startsWith('eyJ'))return false;try{const part=value.split('.')[1]||'';const normalized=part.replace(/-/g,'+').replace(/_/g,'/');const padded=normalized+'='.repeat((4-normalized.length%4)%4);return JSON.parse(atob(padded))?.role==='anon'}catch{return false}}
+function validPublicKey(value){return typeof value==='string'&&value.length>20&&(value.startsWith('sb_publishable_')||validLegacyAnonKey(value))}
+function validateConfig(cfg){if(!cfg||cfg.scope!=='padoka'||!validPublicKey(cfg.publishableKey))return false;try{const url=new URL(String(cfg.url||''));return url.origin===PADOKA_ORIGIN&&url.pathname==='/'}catch{return false}}
+function isPadokaClient(client){try{return new URL(String(client?.supabaseUrl||'')).origin===PADOKA_ORIGIN}catch{return false}}
 async function recover(){
   const loading=$('loading');
   if(!loading||loading.classList.contains('hidden'))return;
@@ -14,7 +19,9 @@ async function recover(){
   try{
     if(!window.supabase?.createClient||!window.PADOKA_RUNTIME?.getPublicConfig)throw new Error('checkout_runtime_missing');
     const cfg=await timeout(window.PADOKA_RUNTIME.getPublicConfig());
+    if(!validateConfig(cfg))throw new Error('checkout_runtime_config_invalid');
     const client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    if(!isPadokaClient(client))throw new Error('checkout_backend_mismatch');
     const [{data:products,error:productError},{data:{session}}]=await timeout(Promise.all([
       client.from('padoka_products').select('id,name,price,is_demo').eq('active',true).order('sort_order'),
       client.auth.getSession()
@@ -34,6 +41,7 @@ async function recover(){
     window.buildItems=buildItems;
     window.PADOKA_CHECKOUT_COUPON='';
     if(window.user){
+      if(!isPadokaClient(client))throw new Error('checkout_backend_mismatch');
       const {data}=await timeout(client.from('padoka_profiles').select('*').eq('id',window.user.id).maybeSingle());
       window.profile=data||null;
     }
