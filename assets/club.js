@@ -2,7 +2,6 @@
   'use strict';
   const EXPECTED_PROJECT_REF='yncspxfsvlqdnodlsosb';
   const SUPABASE_URL=`https://${EXPECTED_PROJECT_REF}.supabase.co`;
-  const CONFIG_URL=`${SUPABASE_URL}/functions/v1/padoka-public-config`;
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=v=>Number(v||0).toLocaleString('pt-BR');
@@ -29,13 +28,24 @@
   function statusLabel(s){
     return {reserved:'Disponível',used:'Utilizado',cancelled:'Cancelado',expired:'Expirado'}[s]||'Resgate';
   }
+  function decodeJwtPayload(token){
+    const parts=String(token||'').split('.');
+    if(parts.length!==3)throw new Error('invalid public key');
+    const raw=parts[1].replace(/-/g,'+').replace(/_/g,'/');
+    const padded=raw+'='.repeat((4-raw.length%4)%4);
+    try{return JSON.parse(atob(padded));}catch{throw new Error('invalid public key')}
+  }
   function validateConfig(cfg){
+    if(cfg?.scope!=='padoka')throw new Error('unexpected config scope');
     const raw=String(cfg?.url||'').trim();
     let parsed;
     try{parsed=new URL(raw)}catch{throw new Error('invalid project config')}
-    if(parsed.protocol!=='https:'||parsed.origin!==SUPABASE_URL)throw new Error('unexpected project config');
-    if(typeof cfg?.publishableKey!=='string'||!cfg.publishableKey.trim())throw new Error('missing publishable key');
-    return cfg.publishableKey.trim();
+    if(parsed.protocol!=='https:'||parsed.origin!==SUPABASE_URL||parsed.pathname!=='/')throw new Error('unexpected project config');
+    const key=typeof cfg?.publishableKey==='string'?cfg.publishableKey.trim():'';
+    if(!key)throw new Error('missing publishable key');
+    if(key.startsWith('sb_publishable_'))return key;
+    if(key.startsWith('eyJ')&&decodeJwtPayload(key)?.role==='anon')return key;
+    throw new Error('invalid public key');
   }
   function currentIdentity(expectedUserId,epoch){
     return Boolean(user?.id&&user.id===expectedUserId&&lifecycleEpoch===epoch);
@@ -227,9 +237,12 @@
   }
   async function start(){
     try{
-      const cfg=window.PADOKA_RUNTIME?.getPublicConfig?await window.PADOKA_RUNTIME.getPublicConfig():await (async()=>{const response=await fetch(CONFIG_URL,{cache:'no-store'});if(!response.ok)throw new Error('config');return response.json()})();
+      if(!window.PADOKA_RUNTIME?.getPublicConfig)throw new Error('PADOKA runtime unavailable');
+      const cfg=await window.PADOKA_RUNTIME.getPublicConfig();
       const publishableKey=validateConfig(cfg);
+      if(!window.supabase?.createClient)throw new Error('Supabase client unavailable');
       sb=window.supabase.createClient(SUPABASE_URL,publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
+      if(!sb||new URL(sb.supabaseUrl).origin!==SUPABASE_URL)throw new Error('unexpected Supabase client');
       window.padokaSupabase=sb;
       const {data:{session},error}=await sb.auth.getSession();if(error)throw error;
       if(!session){location.replace('conta.html');return}
