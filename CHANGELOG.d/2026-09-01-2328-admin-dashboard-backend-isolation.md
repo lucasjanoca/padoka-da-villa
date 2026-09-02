@@ -7,4 +7,5 @@
 - Leituras de Auth, pedidos, estoque e produção, além dos canais Realtime, só são executadas após o project pinning.
 - As permissões existentes foram preservadas: estoque continua restrito a `owner`/`manager`/`stock`, produção a `owner`/`manager`/`production`, e todas as tabelas consultadas continuam sob prefixo `padoka_`.
 - Criada `tests/admin-dashboard-backend-isolation-audit.mjs` para impedir regressão do project pinning e proibir credenciais administrativas ou dependência do backend InfoTech no frontend.
+- O primeiro Static Audit detectou uma expectativa antiga que exigia literalmente `window.padokaSupabase.auth.getSession()`; `tests/admin-dashboard-audit.mjs` foi alinhado para exigir `client.auth.getSession()` somente depois de `padokaClient()`, preservando e reforçando a validação fail-closed em vez de removê-la.
 - Nenhuma migration, RLS, policy, grant, trigger, Edge Function ou configuração Google foi alterada nesta execução.
