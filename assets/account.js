@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id);
 let sb,user,profile,cfg,googleEnabled=null,lifecycleEpoch=0,activeUserId=null;
 const labels={received:'Recebido',seen:'Visto',confirmed:'Confirmado',preparing:'Em preparo',ready:'Pronto',completed:'Concluído',cancelled:'Cancelado'};
 
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function safeAvatarUrl(v){if(!v)return '';try{const u=new URL(String(v),location.href);return u.protocol==='https:'?u.href:''}catch{return ''}}
 function show(id){['loginView','onboardingView','accountView'].forEach(x=>$(x).classList.toggle('hidden',x!==id));const boot=$('sessionBoot');if(boot)boot.hidden=true;document.documentElement.classList.remove('padoka-auth-booting')}
 function notice(t,type='error'){$('authMessage').innerHTML=`<div class="notice ${type}">${t}</div>`}
