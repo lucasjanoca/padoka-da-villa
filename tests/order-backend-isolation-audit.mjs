@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const order = fs.readFileSync('assets/order-idempotency.js', 'utf8');
 const checkout = fs.readFileSync('assets/checkout-page.js', 'utf8');
+const privateAcl = fs.readFileSync('supabase/086_order_v3_private_acl.sql', 'utf8');
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
@@ -28,5 +29,11 @@ expect(checkout.includes("role==='anon'"), 'checkout page may only accept legacy
 expect(checkout.includes("new URL(String(sb?.supabaseUrl||'')).origin!==PADOKA_ORIGIN"), 'checkout page must validate the created Supabase client origin before data/auth access');
 expect(!checkout.includes('padoka-public-config'), 'checkout page must not bypass the central runtime with a direct public-config fetch');
 expect(!/service_role|sb_secret_/i.test(order + checkout), 'checkout frontend must not expose privileged Supabase credentials');
+
+expect(privateAcl.includes('padoka_private.padoka_create_order_once_v3'), 'checkout ACL migration must target only the private v3 implementation');
+expect(/revoke execute[\s\S]*from public;/i.test(privateAcl), 'private v3 order implementation must revoke inherited PUBLIC execute');
+expect(/revoke execute[\s\S]*from anon;/i.test(privateAcl), 'private v3 order implementation must explicitly deny anon execute');
+expect(/grant execute[\s\S]*to authenticated;/i.test(privateAcl), 'authenticated must retain the minimum execute needed by the public SECURITY INVOKER wrapper');
+expect(!/grant execute[\s\S]*to (public|anon)/i.test(privateAcl), 'private v3 order implementation must never grant execute to PUBLIC or anon');
 
 console.log('order backend isolation audit passed');
