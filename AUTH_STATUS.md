@@ -1,6 +1,6 @@
 # PADOKA — Estado das contas e autenticação
 
-Atualizado em 30/08/2026.
+Atualizado em 02/09/2026.
 
 ## O que está ativo
 
@@ -53,7 +53,7 @@ Isso evita mistura operacional com objetos `rass_*`, `emp_*`, `plexo_*` e demais
 
 ## Pedidos e área interna
 
-- `pagamento.html` cria pedidos exclusivamente pela RPC server-authoritative e idempotente `padoka_create_order_once`, usando `request_id` persistido para reconciliar tentativas com resposta de rede ambígua sem duplicar o pedido; o finalizador legado `padoka_create_order` não faz parte do runtime do checkout.
+- `pagamento.html` cria pedidos exclusivamente pela RPC server-authoritative e idempotente `padoka_create_order_once_v3`, usando `request_id` persistido para reconciliar tentativas com resposta de rede ambígua sem duplicar o pedido e enviando a forma de pagamento explicitamente para validação no servidor; os finalizadores legados `padoka_create_order`, `padoka_create_order_once` e `padoka_create_order_once_v2` não fazem parte do runtime do checkout.
 - O checkout público permanece fail-closed enquanto o Pix automático real não estiver integrado; comprovante ou confirmação manual não autoriza a criação do pedido.
 - A camada idempotente do checkout acompanha `onAuthStateChange`: logout/troca de conta desabilita imediatamente a continuação da tentativa anterior, invalida respostas assíncronas pelo `lifecycleEpoch` e recarrega perfil/catálogo antes de permitir que uma nova identidade continue.
 - O retry ambíguo do checkout fica em `sessionStorage` sob chave vinculada ao `user_id` do cliente. Logout/troca de conta não mistura nem apaga a tentativa persistida da identidade anterior; ao retornar, somente o mesmo cliente restaura aquele `request_id`, enquanto respostas da sessão antiga continuam sendo ignoradas após mudança de autenticação.
