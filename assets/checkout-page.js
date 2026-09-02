@@ -7,7 +7,7 @@ let sb=null,user=null,profile=null,pickup=null,catalog={},couponState=null;
 window.PADOKA_CHECKOUT_COUPON='';
 window.PADOKA_PAYMENT_METHOD='pickup';
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const get=(k,f=null)=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(f))}catch{return f}};
 function withTimeout(promise,ms=6500){let t;const timer=new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error('checkout_timeout')),ms)});return Promise.race([Promise.resolve(promise),timer]).finally(()=>clearTimeout(t));}
 function hideLoader(){const l=$('loading');if(l)l.classList.add('hidden');}
