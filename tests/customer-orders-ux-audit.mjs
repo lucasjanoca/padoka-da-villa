@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
 const page = fs.readFileSync('acompanhamento.html', 'utf8');
+const PADOKA_ORIGIN = 'https://yncspxfsvlqdnodlsosb.supabase.co';
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
@@ -18,6 +19,9 @@ expect(page.includes(".order('created_at',{ascending:false})"), 'customer orders
 expect(page.includes("filter:`customer_id=eq.${nextId}`"), 'Realtime updates must remain scoped to the authenticated customer');
 expect(page.includes("onAuthStateChange"), 'customer orders must react to authentication lifecycle changes');
 expect(page.includes("beginSessionTransition(nextId)"), 'account changes must immediately enter a fail-closed transition state');
+expect(page.includes(`const CONFIG_URL='${PADOKA_ORIGIN}/functions/v1/padoka-public-config'`), 'customer orders config must remain pinned to the PADOKA project');
+expect(page.includes(`connect-src 'self' ${PADOKA_ORIGIN} wss://yncspxfsvlqdnodlsosb.supabase.co`), 'customer orders CSP must restrict backend connections to PADOKA HTTP/WSS origins');
+expect(!/https:\/\/\*\.supabase\.co|wss:\/\/\*\.supabase\.co/i.test(page), 'customer orders CSP must not allow wildcard Supabase origins');
 expect(!/service_role|sb_secret_/i.test(page), 'customer orders page must never expose privileged Supabase credentials');
 expect(!/href=["'][^"']*(?:internal|pedidos|pdv|gestao)\.html/i.test(page), 'customer orders page must not expose internal operation links');
 
