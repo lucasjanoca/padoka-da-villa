@@ -25,7 +25,7 @@ need(ui,/waitForValidatedStaff/i,'dashboard precisa esperar a identidade atual s
 need(ui,/waitForValidatedStaff\(expectedUserId,expectedEpoch\)/i,'espera do guard precisa ficar vinculada ao epoch que iniciou a ativação');
 need(ui,/if\(expectedEpoch!==lifecycleEpoch\)return ['"]{2}/i,'espera de staff antiga precisa abortar assim que o lifecycle mudar');
 need(ui,/async function safeSession\(\)/i,'dashboard precisa centralizar a leitura segura da sessão');
-need(ui,/const \{data,error\}=await window\.padokaSupabase\.auth\.getSession\(\)/i,'leitura segura precisa inspecionar o erro retornado pelo Auth');
+need(ui,/const client=padokaClient\(\);[\s\S]*?const \{data,error\}=await client\.auth\.getSession\(\)/i,'leitura segura precisa validar o backend antes de inspecionar o erro retornado pelo Auth');
 need(ui,/if\(error\)\{console\.error\(['"]Falha ao confirmar sessão do dashboard PADOKA['"],error\);return null\}/i,'erro retornado pelo Auth precisa manter o dashboard fail-closed');
 need(ui,/catch\(error\)\{[\s\S]*?Falha de rede ao confirmar sessão do dashboard PADOKA[\s\S]*?return null/i,'rejeição real de transporte precisa manter o dashboard fail-closed');
 need(ui,/async function sessionStillCurrent\(epoch,userId\)/i,'dashboard precisa revalidar a identidade antes de consultas periódicas');
