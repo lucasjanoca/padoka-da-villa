@@ -184,10 +184,48 @@
   async function bind(nextClient){
     if(!isPadokaClient(nextClient))return;
     if(client===nextClient)return;
+
+    const previousClient=client;
+    const previousChannel=channel;
+    const previousAuthSub=authSub;
+    ++lifecycleEpoch;
+    activeUserId='';
+    session=null;
+    channel=null;
+    authSub=null;
+    renderEmpty();
+    if(root){
+      root.hidden=true;
+      if(panelEl)panelEl.hidden=true;
+      root.querySelector('.padoka-notify-btn')?.setAttribute('aria-expanded','false');
+    }
+    previousAuthSub?.unsubscribe();
+    if(previousChannel&&previousClient){try{await previousClient.removeChannel(previousChannel);}catch{}}
+
     client=nextClient;
-    const current=await safeSession();
+    let current=null;
+    try{
+      const {data,error}=await nextClient.auth.getSession();
+      if(error)throw error;
+      current=data?.session||null;
+    }catch(error){
+      if(client===nextClient)console.error('Falha ao confirmar sessão das notificações PADOKA',error);
+      return;
+    }
+    if(client!==nextClient)return;
     await setSession(current);
-    const {data}=client.auth.onAuthStateChange((_event,nextSession)=>setTimeout(()=>setSession(nextSession),0));
+    if(client!==nextClient)return;
+
+    const {data}=nextClient.auth.onAuthStateChange((_event,nextSession)=>{
+      if(client!==nextClient)return;
+      setTimeout(()=>{
+        if(client===nextClient)setSession(nextSession);
+      },0);
+    });
+    if(client!==nextClient){
+      data?.subscription?.unsubscribe();
+      return;
+    }
     authSub=data?.subscription||null;
   }
 
@@ -200,6 +238,7 @@
     activeUserId='';
     session=null;
     authSub?.unsubscribe();
+    authSub=null;
     if(channel&&client)client.removeChannel(channel);
     channel=null;
     renderEmpty();
