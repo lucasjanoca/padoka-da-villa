@@ -20,18 +20,25 @@ const visual=[
 const visualById=Object.fromEntries(visual.map(p=>[p.id,p]));
 const labels={paes:'Pães',pães:'Pães',salgados:'Salgados',lanches:'Lanches',doces:'Doces',bebidas:'Bebidas'};
 const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
-const CONFIG_URL=PADOKA_ORIGIN+'/functions/v1/padoka-public-config';
 const safeId=v=>{const s=String(v??'').trim();return /^[a-z0-9][a-z0-9_-]{0,79}$/i.test(s)?s:null};
 const esc=v=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-const requirePadokaOrigin=value=>{
-  try{
-    const url=new URL(String(value||''));
-    if(url.origin!==PADOKA_ORIGIN)throw new Error('backend mismatch');
-    return PADOKA_ORIGIN;
-  }catch{
-    throw new Error('PADOKA public config returned an invalid backend');
-  }
-};
+function decodeJwtPayload(token){
+  const parts=String(token||'').split('.');
+  if(parts.length!==3)throw new Error('Chave pública inválida');
+  const raw=parts[1].replace(/-/g,'+').replace(/_/g,'/');
+  const padded=raw+'='.repeat((4-raw.length%4)%4);
+  try{return JSON.parse(atob(padded))}catch{throw new Error('Chave pública inválida')}
+}
+function assertPublicConfig(value){
+  if(!value||typeof value!=='object'||value.scope!=='padoka')throw new Error('Configuração inválida');
+  let url;
+  try{url=new URL(String(value.url||''))}catch{throw new Error('Backend PADOKA inválido')}
+  if(url.protocol!=='https:'||url.origin!==PADOKA_ORIGIN||url.pathname!=='/')throw new Error('Backend PADOKA inválido');
+  const key=typeof value.publishableKey==='string'?value.publishableKey.trim():'';
+  if(!key)throw new Error('Chave pública inválida');
+  if(!key.startsWith('sb_publishable_')&&!(key.startsWith('eyJ')&&decodeJwtPayload(key)?.role==='anon'))throw new Error('Chave pública inválida');
+  return {...value,url:PADOKA_ORIGIN,publishableKey:key};
+}
 window.PADOKA_CATALOG=[];
 window.PADOKA_CATALOG_BY_ID=visualById;
 window.PADOKA_CATALOG_READY=false;
@@ -77,12 +84,13 @@ function loadPickupValidation(){
 }
 async function load(){
   try{
-    const cfg=window.PADOKA_RUNTIME?.getPublicConfig?await window.PADOKA_RUNTIME.getPublicConfig():await (async()=>{const configResponse=await fetch(CONFIG_URL,{cache:'no-store'});if(!configResponse.ok)throw new Error('public config unavailable');return configResponse.json()})();
-    const origin=requirePadokaOrigin(cfg.url);
-    if(typeof cfg.publishableKey!=='string'||!cfg.publishableKey.trim())throw new Error('publishable key unavailable');
-    const endpoint=`${origin}/rest/v1/padoka_products?select=id,name,category,price,is_demo,sort_order&active=eq.true&order=sort_order.asc`;
-    const response=await fetch(endpoint,{cache:'no-store',headers:{apikey:cfg.publishableKey}});
+    if(typeof window.PADOKA_RUNTIME?.getPublicConfig!=='function')throw new Error('Runtime PADOKA indisponível');
+    const cfg=assertPublicConfig(await window.PADOKA_RUNTIME.getPublicConfig());
+    const endpoint=`${PADOKA_ORIGIN}/rest/v1/padoka_products?select=id,name,category,price,is_demo,sort_order&active=eq.true&order=sort_order.asc`;
+    const response=await fetch(endpoint,{cache:'no-store',credentials:'omit',redirect:'error',headers:{apikey:cfg.publishableKey}});
     if(!response.ok)throw new Error('catalog unavailable');
+    const contentType=String(response.headers.get('content-type')||'').toLowerCase();
+    if(!contentType.includes('application/json'))throw new Error('catalog response invalid');
     const rows=await response.json();
     const merged=(Array.isArray(rows)?rows:[]).map(row=>{
       const id=safeId(row.id);if(!id)return null;
