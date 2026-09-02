@@ -2,6 +2,8 @@
   const isGestao=location.pathname.endsWith('/gestao.html')||location.pathname.endsWith('gestao.html');
   if(!isGestao)return;
 
+  const PADOKA_SUPABASE_URL='https://yncspxfsvlqdnodlsosb.supabase.co';
+  const isPadokaClient=candidate=>String(candidate?.supabaseUrl||'').replace(/\/+$/,'')===PADOKA_SUPABASE_URL;
   const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   const labels={owner:'Proprietário',manager:'Gerente',cashier:'Caixa',attendant:'Atendimento',production:'Produção',stock:'Estoque'};
   const missingRpc=error=>['PGRST202','42883'].includes(String(error?.code||''))||/padoka_list_staff_audit|function .* does not exist|schema cache/i.test(String(error?.message||''));
@@ -10,7 +12,7 @@
 
   async function waitForContext(){
     for(let i=0;i<100;i++){
-      if(window.padokaSupabase&&window.padokaStaffRole)return {client:window.padokaSupabase,role:window.padokaStaffRole};
+      if(isPadokaClient(window.padokaSupabase)&&window.padokaStaffRole)return {client:window.padokaSupabase,role:window.padokaStaffRole};
       await sleep(100);
     }
     return null;
