@@ -27,6 +27,15 @@ expect(source.includes('p_request_id:attempt.requestId'),'Resgate deve enviar re
 expect(!source.includes("sb.rpc('padoka_redeem_reward'"),'RPC legado de resgate sem idempotência não pode voltar ao runtime.');
 expect(source.includes("sb.rpc('padoka_cancel_loyalty_redemption'"),'Cancelamento deve continuar server-authoritative via RPC PADOKA.');
 expect(!source.includes(".update({points_balance")&&!source.includes(".insert({points_balance"),'Cliente não pode gravar saldo de fidelidade diretamente.');
+
+for(const table of ['padoka_loyalty_accounts','padoka_loyalty_redemptions','padoka_loyalty_ledger']){
+  const read=new RegExp(`sb\\.from\\('${table}'\\)[\\s\\S]{0,420}?\\.eq\\('user_id',expectedUserId\\)`);
+  expect(read.test(source),`${table} deve permanecer limitado ao user_id autenticado no runtime do cliente.`);
+}
+expect(source.includes('if(!currentIdentity(expectedUserId,epoch)||!await ensureSession(expectedUserId,epoch))return;'),'Dados do Club só podem ser aplicados após revalidar sessão e identidade.');
+expect(source.includes('const epoch=++lifecycleEpoch;\n    user=nextUser;\n    clearCustomerState();'),'Troca de identidade deve invalidar o lifecycle e limpar dados do cliente anterior antes de recarregar.');
+expect(!/sb\.from\('padoka_loyalty_(?:accounts|ledger|redemptions)'\)[\s\S]{0,240}?\.(?:insert|update|delete)\(/.test(source),'Frontend do Club não pode mutar saldo, extrato ou resgates diretamente.');
+
 expect(!source.includes('service_role')&&!source.includes('sb_secret_'),'Frontend público não pode conter credencial administrativa.');
 expect(!/infotech/i.test(source),'PADOKA Club não pode depender do backend InfoTech.');
 
