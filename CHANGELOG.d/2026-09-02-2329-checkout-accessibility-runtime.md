@@ -5,5 +5,7 @@
 - Restaurado `assets/accessibility.js?v=2` no checkout, preservando o skip-link e a região de feedback acessível já padronizados no restante da aplicação.
 - A execução seguinte confirmou que a auditoria de acessibilidade passou e revelou um matcher desatualizado em `tests/app-experience-audit.mjs`: ele exigia especificamente `padoka-pwa.js?v=4`, embora o cache-busting do runtime possa avançar sem mudar o contrato da página.
 - A auditoria de experiência agora exige a presença de `assets/padoka-pwa.js` e aceita somente um sufixo opcional `?v=<número>`, evitando rebaixar o frontend ou mascarar ausência real do runtime PWA.
+- O `PADOKA Static Audit #1289` confirmou os dois pontos acima e avançou até `browser-csp-audit.mjs`, onde encontrou outra premissa antiga: a auditoria exigia `images.unsplash.com` também em páginas sem imagens remotas, como `pagamento.html`.
+- A auditoria CSP agora exige essa origem externa somente nas superfícies que realmente renderizam imagens remotas (`index.html`, `produto.html`, `gestao.html` e `pdv.html`), preservando a política de privilégio mínimo nas demais páginas.
 - Nenhuma lógica de checkout, catálogo, autenticação, idempotência, pedido, Pix ou Supabase foi alterada.
 - Nenhuma migration, RLS, policy, grant, trigger, Edge Function ou objeto não-`padoka_` foi alterado nesta execução.
