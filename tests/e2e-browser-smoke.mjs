@@ -1,8 +1,12 @@
+import { readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
 const base=(process.env.BASE_URL||'https://lucasjanoca.github.io/padoka-da-villa').replace(/\/$/,'');
 const fail=(msg)=>{throw new Error(msg)};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const sourceServiceWorker=await readFile(new URL('../service-worker.js',import.meta.url),'utf8');
+const expectedCache=sourceServiceWorker.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/)?.[1];
+if(!expectedCache||!/^padoka-pwa-v\d+$/.test(expectedCache)) fail('CACHE_NAME local do Service Worker é inválido');
 
 async function waitForProduction(){
   for(let i=0;i<18;i++){
@@ -13,11 +17,11 @@ async function waitForProduction(){
         fetch(base+'/service-worker.js',{cache:'no-store'})
       ]);
       const swText=sw.ok?await sw.text():'';
-      if(vendor.ok&&scanner.ok&&sw.ok&&swText.includes('padoka-pwa-v6')) return;
+      if(vendor.ok&&scanner.ok&&sw.ok&&swText.includes(`CACHE_NAME = '${expectedCache}'`)) return;
     }catch{}
     await sleep(10000);
   }
-  fail('Produção não convergiu para vendor local + PWA v6');
+  fail('Produção não convergiu para vendor local + cache '+expectedCache);
 }
 
 await waitForProduction();
