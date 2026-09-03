@@ -19,7 +19,7 @@ ok(!/\$\{profile\.phone\}/.test(checkout), 'checkout-page.js: telefone não deve
 
 // Checkout must stay server-backed and fail closed when runtime/config/backend validation fails.
 ok(checkout.includes("const PADOKA_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co'"), 'checkout-page.js: backend PADOKA não está fixado');
-ok(checkout.includes("typeof window.PADOKA_RUNTIME?.getPublicConfig"), 'checkout-page.js: runtime PADOKA obrigatório ausente');
+ok(checkout.includes("!window.PADOKA_RUNTIME?.getPublicConfig"), 'checkout-page.js: runtime PADOKA obrigatório ausente');
 ok(checkout.includes("new URL(String(sb?.supabaseUrl||'')).origin!==PADOKA_ORIGIN"), 'checkout-page.js: validação da origem Supabase ausente');
 ok(checkout.includes("$('sendOrder').disabled=true"), 'checkout-page.js: falhas devem manter envio bloqueado');
 
