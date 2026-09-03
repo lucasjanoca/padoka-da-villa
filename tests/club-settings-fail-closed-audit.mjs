@@ -7,7 +7,9 @@ if(!source.includes("const EXPECTED_PROJECT_REF='yncspxfsvlqdnodlsosb'"))fail('P
 if(!source.includes("if(!s.data)throw new Error('loyalty settings unavailable');"))fail('PADOKA Club deve falhar fechado quando a configuração de fidelidade não vier do servidor.');
 if(/settings\s*=\s*s\.data\s*\|\|\s*\{/.test(source))fail('PADOKA Club não deve inventar configuração padrão de fidelidade no navegador.');
 if(source.includes('points_per_brl:1,first_order_bonus_points:20,birthday_multiplier:2'))fail('Benefícios padrão demonstrativos não devem ser usados como fallback de produção.');
-if(!source.includes("sb.rpc('padoka_redeem_reward'"))fail('Resgate deve continuar server-authoritative via RPC PADOKA.');
+if(!source.includes("sb.rpc('padoka_redeem_reward_once'"))fail('Resgate deve continuar server-authoritative via RPC PADOKA idempotente.');
+if(!source.includes('p_request_id:attempt.requestId'))fail('Resgate deve enviar request_id para retry seguro.');
+if(source.includes("sb.rpc('padoka_redeem_reward'"))fail('RPC legado de resgate sem idempotência não pode voltar ao runtime.');
 if(!source.includes("sb.rpc('padoka_cancel_loyalty_redemption'"))fail('Cancelamento de resgate deve continuar server-authoritative via RPC PADOKA.');
 if(/service_role|sb_secret_/i.test(source))fail('Frontend do PADOKA Club nunca deve conter credencial administrativa.');
 
