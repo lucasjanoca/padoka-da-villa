@@ -46,7 +46,8 @@ ok(html['acompanhamento.html'].includes('postgres_changes'), 'acompanhamento.htm
 
 // Checkout and public catalog must remain server-authoritative and retry-safe.
 ok(html['pagamento.html'].includes('assets/order-idempotency.js'), 'pagamento.html: camada idempotente de checkout ausente');
-ok(orderIdempotency.includes("rpc('padoka_create_order_once'"), 'checkout: pedido não usa padoka_create_order_once');
+ok(orderIdempotency.includes("rpc('padoka_create_order_once_v3'"), 'checkout: pedido não usa padoka_create_order_once_v3');
+ok(!/rpc\(['"]padoka_create_order_once(?:_v2)?['"]/.test(orderIdempotency), 'checkout: RPC idempotente legada v1/v2 reapareceu');
 ok(!/\.rpc\(['"]padoka_create_order['"]/.test(html['pagamento.html']), 'pagamento.html: RPC legada de pedido reapareceu');
 ok(!/insert\s*\([^)]*padoka_orders/i.test(html['pagamento.html']), 'pagamento.html: não deve inserir pedido diretamente');
 ok(catalog.includes('/rest/v1/padoka_products'), 'assets/catalog.js: catálogo público não consulta padoka_products');
