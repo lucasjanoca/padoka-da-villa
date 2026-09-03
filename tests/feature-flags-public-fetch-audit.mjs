@@ -8,7 +8,10 @@ if(!src.includes("credentials:'omit'"))fail('public feature flag fetches must om
 if(!src.includes("redirect:'error'"))fail('public feature flag fetches must fail closed on redirects');
 if(!src.includes("cache:'no-store'"))fail('public feature flag fetches must not use a stale HTTP cache');
 if(!src.includes("audience=eq.public"))fail('feature flags query must remain restricted to public audience');
-if(!src.includes("requirePadokaOrigin(cfg.url)"))fail('runtime config origin must be validated before REST access');
+if(!src.includes('const cfg=validateConfig(await window.PADOKA_RUNTIME.getPublicConfig())'))fail('runtime config must be validated before REST access');
+if(!src.includes("if(url.origin!==PADOKA_ORIGIN||url.pathname!=='/')"))fail('runtime config must enforce the exact PADOKA origin and root path');
+if(!src.includes("return {origin:PADOKA_ORIGIN,publishableKey:value.publishableKey}"))fail('validated config must return the pinned PADOKA origin');
+if(!src.includes("const url=cfg.origin+'/rest/v1/padoka_feature_flags"))fail('feature flag REST access must use the validated PADOKA origin');
 if(!src.includes("Object.create(null)"))fail('feature flag maps must use null prototypes');
 if(!src.includes("isSafeFlagKey"))fail('feature flag keys must be validated before entering runtime maps');
 for(const dangerous of ['__proto__','prototype','constructor'])if(!src.includes(`value!=='${dangerous}'`))fail(`feature flag runtime must reject dangerous key ${dangerous}`);
