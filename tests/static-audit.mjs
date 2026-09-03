@@ -14,9 +14,13 @@ const statusMigration = read('supabase/005_order_status_transition_rpc.sql');
 const failures = [];
 const ok = (cond, msg) => { if (!cond) failures.push(msg); };
 
-// Public pages must not advertise internal operational modules.
-for (const f of ['index.html','produto.html','conta.html','pagamento.html','acompanhamento.html','club.html']) {
-  ok(!/(href=["'][^"']*(?:internal|pdv|gestao|pedidos)\.html)/i.test(html[f]), `${f}: expõe link para módulo interno`);
+// Public pages must not advertise internal operational modules or load their controllers.
+const publicPages = ['index.html','produto.html','conta.html','pagamento.html','acompanhamento.html','club.html'];
+const internalSurfaceLink = /(?:href|action|formaction)=["'][^"']*(?:internal|pedidos|pdv|gestao|enterprise|club-admin)\.html(?:[?#][^"']*)?["']/i;
+const internalControllerScript = /src=["'][^"']*assets\/(?:internal-nav|operational-sync|reporting-sync|settings-sync|loss-registration|pdv-idempotency|club-admin)\.js(?:[?#][^"']*)?["']/i;
+for (const f of publicPages) {
+  ok(!internalSurfaceLink.test(html[f]), `${f}: expõe navegação para módulo interno`);
+  ok(!internalControllerScript.test(html[f]), `${f}: carrega controlador de módulo interno`);
 }
 
 // Every internal surface must remain protected by the staff table.
