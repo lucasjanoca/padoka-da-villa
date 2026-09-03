@@ -3,7 +3,7 @@
   const EXPECTED_PROJECT_REF='yncspxfsvlqdnodlsosb';
   const SUPABASE_URL=`https://${EXPECTED_PROJECT_REF}.supabase.co`;
   const $=id=>document.getElementById(id);
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const num=v=>Number(v||0).toLocaleString('pt-BR');
   const date=v=>v?new Date(v).toLocaleString('pt-BR'):'—';
   let sb=null,user=null,settings=null,account=null,rewards=[],redemptions=[],ledger=[],selectedReward=null,lifecycleEpoch=0;
@@ -22,6 +22,7 @@
     if(m.includes('reward expired'))return 'Essa recompensa não está mais disponível.';
     if(m.includes('loyalty unavailable'))return 'O PADOKA Club está temporariamente pausado.';
     if(m.includes('redemption not found'))return 'Não encontramos esse resgate.';
+    if(m.includes('request id conflict'))return 'Não foi possível reconciliar o resgate anterior. Tente novamente.';
     if(m.includes('permission'))return 'Sua sessão não permite essa operação.';
     return 'Não foi possível concluir agora. Tente novamente.';
   }
@@ -164,19 +165,49 @@
     $('redeemModal').classList.remove('hidden');
   }
   function closeRedeem(){selectedReward=null;$('redeemModal').classList.add('hidden')}
+  function redemptionRequestKey(userId,rewardId){
+    return 'padoka:club:redeem:'+userId+':'+rewardId;
+  }
+  function getOrCreateRedemptionRequest(userId,rewardId){
+    const key=redemptionRequestKey(userId,rewardId);
+    let requestId='';
+    try{requestId=sessionStorage.getItem(key)||''}catch{throw new Error('redemption retry storage unavailable')}
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)){
+      if(!crypto?.randomUUID)throw new Error('secure request id unavailable');
+      requestId=crypto.randomUUID();
+      try{
+        sessionStorage.setItem(key,requestId);
+        if(sessionStorage.getItem(key)!==requestId)throw new Error('redemption retry storage unavailable');
+      }catch{throw new Error('redemption retry storage unavailable')}
+    }
+    return {key,requestId};
+  }
+  function clearRedemptionRequest(key){
+    try{sessionStorage.removeItem(key)}catch{}
+  }
   async function confirmRedeem(){
     if(!selectedReward||!user?.id)return;
     const expectedUserId=user.id,epoch=lifecycleEpoch,rewardId=selectedReward.id;
     const btn=$('confirmRedeem');btn.disabled=true;btn.textContent='Resgatando…';
+    let attempt=null;
     try{
       if(!await ensureSession(expectedUserId,epoch))return;
-      const {data,error}=await sb.rpc('padoka_redeem_reward',{p_reward_id:rewardId});
+      attempt=getOrCreateRedemptionRequest(expectedUserId,rewardId);
+      const {data,error}=await sb.rpc('padoka_redeem_reward_once',{
+        p_reward_id:rewardId,
+        p_request_id:attempt.requestId
+      });
       if(error)throw error;
       if(!currentIdentity(expectedUserId,epoch))return;
+      clearRedemptionRequest(attempt.key);
       closeRedeem();
-      toast('Recompensa resgatada! Código '+data.code);
+      if(data?.status==='reserved')toast((data?.replayed?'Resgate confirmado! Código ':'Recompensa resgatada! Código ')+data.code);
+      else toast('Resgate reconciliado: '+statusLabel(data?.status)+'.');
       await loadData(expectedUserId,epoch);
-    }catch(e){if(currentIdentity(expectedUserId,epoch)){console.error(e);toast(friendly(e))}}
+    }catch(e){
+      if(String(e?.message||e||'').toLowerCase().includes('request id conflict')&&attempt?.key)clearRedemptionRequest(attempt.key);
+      if(currentIdentity(expectedUserId,epoch)){console.error(e);toast(friendly(e))}
+    }
     finally{if(currentIdentity(expectedUserId,epoch)){btn.disabled=false;btn.textContent='Confirmar resgate'}}
   }
   async function cancelRedemption(id){
