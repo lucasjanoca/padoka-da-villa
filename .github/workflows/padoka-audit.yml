@@ -36,17 +36,28 @@ jobs:
             node --check "$file"
           done
 
-      - name: Check internal extension syntax
+      - name: Check critical runtime syntax
+        shell: bash
         run: |
-          node --check assets/staff-audit.js
-          node --check assets/product-management.js
-          node --check assets/pdv-idempotency.js
-          node --check assets/pdv-scanner-fix.js
-          node --check assets/orders-auth-lifecycle.js
-          node --check assets/app-runtime.js
-          node --check assets/padoka-pwa.js
-          node --check assets/account.js
-          node --check assets/club.js
+          set -euo pipefail
+          for file in \
+            assets/app-runtime.js \
+            assets/account.js \
+            assets/checkout-page.js \
+            assets/checkout-recovery.js \
+            assets/orders-auth-lifecycle.js \
+            assets/internal-nav.js \
+            assets/operational-sync.js \
+            assets/loss-registration.js \
+            assets/staff-audit.js \
+            assets/product-management.js \
+            assets/pdv-idempotency.js \
+            assets/pdv-scanner-fix.js \
+            assets/padoka-pwa.js \
+            assets/club.js; do
+            echo "Syntax: $file"
+            node --check "$file"
+          done
 
       - name: Run every PADOKA audit
         shell: bash
