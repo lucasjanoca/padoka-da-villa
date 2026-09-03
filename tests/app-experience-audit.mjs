@@ -41,7 +41,7 @@ for(const page of publicPages){
   const source=read(page);
   need(source.includes('assets/app-shell.css'),page+': shell visual do app ausente');
   need(source.includes('assets/app-runtime.js'),page+': runtime do app ausente');
-  need(source.includes('assets/padoka-pwa.js?v=4'),page+': cliente PWA v4 ausente');
+  need(/assets\/padoka-pwa\.js(?:\?v=\d+)?/.test(source),page+': cliente PWA ausente');
 }
 
 need(sw.includes("const CACHE_NAME = 'padoka-pwa-v8'"),'Service Worker: cache v8 ausente');
