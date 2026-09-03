@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 
 const pages=['index.html','produto.html','acompanhamento.html','conta.html','gestao.html','internal.html','mfa.html','pagamento.html','pdv.html','pedidos.html','enterprise.html','club.html','club-admin.html'];
+const remoteImagePages=new Set(['index.html','produto.html','gestao.html','pdv.html']);
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 
 for(const page of pages){
@@ -21,7 +22,7 @@ for(const page of pages){
   if(scriptDirective.includes("'unsafe-inline'"))fail(page+': script-src ainda permite unsafe-inline');
   if(/https?:\/\//i.test(scriptDirective))fail(page+': script-src ainda permite origem remota');
   if(/(?:^|\s)https:(?:\s|$)/.test(imgDirective))fail(page+': img-src ainda permite qualquer origem HTTPS');
-  if(!['club.html','club-admin.html'].includes(page) && !imgDirective.includes('https://images.unsplash.com'))fail(page+': allowlist de imagem esperada ausente');
+  if(remoteImagePages.has(page) && !imgDirective.includes('https://images.unsplash.com'))fail(page+': allowlist de imagem esperada ausente');
   if(styleDirective.includes("'unsafe-inline'"))fail(page+': style-src ainda permite unsafe-inline');
   if(page==='pdv.html'){
     if(!/style-src-attr 'unsafe-inline'/.test(policy))fail(page+': scanner precisa da exceção style-src-attr controlada');
