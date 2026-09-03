@@ -7,4 +7,6 @@
 - A auditoria também preserva os papéis mínimos `owner`, `manager`, `stock` e `production`, exige sessão confirmada antes de `padoka_register_loss_once`, bloqueia objetos não-`padoka_`, proíbe escrita direta em estoque e protege o retry idempotente por identidade do funcionário.
 - O comportamento fail-closed do módulo de perdas continua obrigatório quando sessão/capability não podem ser confirmadas.
 - Nenhuma credencial `service_role`/`sb_secret_` pode aparecer no frontend e o runtime auditado não pode depender de InfoTech.io.
+- O primeiro CI revelou um parêntese excedente na nova auditoria; a sintaxe foi corrigida imediatamente.
+- Ao avançar novamente pela checagem completa de sintaxe, o CI revelou o mesmo erro preexistente em `tests/production-backend-boundary-audit.mjs`, introduzido na execução anterior; esse teste também foi corrigido sem alterar o runtime de Produção.
 - Nenhuma migration, RLS, policy, grant, trigger, Edge Function ou configuração Google OAuth foi alterada nesta execução; por isso não houve mudança de banco que exigisse nova consulta aos Security Advisors.
