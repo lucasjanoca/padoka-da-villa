@@ -3,7 +3,7 @@
   const EXPECTED_PROJECT_REF='yncspxfsvlqdnodlsosb';
   const SUPABASE_URL=`https://${EXPECTED_PROJECT_REF}.supabase.co`;
   const $=id=>document.getElementById(id);
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=v=>Number(v||0).toLocaleString('pt-BR');
   const date=v=>v?new Date(v).toLocaleString('pt-BR'):'—';
   let sb=null,user=null,settings=null,account=null,rewards=[],redemptions=[],ledger=[],selectedReward=null,lifecycleEpoch=0;
