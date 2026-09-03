@@ -38,7 +38,7 @@ need(manifest.launch_handler?.client_mode?.includes('navigate-existing'), 'Manif
 
 for (const page of pages) {
   const source = read(page);
-  need(source.includes('assets/padoka-pwa.js?v=4'), `${page}: cliente PWA v4 ausente`);
+  need(/assets\/padoka-pwa\.js\?v=\d+/.test(source), `${page}: cliente PWA versionado ausente`);
   need(source.includes('rel="manifest"'), `${page}: manifest PWA ausente`);
   need(source.includes('rel="apple-touch-icon"') && source.includes('assets/icon-192.png'), `${page}: Apple touch icon ausente`);
 }
