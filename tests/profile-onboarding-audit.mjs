@@ -22,6 +22,17 @@ ok(/grant\s+execute\s+on\s+function\s+public\.padoka_save_profile[\s\S]*?to\s+au
 ok(/revoke\s+insert\s*,\s*update\s+on\s+table\s+public\.padoka_profiles\s+from\s+authenticated/i.test(migration), 'migration 013: escrita direta no perfil não é revogada após ativação');
 ok(!/create\s+trigger[\s\S]{0,500}?\bon\s+auth\.users\b/i.test(migration), 'migration 013: trigger global em auth.users é proibido');
 
+// Contrato de minimização de dados no primeiro acesso: endereço/CPF não pertencem ao onboarding padrão.
+const rpcSignature = migration.match(/public\.padoka_save_profile\s*\(([\s\S]*?)\)\s*returns/i)?.[1] || '';
+ok(/p_full_name\s+text/i.test(rpcSignature), 'migration 013: nome deve permanecer no contrato do onboarding');
+ok(/p_phone\s+text/i.test(rpcSignature), 'migration 013: telefone/WhatsApp deve permanecer no contrato do onboarding');
+ok(/p_birthday\s+date\s+default\s+null/i.test(rpcSignature), 'migration 013: aniversário deve permanecer opcional');
+ok(/p_marketing_opt_in\s+boolean\s+default\s+false/i.test(rpcSignature), 'migration 013: marketing deve permanecer opt-in e opcional');
+ok(/p_privacy_accepted\s+boolean\s+default\s+false/i.test(rpcSignature), 'migration 013: consentimento deve permanecer explícito');
+ok(!/cpf|document|tax_id|address|street|cep|postal|delivery/i.test(rpcSignature), 'migration 013: CPF/endereço não podem entrar no onboarding padrão');
+ok(/length\(v_phone\)\s*<\s*8/i.test(migration), 'migration 013: telefone/WhatsApp deve continuar validado no servidor');
+ok(/length\(v_name\)\s*<\s*2/i.test(migration), 'migration 013: nome deve continuar validado no servidor');
+
 ok(account.includes("rpc('padoka_save_profile'"), 'conta.html: onboarding não usa RPC padoka_save_profile');
 ok(!account.includes('profileRpcMissing'), 'conta.html: fallback temporário de RPC ausente deve permanecer removido');
 ok(!/sb\.from\('padoka_profiles'\)\.update\(/.test(account), 'conta.html: escrita direta UPDATE em padoka_profiles é proibida');
@@ -33,7 +44,22 @@ ok(!!argsMatch, 'conta.html: argumentos da RPC não foram localizados de forma a
 if (argsMatch) {
   ok(!/avatar_url/.test(argsMatch[1]), 'conta.html: avatar não deve ser confiado como argumento da RPC');
   ok(!/auth_provider/.test(argsMatch[1]), 'conta.html: provider não deve ser confiado como argumento da RPC');
+  ok(!/cpf|document|tax_id|address|street|cep|postal|delivery/i.test(argsMatch[1]), 'conta.html: CPF/endereço não podem ser enviados pelo onboarding padrão');
 }
+
+const onboarding = accountPage.match(/<section\s+class="card hidden"\s+id="onboardingView">([\s\S]*?)<\/section>/i)?.[1] || '';
+ok(!!onboarding, 'conta.html: seção de primeiro acesso não foi localizada');
+ok(/id="name"[^>]*autocomplete="name"/i.test(onboarding), 'conta.html: nome editável deve permanecer no primeiro acesso');
+ok(/id="email"[^>]*type="email"[^>]*readonly/i.test(onboarding), 'conta.html: e-mail autenticado deve permanecer pré-preenchido/somente leitura');
+ok(/id="phone"[^>]*type="tel"[^>]*autocomplete="tel"/i.test(onboarding), 'conta.html: telefone/WhatsApp deve permanecer no primeiro acesso');
+ok(/Aniversário\s*\(opcional\)/i.test(onboarding) && /id="birthday"[^>]*type="date"/i.test(onboarding), 'conta.html: aniversário deve permanecer claramente opcional');
+ok(/id="privacy"[^>]*type="checkbox"/i.test(onboarding), 'conta.html: consentimento de privacidade deve permanecer explícito');
+ok(/id="marketing"[^>]*type="checkbox"/i.test(onboarding), 'conta.html: marketing opcional deve permanecer separado');
+ok(!/id="birthday"[^>]*\brequired\b/i.test(onboarding), 'conta.html: aniversário não pode virar obrigatório');
+ok(!/id="marketing"[^>]*\brequired\b/i.test(onboarding), 'conta.html: marketing não pode virar obrigatório');
+ok(!/cpf|cnpj|documento|endereço|endereco|logradouro|cep|postal/i.test(onboarding), 'conta.html: CPF/endereço não podem ser exigidos no onboarding padrão');
+ok(/function\s+prefill\(\)[\s\S]*?\$\('name'\)\.value=[^;]*user\?\.user_metadata/i.test(account), 'conta.html: nome deve continuar pré-preenchido a partir da identidade autenticada');
+ok(/\$\('email'\)\.value=user\?\.email\|\|''/.test(account), 'conta.html: e-mail deve continuar pré-preenchido a partir da sessão autenticada');
 
 ok(/external\?\.google/.test(account), 'conta.html: estado do provider Google não é pré-verificado');
 ok(/googleEnabled===false/.test(account), 'conta.html: provider Google desativado não é tratado antes do OAuth');
