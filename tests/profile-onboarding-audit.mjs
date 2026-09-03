@@ -58,7 +58,8 @@ ok(/id="marketing"[^>]*type="checkbox"/i.test(onboarding), 'conta.html: marketin
 ok(!/id="birthday"[^>]*\brequired\b/i.test(onboarding), 'conta.html: aniversário não pode virar obrigatório');
 ok(!/id="marketing"[^>]*\brequired\b/i.test(onboarding), 'conta.html: marketing não pode virar obrigatório');
 ok(!/cpf|cnpj|documento|endereço|endereco|logradouro|cep|postal/i.test(onboarding), 'conta.html: CPF/endereço não podem ser exigidos no onboarding padrão');
-ok(/function\s+prefill\(\)[\s\S]*?\$\('name'\)\.value=[^;]*user\?\.user_metadata/i.test(account), 'conta.html: nome deve continuar pré-preenchido a partir da identidade autenticada');
+ok(/function\s+prefill\(\)\{const m=user\?\.user_metadata\|\|\{\};/.test(account), 'conta.html: identidade autenticada não é usada no pré-preenchimento do nome');
+ok(/\$\('name'\)\.value=profile\?\.full_name\|\|m\.full_name\|\|m\.name\|\|''/.test(account), 'conta.html: nome deve continuar pré-preenchido e editável');
 ok(/\$\('email'\)\.value=user\?\.email\|\|''/.test(account), 'conta.html: e-mail deve continuar pré-preenchido a partir da sessão autenticada');
 
 ok(/external\?\.google/.test(account), 'conta.html: estado do provider Google não é pré-verificado');
