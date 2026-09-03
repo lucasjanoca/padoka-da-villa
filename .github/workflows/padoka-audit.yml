@@ -36,28 +36,16 @@ jobs:
             node --check "$file"
           done
 
-      - name: Check critical runtime syntax
+      - name: Check all first-party runtime syntax
         shell: bash
         run: |
           set -euo pipefail
-          for file in \
-            assets/app-runtime.js \
-            assets/account.js \
-            assets/checkout-page.js \
-            assets/checkout-recovery.js \
-            assets/orders-auth-lifecycle.js \
-            assets/internal-nav.js \
-            assets/operational-sync.js \
-            assets/loss-registration.js \
-            assets/staff-audit.js \
-            assets/product-management.js \
-            assets/pdv-idempotency.js \
-            assets/pdv-scanner-fix.js \
-            assets/padoka-pwa.js \
-            assets/club.js; do
+          while IFS= read -r file; do
             echo "Syntax: $file"
             node --check "$file"
-          done
+          done < <(find assets -maxdepth 1 -type f -name '*.js' -print | sort)
+          echo "Syntax: service-worker.js"
+          node --check service-worker.js
 
       - name: Run every PADOKA audit
         shell: bash
