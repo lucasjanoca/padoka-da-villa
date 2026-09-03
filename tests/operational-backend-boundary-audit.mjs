@@ -41,8 +41,9 @@ assert.ok(sync.includes('if(!await sessionStillMatches(userId,epoch))return;'), 
 assert.ok(sync.includes('onAuthStateChange'), 'Operational sync deve reagir a troca/saída da sessão interna.');
 assert.ok(sync.includes('removeChannel(channel)'), 'Operational sync deve remover Realtime ao invalidar o ciclo da sessão.');
 
-// Browser access may read only PADOKA tables and mutate through explicit
-// server-authoritative RPCs. No direct DML or cross-client object is allowed.
+// Browser access may read only PADOKA tables and mutate through an explicit,
+// narrow allowlist of server-authoritative RPCs. No direct DML, legacy mutation
+// or cross-client object is allowed to enter this shared operational runtime.
 const fromObjects = [...sync.matchAll(/\.from\(['"]([^'"]+)['"]\)/g)].map(match => match[1]);
 const rpcObjects = [...sync.matchAll(/\.rpc\(['"]([^'"]+)['"]/g)].map(match => match[1]);
 assert.ok(fromObjects.length > 0, 'Auditoria esperava leituras operacionais no Supabase.');
@@ -51,6 +52,9 @@ for (const object of [...fromObjects, ...rpcObjects]) {
   assert.match(object, /^padoka_/, `Objeto fora do namespace PADOKA detectado: ${object}`);
 }
 assert.deepEqual(new Set(fromObjects), new Set(['padoka_inventory', 'padoka_production_plans', 'padoka_losses']), 'Operational sync passou a ler tabela fora do conjunto operacional aprovado.');
+assert.deepEqual(new Set(rpcObjects), new Set(['padoka_adjust_inventory_once', 'padoka_update_inventory_metadata', 'padoka_upsert_production_plan']), 'Operational sync passou a chamar RPC fora da allowlist operacional aprovada.');
+assert.ok(!sync.includes(".rpc('padoka_adjust_inventory',"), 'RPC legada não idempotente de ajuste de estoque não pode voltar ao runtime.');
+assert.ok(!sync.includes(".rpc('padoka_register_loss',"), 'RPC legada de perdas não pode voltar ao runtime compartilhado.');
 assert.ok(!/\.from\(['"][^'"]+['"]\)\s*\.(?:insert|update|upsert|delete)\s*\(/.test(sync), 'Operational sync não pode executar DML direto; use RPC autorizada.');
 
 for (const forbidden of ['service_role', 'sb_secret_', 'infotech-io', 'infotech.io']) {
