@@ -16,7 +16,7 @@ function setSettingsAvailability(available){
   for(const id of ['setEnabled','setRate','setFirst','setBirthday','setDays','setCap','saveSettings'])if($(id))$(id).disabled=!loyaltySettingsLoaded;
 }
 function clearAdminUi(){
-  role='';rewards=[];campaigns=[];selectedCustomer=null;lookupData=null;setSettingsAvailability(false);
+  role='';rewards=[];campaigns=[];selectedCustomer=null;lookupData=null;setSettingsAvailability(false);document.body.classList.remove('manager');
   $('app')?.classList.add('hidden');$('gate')?.classList.remove('hidden');
   if($('roleBadge'))$('roleBadge').textContent='EQUIPE';
   if($('lookupResult'))$('lookupResult').innerHTML='<div class="empty">Nenhum resgate carregado.</div>';
