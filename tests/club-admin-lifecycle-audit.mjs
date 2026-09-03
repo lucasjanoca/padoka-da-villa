@@ -14,6 +14,9 @@ expect(admin.includes("aal?.currentLevel!=='aal2'"), 'owner/manager actions must
 expect(admin.includes('lifecycleEpoch'), 'club admin must invalidate stale async work across auth changes');
 expect(admin.includes('activeStaffUserId'), 'club admin must bind state to the active staff identity');
 expect(admin.includes('sessionStillCurrent'), 'club admin must revalidate the session before sensitive work');
+expect(admin.includes("document.body.classList.remove('manager')"), 'auth lifecycle cleanup must immediately clear manager-only UI state');
+expect(admin.includes("role='';rewards=[];campaigns=[];selectedCustomer=null;lookupData=null"), 'auth lifecycle cleanup must clear privileged Club state before revalidation');
+expect(admin.includes("$('app')?.classList.add('hidden');$('gate')?.classList.remove('hidden')"), 'auth lifecycle cleanup must hide the internal Club app before revalidation');
 expect(admin.includes("sb.rpc('padoka_admin_adjust_loyalty'"), 'manual loyalty adjustment must go through the server-authoritative RPC');
 expect(admin.includes("sb.rpc('padoka_admin_process_loyalty_code'"), 'redemption processing must go through the server-authoritative RPC');
 expect(admin.includes("sb.rpc('padoka_admin_loyalty_customers'"), 'customer lookup must stay behind the PADOKA admin RPC');
