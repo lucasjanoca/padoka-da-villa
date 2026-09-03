@@ -82,7 +82,7 @@ jobs:
             FAILED=1
           }
 
-          check "$BASE/" "assets/padoka-pwa.js?v=3" "Home"
+          check "$BASE/" "assets/padoka-pwa.js?v=" "Home"
           check "$BASE/produto.html" "PADOKA" "Produto"
           check "$BASE/conta.html" "customer-notifications.js" "Conta"
           check "$BASE/acompanhamento.html" "customer-notifications.js" "Acompanhamento"
@@ -97,7 +97,8 @@ jobs:
           check "$BASE/manifest.webmanifest" "\"display\": \"standalone\"" "Manifest PWA"
           check "$BASE/manifest.webmanifest" "assets/icon-192.png" "Manifest icon 192"
           check "$BASE/manifest.webmanifest" "assets/icon-512.png" "Manifest icon 512"
-          check "$BASE/service-worker.js" "padoka-pwa-v6" "Service Worker"
+          check "$BASE/service-worker.js" "const CACHE_NAME = 'padoka-pwa-v" "Service Worker"
+          check "$BASE/service-worker.js" "PADOKA_BACKEND_ORIGIN = 'https://yncspxfsvlqdnodlsosb.supabase.co'" "Service Worker backend PADOKA"
           check "$BASE/.well-known/security.txt" "security/advisories/new" "security.txt"
           check_not_found "$BASE/supabase/" "Backend Supabase"
           check_not_found "$BASE/tests/" "Testes internos"
