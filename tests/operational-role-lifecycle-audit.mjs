@@ -15,8 +15,8 @@ for (const [needle, label] of roleChecks) {
 }
 
 const validation = nav.indexOf("from('padoka_staff_users')");
-const authorization = nav.indexOf('if(!allowed(current,role))');
-const moduleLoad = nav.indexOf('loadValidatedModuleScripts(role);');
+const authorization = nav.indexOf('if(!allowed(current,role)){', validation);
+const moduleLoad = nav.indexOf('loadValidatedModuleScripts(role);', validation);
 assert.ok(validation >= 0 && authorization > validation && moduleLoad > authorization,
   'Módulos internos só podem carregar após validar padoka_staff_users e autorizar o papel atual.');
 
