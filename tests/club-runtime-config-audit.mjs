@@ -22,7 +22,9 @@ const clientCreate=source.indexOf('window.supabase.createClient',validation);
 const authRead=source.indexOf('sb.auth.getSession()',clientCreate);
 expect(runtimeRead>=0&&validation>runtimeRead&&clientCreate>validation&&authRead>clientCreate,'PADOKA Club deve validar configuração antes de criar cliente e ler sessão.');
 
-expect(source.includes("sb.rpc('padoka_redeem_reward'"),'Resgate deve continuar server-authoritative via RPC PADOKA.');
+expect(source.includes("sb.rpc('padoka_redeem_reward_once'"),'Resgate deve continuar server-authoritative via RPC PADOKA idempotente.');
+expect(source.includes('p_request_id:attempt.requestId'),'Resgate deve enviar request_id para retry seguro.');
+expect(!source.includes("sb.rpc('padoka_redeem_reward'"),'RPC legado de resgate sem idempotência não pode voltar ao runtime.');
 expect(source.includes("sb.rpc('padoka_cancel_loyalty_redemption'"),'Cancelamento deve continuar server-authoritative via RPC PADOKA.');
 expect(!source.includes(".update({points_balance")&&!source.includes(".insert({points_balance"),'Cliente não pode gravar saldo de fidelidade diretamente.');
 expect(!source.includes('service_role')&&!source.includes('sb_secret_'),'Frontend público não pode conter credencial administrativa.');
