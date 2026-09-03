@@ -10,7 +10,7 @@ const PADOKA_ORIGIN=`https://${PADOKA_REF}.supabase.co`;
 const checks=[
   ['gestão fixa o backend correto da PADOKA',gestao.includes(`${PADOKA_ORIGIN}/functions/v1/padoka-public-config`)],
   ['CSP conecta somente ao backend PADOKA',gestao.includes(`connect-src 'self' ${PADOKA_ORIGIN} wss://${PADOKA_REF}.supabase.co`)&&!gestao.includes('https://*.supabase.co')&&!gestao.includes('wss://*.supabase.co')],
-  ['guard interno fixa o mesmo origin',nav.includes(`const PADOKA_SUPABASE_ORIGIN='${PADOKA_ORIGIN}'`)&&nav.includes("throw new Error('PADOKA backend mismatch')"))],
+  ['guard interno fixa o mesmo origin',nav.includes(`const PADOKA_SUPABASE_ORIGIN='${PADOKA_ORIGIN}'`)&&nav.includes("throw new Error('PADOKA backend mismatch')")],
   ['produção é carregada somente após validação interna',/function loadValidatedModuleScripts\(role\)[\s\S]*?if\(!allowed\(current,role\)\)return;[\s\S]*?if\(current==='producao'\)loadScript\('assets\/production-completion\.js','padokaProduction'\)/.test(nav)],
   ['papéis da produção permanecem mínimos',/producao:\['owner','manager','production'\]/.test(nav)&&/allowedRoles=new Set\(\['owner','manager','production'\]\)/.test(production)],
   ['módulo exige sessão confirmada antes da RPC',/const preflightSession=await confirmedSession\(\);[\s\S]*?preflightSession\?\.user\?\.id!==userId[\s\S]*?await sb\.rpc\('padoka_record_production'/.test(production)],
