@@ -7,5 +7,7 @@
 - A auditoria de experiência agora exige a presença de `assets/padoka-pwa.js` e aceita somente um sufixo opcional `?v=<número>`, evitando rebaixar o frontend ou mascarar ausência real do runtime PWA.
 - O `PADOKA Static Audit #1289` confirmou os dois pontos acima e avançou até `browser-csp-audit.mjs`, onde encontrou outra premissa antiga: a auditoria exigia `images.unsplash.com` também em páginas sem imagens remotas, como `pagamento.html`.
 - A auditoria CSP agora exige essa origem externa somente nas superfícies que realmente renderizam imagens remotas (`index.html`, `produto.html`, `gestao.html` e `pdv.html`), preservando a política de privilégio mínimo nas demais páginas.
+- O `PADOKA Static Audit #1291` confirmou a CSP e revelou que `catalog-backend-pinning-audit.mjs` ainda esperava um fetch próprio de `padoka-public-config`, embora o catálogo já tenha sido endurecido para obter a configuração exclusivamente por `PADOKA_RUNTIME.getPublicConfig()` e validá-la antes do uso.
+- A auditoria de pinning do catálogo foi alinhada à arquitetura atual: runtime obrigatório, escopo `padoka`, origem HTTPS exata `yncspxfsvlqdnodlsosb.supabase.co`, endpoint `padoka_products` construído somente a partir da origem fixada, `credentials:'omit'`, redirects bloqueados e nenhuma credencial privilegiada no navegador.
 - Nenhuma lógica de checkout, catálogo, autenticação, idempotência, pedido, Pix ou Supabase foi alterada.
 - Nenhuma migration, RLS, policy, grant, trigger, Edge Function ou objeto não-`padoka_` foi alterado nesta execução.
