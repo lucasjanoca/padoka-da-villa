@@ -56,6 +56,8 @@
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
     installPrompt = event;
+    const status = document.getElementById('status');
+    if (page === 'admin-install.html' && status) status.textContent = 'Pronto para instalar o ADM Padoka neste aparelho.';
     syncButtons();
   });
 
@@ -65,7 +67,9 @@
       installPrompt = null;
       try {
         await prompt.prompt();
-        await prompt.userChoice;
+        const choice = await prompt.userChoice;
+        const status = document.getElementById('status');
+        if (status) status.textContent = choice?.outcome === 'accepted' ? 'ADM Padoka instalado com sucesso.' : 'Instalação cancelada. Você pode tentar novamente.';
       } catch {}
       return;
     }
@@ -105,6 +109,7 @@
   function syncButtons() {
     configureButton(document.getElementById('padokaAdminInstallEntry'));
     configureButton(document.getElementById('padokaInstallAdmin'), 'Instalar ADM Padoka');
+    if (page === 'admin-install.html') configureButton(document.getElementById('install'), 'Instalar ADM Padoka');
   }
 
   const observer = new MutationObserver(() => {
@@ -125,7 +130,10 @@
   else start();
 
   window.addEventListener('appinstalled', () => {
+    const status = document.getElementById('status');
+    if (status && page === 'admin-install.html') status.textContent = 'ADM Padoka instalado com sucesso.';
     document.getElementById('padokaAdminInstallEntry')?.setAttribute('hidden', '');
     document.getElementById('padokaInstallAdmin')?.setAttribute('hidden', '');
+    document.getElementById('install')?.setAttribute('hidden', '');
   });
 })();
