@@ -116,7 +116,7 @@
       const formats=typeof BarcodeDetector.getSupportedFormats==='function'?await BarcodeDetector.getSupportedFormats():[];
       const wanted=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','codabar','qr_code'];const supported=formats.length?wanted.filter(x=>formats.includes(x)):wanted;
       if(!supported.length)return false;nativeDetector=new BarcodeDetector({formats:supported});nativeStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
-      const reader=document.getElementById('barcodeReader');reader.innerHTML='';nativeVideo=document.createElement('video');nativeVideo.autoplay=true;nativeVideo.muted=true;nativeVideo.playsInline=true;nativeVideo.setAttribute('playsinline','');nativeVideo.srcObject=nativeStream;reader.appendChild(nativeVideo);await nativeVideo.play();setCameraStatus('Câmera aberta. Aponte para um código de barras.','ok');nativeCameraLoop();return true
+      const reader=document.getElementById('barcodeReader');reader.innerHTML='';nativeVideo=document.createElement('video');nativeVideo.autoplay=true;nativeVideo.muted=true;nativeVideo.playsInline=true;nativeVideo.setAttribute('playsinline','');nativeVideo.srcObject=nativeStream;reader.appendChild(nativeVideo);if(nativeVideo.readyState<1)await new Promise(resolve=>nativeVideo.addEventListener('loadedmetadata',resolve,{once:true}));await nativeVideo.play();setCameraStatus('Câmera aberta. Aponte para um código de barras.','ok');nativeCameraLoop();return true
     }catch(error){stopNativeCamera();throw error}
   }
 
@@ -136,7 +136,10 @@
     if(nativeStream||nativeVideo){stopNativeCamera();cameraLockedUntil=0;clearInterval(cameraCountdownTimer);cameraCountdownTimer=null;const modal=document.getElementById('cameraModal'),status=document.getElementById('cameraStatus'),reader=document.getElementById('barcodeReader');if(reader)reader.innerHTML='';modal?.classList.add('hidden');if(status){status.className='camera-status';status.textContent='Abrindo a câmera…'}if(scannerInput){scannerInput.value='';scannerInput.focus()}return}
     return originalCloseCamera()
   };
-  if(cameraBtn)cameraBtn.onclick=openCamera;const closeBtn=document.getElementById('cameraClose');if(closeBtn)closeBtn.onclick=closeCamera;
+  if(cameraBtn)cameraBtn.onclick=openCamera;
+  const closeBtn=document.getElementById('cameraClose');if(closeBtn)closeBtn.onclick=closeCamera;
+  const cameraModal=document.getElementById('cameraModal');if(cameraModal)cameraModal.addEventListener('click',event=>{if(event.target===cameraModal)closeCamera()});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&cameraIsOpen()){event.preventDefault();event.stopPropagation();closeCamera()}},true);
 
   installHardwareKeyboardSupport();
   let attempts=0;const timer=setInterval(async()=>{attempts+=1;if(sb&&Array.isArray(products)&&products.length){clearInterval(timer);const session=await safeSession(),userId=session?.user?.id||'';if(userId){watchScannerAuth();await activateScannerForUser(userId)}else resetScannerForIdentityChange('Não foi possível confirmar uma sessão interna autorizada para usar o leitor.');return}if(attempts>=40)clearInterval(timer)},250);
