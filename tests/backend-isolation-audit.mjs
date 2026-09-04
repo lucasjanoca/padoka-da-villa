@@ -12,6 +12,10 @@ const ok = (cond, msg) => { if (!cond) failures.push(msg); };
 const PADOKA_REF = 'yncspxfsvlqdnodlsosb';
 const PADOKA_ORIGIN = `https://${PADOKA_REF}.supabase.co`;
 
+const stripSqlComments = (source) => source
+  .replace(/\/\*[\s\S]*?\*\//g, ' ')
+  .replace(/--[^\r\n]*/g, ' ');
+
 // Public/browser runtime must never contain an administrative credential or point
 // to a different Supabase project. Migration SQL is intentionally excluded from
 // the literal service_role check: PostgreSQL migrations may safely REVOKE/GRANT
@@ -36,17 +40,25 @@ ok(!/const url=cfg\.url\s*\+/.test(featureFlags), 'assets/feature-flags.js: aces
 
 // Migrations may document forbidden destinations (for example, "não aplicar no
 // InfoTech.io") and may name PostgreSQL roles. What they must not do is embed a
-// Supabase URL for another project.
+// Supabase URL for another project or attach a PADOKA lifecycle trigger globally
+// to auth.users. Customer onboarding must remain explicit inside the PADOKA flow.
 for (const rel of migrationFiles) {
   const source = fs.readFileSync(new URL(rel, root), 'utf8');
   for (const match of source.matchAll(/https:\/\/([a-z0-9]{20})\.supabase\.co/gi)) {
     ok(match[1] === PADOKA_REF, `${rel}: aponta para Supabase diferente do backend PADOKA (${match[1]})`);
   }
+
+  const executableSql = stripSqlComments(source);
+  ok(
+    !/create\s+(?:or\s+replace\s+)?trigger\b[\s\S]{0,1200}?\bon\s+auth\.users\b/i.test(executableSql),
+    `${rel}: trigger global em auth.users é proibido; onboarding PADOKA deve permanecer explícito`
+  );
 }
 
 const auth = fs.readFileSync(new URL('AUTH_STATUS.md', root), 'utf8');
 ok(auth.includes(PADOKA_REF), 'AUTH_STATUS.md: backend PADOKA não está documentado');
 ok(/InfoTech\.io não é usado pela PADOKA/i.test(auth), 'AUTH_STATUS.md: isolamento do InfoTech.io não está explícito');
+ok(/Não existe trigger global em `auth\.users`/i.test(auth), 'AUTH_STATUS.md: proibição de trigger global em auth.users precisa permanecer documentada');
 
 if (failures.length) {
   console.error(`PADOKA backend isolation audit: ${failures.length} falha(s)`);
