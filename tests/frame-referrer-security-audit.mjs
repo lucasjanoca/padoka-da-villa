@@ -5,7 +5,8 @@ const guard=fs.readFileSync('assets/frame-guard.js','utf8');
 const css=fs.readFileSync('assets/runtime-security.css','utf8');
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 
-if(!guard.includes('window.top === window.self'))fail('Frame guard: verificação top/self ausente');
+const hasTopSelfGuard = guard.includes('window.top === window.self') || guard.includes('window.top !== window.self');
+if(!hasTopSelfGuard)fail('Frame guard: verificação top/self ausente');
 if(!guard.includes("classList.add('padoka-framed')"))fail('Frame guard: fail-closed visual ausente');
 if(!css.includes('.padoka-framed body{display:none!important}'))fail('Frame guard: regra CSS fail-closed ausente');
 
