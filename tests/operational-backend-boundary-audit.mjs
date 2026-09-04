@@ -12,7 +12,11 @@ const PADOKA_WSS = 'wss://yncspxfsvlqdnodlsosb.supabase.co';
 // role-validated operational module is loaded.
 assert.ok(nav.includes(`const PADOKA_SUPABASE_ORIGIN='${PADOKA_ORIGIN}'`), 'Internal guard perdeu o origin exato da PADOKA.');
 assert.ok(nav.includes("if(origin!==PADOKA_SUPABASE_ORIGIN)throw new Error('PADOKA backend mismatch')"), 'Internal guard deve rejeitar qualquer origin Supabase diferente.');
-assert.ok(nav.includes('return originalCreateClient(PADOKA_SUPABASE_ORIGIN,key,options)'), 'Cliente interno deve ser criado somente com o origin fixado da PADOKA.');
+assert.ok(
+  nav.includes('return originalCreateClient(PADOKA_SUPABASE_ORIGIN,key,options)') ||
+  nav.includes('const client=originalCreateClient(PADOKA_SUPABASE_ORIGIN,key,options)'),
+  'Cliente interno deve ser criado somente com o origin fixado da PADOKA.'
+);
 
 const csp = gestao.match(/Content-Security-Policy\" content=\"([^\"]+)/i)?.[1] || '';
 assert.ok(csp.includes(`connect-src 'self' ${PADOKA_ORIGIN} ${PADOKA_WSS}`), 'Gestão deve restringir connect-src ao backend HTTP/WSS da PADOKA.');
