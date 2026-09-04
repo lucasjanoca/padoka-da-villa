@@ -1,9 +1,7 @@
 (() => {
   'use strict';
 
-  if (window.top === window.self) {
-    // Documento de nível superior: continua com o bootstrap normal abaixo.
-  } else {
+  if (window.top !== window.self) {
     document.documentElement.classList.add('padoka-framed');
     try { window.top.location = window.location.href; } catch {}
     return;
@@ -55,15 +53,39 @@
   }
 
   let installPrompt = null;
+
+  function installerUrl() {
+    return new URL('admin-install.html?from=customer-app&v=2', location.href);
+  }
+
+  function openInstallerOutsideCurrentApp() {
+    const target = installerUrl();
+    if (/android/i.test(navigator.userAgent)) {
+      const scheme = target.protocol.replace(':', '');
+      const intent = `intent://${target.host}${target.pathname}${target.search}#Intent;scheme=${scheme};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(target.href)};end`;
+      location.href = intent;
+      return;
+    }
+    const opened = window.open(target.href, '_blank', 'noopener,noreferrer');
+    if (!opened) location.href = target.href;
+  }
+
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
     installPrompt = event;
     const status = document.getElementById('status');
-    if (page === 'admin-install.html' && status) status.textContent = 'Pronto para instalar o ADM Padoka neste aparelho.';
+    if (page === 'admin-install.html' && status) {
+      status.textContent = 'Pronto para instalar o ADM Padoka neste aparelho.';
+    }
     syncButtons();
   });
 
   async function requestInstall() {
+    if (standalone() && !launchedAsAdminApp()) {
+      openInstallerOutsideCurrentApp();
+      return;
+    }
+
     if (installPrompt) {
       const prompt = installPrompt;
       installPrompt = null;
@@ -71,26 +93,38 @@
         await prompt.prompt();
         const choice = await prompt.userChoice;
         const status = document.getElementById('status');
-        if (status) status.textContent = choice?.outcome === 'accepted' ? 'ADM Padoka instalado com sucesso.' : 'Instalação cancelada. Você pode tentar novamente.';
+        if (status) {
+          status.textContent = choice?.outcome === 'accepted'
+            ? 'ADM Padoka instalado com sucesso.'
+            : 'Instalação cancelada. Você pode tentar novamente.';
+        }
       } catch {}
       return;
     }
+
     if (page !== 'admin-install.html') {
-      location.href = 'admin-install.html?from=adm';
+      location.href = 'admin-install.html?from=adm&v=2';
       return;
     }
+
     const status = document.getElementById('status');
-    if (status) status.textContent = 'No Chrome, toque em ⋮ e escolha “Instalar app” ou “Adicionar à tela inicial”.';
+    if (status) {
+      status.textContent = /iphone|ipad|ipod/i.test(navigator.userAgent)
+        ? 'No Safari, toque em Compartilhar e depois em Adicionar à Tela de Início.'
+        : 'No Chrome, toque em ⋮ e escolha “Instalar app” ou “Adicionar à tela inicial”.';
+    }
   }
 
   function configureButton(button, label = 'Baixar ADM Padoka') {
-    if (!button || launchedAsAdminApp()) {
-      if (button) button.hidden = true;
-      return;
+    if (!button) return;
+    const hide = launchedAsAdminApp();
+    if (button.hidden !== hide) button.hidden = hide;
+    if (hide) return;
+    if (button.textContent !== label) button.textContent = label;
+    if (button.dataset.padokaAdminInstallBound !== '1') {
+      button.addEventListener('click', requestInstall);
+      button.dataset.padokaAdminInstallBound = '1';
     }
-    button.hidden = false;
-    button.textContent = label;
-    button.onclick = requestInstall;
   }
 
   function ensureEntryButton() {
@@ -102,6 +136,7 @@
     button.id = 'padokaAdminInstallEntry';
     button.className = 'btn light';
     button.textContent = 'Baixar ADM Padoka';
+    button.dataset.padokaAdminInstallBound = '1';
     button.addEventListener('click', requestInstall);
     const status = access.querySelector('#status');
     if (status) status.insertAdjacentElement('afterend', button);
@@ -111,18 +146,14 @@
   function syncButtons() {
     configureButton(document.getElementById('padokaAdminInstallEntry'));
     configureButton(document.getElementById('padokaInstallAdmin'), 'Instalar ADM Padoka');
-    if (page === 'admin-install.html') configureButton(document.getElementById('install'), 'Instalar ADM Padoka');
+    if (page === 'admin-install.html') {
+      configureButton(document.getElementById('install'), 'Instalar ADM Padoka');
+    }
   }
-
-  const observer = new MutationObserver(() => {
-    ensureEntryButton();
-    syncButtons();
-  });
 
   const start = () => {
     ensureEntryButton();
     syncButtons();
-    observer.observe(document.documentElement, { childList: true, subtree: true });
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./service-worker.js', { scope: './', updateViaCache: 'none' }).catch(() => {});
     }
