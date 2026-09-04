@@ -7,9 +7,17 @@ const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 const loadStart=frontend.indexOf('async function load(){');
 const loadRpc=frontend.indexOf("sb.rpc('padoka_get_settings')",loadStart);
 const loadPreflight=frontend.indexOf('if(!await identityStillCurrent(epoch,userId)){',loadStart);
+const loadPostflight=frontend.indexOf('if(!await identityStillCurrent(epoch,userId))return false;',loadRpc);
+const loadFill=frontend.indexOf('fill(Array.isArray(data)?data[0]:data);',loadRpc);
+const loadEnable=frontend.indexOf('setControlsEnabled(true)',loadRpc);
 const saveStart=frontend.indexOf('async function save(){');
 const saveRpc=frontend.indexOf("sb.rpc('padoka_update_settings'",saveStart);
 const savePreflight=frontend.indexOf('if(!await identityStillCurrent(epoch,userId)){',saveStart);
+const savePostflight=frontend.indexOf('if(!await identityStillCurrent(epoch,userId))return;',saveRpc);
+const saveFill=frontend.indexOf('fill(Array.isArray(data)?data[0]:data);',saveRpc);
+const activationStart=frontend.indexOf('async function activateForUser(expectedUserId)');
+const activationLoad=frontend.indexOf('if(await load()',activationStart);
+const activationSubscribe=frontend.indexOf('subscribe()',activationLoad);
 
 const checks=[
   [migration.includes('Sites De Clientes! (yncspxfsvlqdnodlsosb)'), 'migration must target the PADOKA backend explicitly'],
@@ -45,7 +53,9 @@ const checks=[
   [(frontend.match(/identityStillCurrent\(epoch,userId\)/g)||[]).length>=7, 'settings load/save and transport recovery must reject stale responses from a previous identity'],
   [frontend.includes('const epoch=lifecycleEpoch,userId=activeUserId;'), 'settings async operations must capture the current identity before RPC work'],
   [loadStart>=0&&loadPreflight>loadStart&&loadRpc>loadPreflight, 'settings load must confirm the same staff identity before calling padoka_get_settings'],
+  [loadPostflight>loadRpc&&loadFill>loadPostflight&&loadEnable>loadPostflight, 'settings load must re-confirm the same staff identity after padoka_get_settings and before rendering/enabling controls'],
   [saveStart>=0&&savePreflight>saveStart&&saveRpc>savePreflight, 'settings save must confirm the same staff identity before calling padoka_update_settings'],
+  [savePostflight>saveRpc&&saveFill>savePostflight, 'settings save must re-confirm the same staff identity after padoka_update_settings and before applying the server response'],
   [frontend.includes('session?.user?.id!==expectedUserId'), 'settings activation must verify the Supabase session still belongs to the expected staff user'],
   [frontend.includes("document.documentElement.classList.contains('padoka-staff-pending')"), 'settings activation must wait for the staff guard before trusting role state'],
   [frontend.includes("document.documentElement.classList.contains('padoka-role-pending')"), 'settings activation must wait for role revalidation before enabling controls'],
@@ -56,6 +66,7 @@ const checks=[
   [frontend.includes('clearChannel()'), 'settings sync must tear down the previous realtime channel on identity change'],
   [frontend.includes('sb.removeChannel(current)'), 'settings sync must unsubscribe the old realtime settings channel'],
   [frontend.includes('if(epoch===lifecycleEpoch&&activeUserId===userId)load()'), 'settings realtime callbacks must be scoped to the identity that created the channel'],
+  [activationStart>=0&&activationLoad>activationStart&&activationSubscribe>activationLoad&&frontend.slice(activationLoad,activationSubscribe).includes('epoch===lifecycleEpoch&&activeUserId===expectedUserId'), 'settings realtime subscription must only start after a successful load for the still-current staff identity'],
   [frontend.includes("resetForIdentityChange();"), 'auth changes must invalidate stale settings runtime immediately'],
   [frontend.includes("if(!allowedRoles.has(role)){blockLegacyFallback('Somente responsáveis autorizados podem alterar configurações.')"), 'settings controls must stay blocked after a switch to an unauthorized staff role'],
   [frontend.includes("catch(error){\n      if(!await identityStillCurrent(epoch,userId))return false;"), 'settings load must recover from a transport rejection without reviving a stale identity'],
