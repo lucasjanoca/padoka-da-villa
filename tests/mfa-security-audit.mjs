@@ -4,39 +4,25 @@ const page=fs.readFileSync('mfa.html','utf8');
 const mfa=fs.readFileSync('assets/mfa.js','utf8');
 const nav=fs.readFileSync('assets/internal-nav.js','utf8');
 const internal=fs.readFileSync('internal.html','utf8');
-const migration=fs.readFileSync('supabase/038_privileged_mfa_hardening.sql','utf8');
 const fail=m=>{console.error('FAIL:',m);process.exitCode=1};
 const need=(src,re,m)=>{if(!re.test(src))fail(m)};
 
-need(page,/src=['"]assets\/mfa\.js['"]/,'MFA: lógica deve ficar em módulo externo compatível com CSP estrita');
-if(/<script>(?:.|\n)*?auth\.mfa\./.test(page))fail('MFA: não deve voltar a depender de lógica Auth inline');
+// The PADOKA no longer requires TOTP. The compatibility page must be inert and
+// only redirect to a same-origin, allow-listed administrative destination.
+need(page,/src=['"]assets\/mfa\.js['"]/,'MFA legado: lógica deve permanecer em módulo externo compatível com CSP estrita');
+if(/<script>(?:.|\n)*?auth\.mfa\./.test(page))fail('MFA legado: não deve existir lógica Auth MFA inline');
+need(mfa,/function safeReturn\(\)/,'MFA legado: retorno precisa ser sanitizado');
+need(mfa,/u\.origin===location\.origin/,'MFA legado: retorno deve ficar na mesma origem');
+need(mfa,/location\.replace\(safeReturn\(\)\)/,'MFA legado: deve apenas redirecionar');
+if(/auth\.mfa\.|mfa\.enroll|mfa\.challenge|mfa\.verify/.test(mfa))fail('MFA legado: fluxo TOTP não pode ser reativado');
+if(/createClient\(/.test(mfa))fail('MFA legado: não deve criar cliente de autenticação');
 
-need(mfa,/const SUPABASE_URL=['"]https:\/\/yncspxfsvlqdnodlsosb\.supabase\.co['"]/,'MFA: backend deve ficar fixado no projeto PADOKA correto');
-need(mfa,/url\.origin===SUPABASE_URL/,'MFA: configuração remota deve validar a origem esperada');
-need(mfa,/createClient\(SUPABASE_URL,cfg\.publishableKey/,'MFA: cliente não deve confiar diretamente em cfg.url');
-if(/createClient\(cfg\.url/.test(mfa))fail('MFA: createClient não pode usar cfg.url diretamente');
+// A segurança administrativa continua baseada em sessão autenticada e papéis.
+need(nav,/padoka_staff_users/,'Navegação: autorização deve continuar baseada nos perfis internos da PADOKA');
+need(nav,/window\.padokaStaffRole/,'Navegação: papel validado deve continuar controlando módulos');
+need(nav,/window\.padokaCanAccess/,'Navegação: permissões de módulo devem continuar fail-closed');
+need(nav,/safeSession\(client\)/,'Navegação: sessão deve continuar sendo revalidada');
+need(internal,/validateStaff\(session\)/,'Login interno: deve continuar validando funcionário autorizado');
+need(internal,/padoka_staff_users/,'Login interno: autorização precisa permanecer no cadastro interno');
 
-need(mfa,/auth\.mfa\.getAuthenticatorAssuranceLevel\(\)/,'MFA: deve consultar o AAL atual');
-need(mfa,/auth\.mfa\.listFactors\(\)/,'MFA: deve listar fatores existentes');
-need(mfa,/auth\.mfa\.enroll\(\{factorType:['"]totp['"]/,'MFA: deve permitir enrolamento TOTP');
-need(mfa,/auth\.mfa\.challenge\(\{factorId/,'MFA: deve criar challenge');
-need(mfa,/auth\.mfa\.verify\(\{factorId,challengeId:challenge\.id,code/,'MFA: deve verificar challenge com código');
-need(mfa,/\['owner','manager'\]/,'MFA: somente perfis privilegiados devem ser obrigados nesta tela');
-need(mfa,/safeReturn\(\)/,'MFA: retorno precisa ser sanitizado');
-need(mfa,/from\(['"]padoka_staff_users['"]\)/,'MFA: autorização deve continuar baseada no staff isolado da PADOKA');
-
-need(nav,/privilegedMfaRoles=new Set\(\['owner','manager'\]\)/,'Navegação: owner/manager precisam de MFA');
-need(nav,/getAuthenticatorAssuranceLevel\(\)/,'Navegação: deve validar AAL antes de liberar');
-need(nav,/location\.replace\('mfa\.html\?return='/,'Navegação: deve redirecionar fail-closed para MFA');
-
-need(internal,/privilegedMfaReady/,'Login interno: precisa validar MFA antes de abrir painel');
-need(internal,/currentLevel===['"]aal2['"]/,'Login interno: precisa exigir AAL2');
-need(internal,/mfa\.html\?return=internal\.html/,'Login interno: deve redirecionar para MFA');
-
-need(migration,/auth\.jwt\(\)->>['"]aal['"]/,'Banco: trigger deve validar claim aal');
-need(migration,/v_role in \('owner','manager'\)/,'Banco: exigência deve atingir owner/manager');
-for(const table of ['padoka_staff_users','padoka_products','padoka_settings','padoka_sales','padoka_orders']){
-  if(!migration.includes(table))fail('Banco: proteção MFA ausente em '+table);
-}
-
-if(!process.exitCode)console.log('MFA security audit: OK');
+if(!process.exitCode)console.log('MFA security audit: retired TOTP flow OK');
