@@ -4,7 +4,7 @@
   "short_name": "ADM Padoka",
   "description": "Aplicativo administrativo separado da PADOKA DA VILLA para pedidos, PDV, produtos e operação interna.",
   "lang": "pt-BR",
-  "start_url": "./internal.html?app=adm-padoka",
+  "start_url": "./internal.html?app=adm-padoka&v=2",
   "scope": "./",
   "display": "standalone",
   "display_override": [
