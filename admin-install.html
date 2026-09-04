@@ -3,32 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-bJxweWOOcgt4+Ys5A56aR+bqUby16zDf+wptI7rXvIA='; style-src 'self' 'sha256-rlyP5V++egFOpKlWG9Yx5w8Y0BQFbsbWjAJUob/Aokk='; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'sha256-rlyP5V++egFOpKlWG9Yx5w8Y0BQFbsbWjAJUob/Aokk='; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self';">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="theme-color" content="#15120f">
-<meta name="application-name" content="PADOKA ADM">
+<meta name="application-name" content="ADM Padoka">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="PADOKA ADM">
-<title>PADOKA ADM | Instalar</title>
+<meta name="apple-mobile-web-app-title" content="ADM Padoka">
+<title>ADM Padoka | Instalar</title>
 <link rel="manifest" href="admin-manifest.webmanifest">
 <link rel="icon" href="assets/icon-192.png">
 <link rel="apple-touch-icon" href="assets/icon-192.png">
+<script src="assets/frame-guard.js"></script>
 <style>:root{--bg:#15120f;--fg:#fffaf4;--accent:#c89460;--accent-soft:color-mix(in srgb,#c89460 18%,#15120f)}*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}body{min-height:100dvh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at top,var(--accent-soft),var(--bg) 48%);color:var(--fg)}.card{width:min(100%,470px);border:1px solid color-mix(in srgb,var(--fg) 18%,transparent);border-radius:28px;padding:28px;background:color-mix(in srgb,var(--bg) 86%,white 14%);box-shadow:0 28px 80px #0005}.brand{display:flex;align-items:center;gap:13px}.brand img{width:58px;height:58px;object-fit:contain;border-radius:15px}.brand strong{display:block;font-size:1.08rem}.brand span{display:block;margin-top:3px;opacity:.68;font-size:.8rem}.badge{display:inline-flex;margin-top:24px;padding:7px 10px;border-radius:999px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);font-size:.72rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase}h1{margin:12px 0 8px;font-size:clamp(2rem,8vw,2.7rem);line-height:1.02}p{margin:0;opacity:.72;line-height:1.55}.actions{display:grid;gap:9px;margin-top:22px}button,a{min-height:48px;border-radius:14px;padding:12px 15px;font:inherit;font-weight:900;text-align:center;text-decoration:none;display:grid;place-items:center}button{border:0;background:var(--accent);color:white;cursor:pointer}button[hidden]{display:none}a{border:1px solid color-mix(in srgb,var(--fg) 18%,transparent);color:var(--fg);background:transparent}.status{margin-top:14px;min-height:42px;font-size:.82rem;opacity:.72}.secure{margin-top:18px;padding-top:15px;border-top:1px solid color-mix(in srgb,var(--fg) 14%,transparent);font-size:.72rem;opacity:.58}</style>
 </head>
-<body data-home="internal.html" data-sw="./service-worker.js" data-scope="./">
+<body>
 <main class="card">
-<div class="brand"><img src="assets/icon-192.png" alt=""><div><strong>PADOKA DA VILLA</strong><span>Aplicativo administrativo</span></div></div>
+<div class="brand"><img src="assets/icon-192.png" alt=""><div><strong>ADM Padoka</strong><span>Aplicativo administrativo separado</span></div></div>
 <span class="badge">ADM • acesso restrito</span>
-<h1>Instale o painel ADM</h1>
-<p>Este aplicativo é separado do app usado pelos clientes e abre direto na administração da PADOKA.</p>
+<h1>Instale o ADM Padoka</h1>
+<p>Este é um aplicativo diferente do PADOKA usado pelos clientes. Ele abre direto na administração e pode ficar instalado junto com o aplicativo do cliente.</p>
 <div class="actions">
-<button id="install" type="button">Instalar app ADM</button>
+<button id="install" type="button">Instalar ADM Padoka</button>
 <a href="internal.html">Abrir painel agora</a>
 </div>
-<div class="status" id="status" role="status" aria-live="polite">Toque em “Instalar app ADM”. Se o Chrome ainda estiver preparando a instalação, eu mostro o caminho pelo menu do navegador.</div>
-<div class="secure">Instalar o aplicativo não libera a administração: login, permissões e validações internas continuam obrigatórios.</div>
+<div class="status" id="status" role="status" aria-live="polite">Toque em “Instalar ADM Padoka”.</div>
+<div class="secure">A instalação não libera acesso ao painel: login, permissões e validações internas continuam obrigatórios.</div>
 </main>
-<script>(()=>{'use strict';const b=document.body,install=document.getElementById('install'),status=document.getElementById('status'),home=b.dataset.home,sw=b.dataset.sw,scope=b.dataset.scope;let promptEvent=null;const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;const ios=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);if('serviceWorker'in navigator){addEventListener('load',async()=>{try{await navigator.serviceWorker.register(sw,{scope,updateViaCache:'none'});await navigator.serviceWorker.ready}catch{}})}addEventListener('beforeinstallprompt',e=>{e.preventDefault();promptEvent=e;status.textContent='Pronto. Toque em “Instalar app ADM” para abrir a instalação do Android.'});install.addEventListener('click',async()=>{if(promptEvent){const e=promptEvent;promptEvent=null;await e.prompt();try{const c=await e.userChoice;if(c?.outcome==='accepted')status.textContent='Aplicativo ADM instalado.';else status.textContent='Instalação cancelada. Você pode tentar novamente pelo menu do Chrome.'}catch{}return}status.textContent=ios()?'No Safari: Compartilhar → Adicionar à Tela de Início.':'No Chrome: toque em ⋮ → Instalar app. Se aparecer “Adicionar à tela inicial”, use essa opção.'});addEventListener('appinstalled',()=>{status.textContent='Aplicativo ADM instalado com sucesso.'});if(standalone())location.replace(home)})()</script>
 </body>
 </html>
