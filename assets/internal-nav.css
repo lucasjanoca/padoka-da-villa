@@ -19,3 +19,86 @@
 @media(max-width:390px){
   .tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important}.scanner .scan-btn,.scanner .camera-btn{font-size:12px!important}.products{gap:8px!important}
 }
+
+/* 2026-09-04 — camera modal hardening on narrow Android viewports */
+.camera-modal{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))!important;
+}
+.camera-modal.hidden{display:none!important}
+.camera-card{
+  width:100%!important;
+  max-width:620px!important;
+  min-width:0!important;
+  max-height:calc(100dvh - 20px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  margin:0 auto!important;
+}
+.camera-head{
+  position:sticky!important;
+  top:0!important;
+  z-index:8!important;
+  background:#17130f!important;
+  padding:4px 0 10px!important;
+}
+.camera-close{
+  display:grid!important;
+  place-items:center!important;
+  flex:0 0 auto!important;
+  position:relative!important;
+  z-index:10!important;
+}
+#barcodeReader{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+#barcodeReader>div,#barcodeReader video,#barcodeReader canvas,#barcodeReader img{
+  max-width:100%!important;
+  min-width:0!important;
+}
+#barcodeReader video,#barcodeReader canvas{
+  width:100%!important;
+  height:auto!important;
+  object-fit:cover!important;
+}
+
+/* Keep the ADM installer obvious until the admin PWA is installed. */
+.padoka-install-admin[hidden]{display:none!important}
+.padoka-drawer:not(.open) .padoka-install-admin:not([hidden]){
+  position:fixed!important;
+  right:max(12px,env(safe-area-inset-right))!important;
+  bottom:max(14px,env(safe-area-inset-bottom))!important;
+  width:auto!important;
+  min-width:158px!important;
+  min-height:46px!important;
+  margin:0!important;
+  padding:0 16px!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  border-radius:999px!important;
+  background:#15120f!important;
+  color:#fff!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.28)!important;
+  z-index:96!important;
+  font-size:11px!important;
+  letter-spacing:.01em!important;
+}
+.padoka-drawer.open .padoka-install-admin:not([hidden]){
+  position:static!important;
+  width:100%!important;
+}
+@media(max-width:700px){
+  .camera-modal{padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important}
+  .camera-card{max-height:calc(100dvh - 16px)!important;border-radius:18px!important;padding:10px!important}
+  #barcodeReader{min-height:210px!important;max-height:54dvh!important}
+  #barcodeReader video,#barcodeReader canvas{max-height:54dvh!important}
+  .camera-status{font-size:10px!important}
+  .camera-tip{font-size:9px!important}
+  .padoka-drawer:not(.open) .padoka-install-admin:not([hidden]){right:max(10px,env(safe-area-inset-right))!important;bottom:max(12px,env(safe-area-inset-bottom))!important;min-height:44px!important;min-width:150px!important}
+}
