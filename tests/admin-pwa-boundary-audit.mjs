@@ -7,6 +7,7 @@ const ok = (condition, message) => { if (!condition) failures.push(message); };
 const installer = read('admin-install.html');
 const manifestRaw = read('admin-manifest.webmanifest');
 const serviceWorker = read('service-worker.js');
+const frameGuard = read('assets/frame-guard.js');
 const publicPages = ['index.html','produto.html','conta.html','pagamento.html','acompanhamento.html','club.html'];
 const privatePages = ['internal.html','pedidos.html','pdv.html','gestao.html','mfa.html','enterprise.html','club-admin.html'];
 
@@ -20,19 +21,24 @@ try {
 if (manifest) {
   ok(manifest.id === './adm-padoka', 'admin manifest: id dedicado do ADM Padoka ausente');
   ok(manifest.name === 'ADM Padoka', 'admin manifest: nome ADM Padoka ausente');
-  ok(manifest.start_url === './internal.html?app=adm-padoka', 'admin manifest: start_url dedicado do ADM Padoka ausente');
+  ok(manifest.start_url === './internal.html?app=adm-padoka&v=2', 'admin manifest: start_url dedicado/atualizado do ADM Padoka ausente');
   ok(manifest.scope === './', 'admin manifest: scope inesperado');
   ok(manifest.display === 'standalone', 'admin manifest: display standalone ausente');
 }
 
 ok(installer.includes('rel="manifest" href="admin-manifest.webmanifest"'), 'admin installer: manifesto ADM não está vinculado');
 ok(installer.includes('data-home="internal.html"'), 'admin installer: destino interno esperado ausente');
+ok(installer.includes('internal.html?app=adm-padoka&amp;v=2'), 'admin installer: abertura atualizada do painel ausente');
 ok(installer.includes('form-action \'none\''), 'admin installer: CSP não bloqueia envio de formulários');
 ok(installer.includes('frame-ancestors \'none\''), 'admin installer: CSP não bloqueia embedding');
 ok(installer.includes('connect-src \'self\''), 'admin installer: CSP permite conexões externas inesperadas');
 ok(installer.includes('noindex,nofollow,noarchive'), 'admin installer: proteção contra indexação ausente');
 ok(!/service_role|sb_secret_|client_secret/i.test(installer + manifestRaw), 'admin PWA: segredo/credencial administrativa detectada');
 ok(!/supabase\.co|auth\/v1|rest\/v1|functions\/v1/i.test(installer), 'admin installer: não deve consultar backend nem autenticação diretamente');
+
+ok(!frameGuard.includes('new MutationObserver'), 'admin UI: observador de DOM pode recriar loop de mutações e travar campos/botões');
+ok(frameGuard.includes("button.textContent !== label"), 'admin UI: atualização idempotente do botão de instalação ausente');
+ok(frameGuard.includes('package=com.android.chrome'), 'admin UI: saída do app de clientes para instalar o ADM no Chrome ausente');
 
 for (const page of publicPages) {
   const source = read(page);
