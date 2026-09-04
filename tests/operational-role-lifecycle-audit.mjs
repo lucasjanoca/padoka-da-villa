@@ -48,6 +48,19 @@ assert.ok(sync.includes("clearOperationalState('Validando novamente o acesso int
 assert.ok(sync.includes('if(channel&&sb){try{sb.removeChannel(channel)}catch{}}channel=null;'),
   'Troca de conta deve remover o canal Realtime operacional anterior.');
 
+assert.match(sync,
+  /async function loadScoped\(.*?if\(!await sessionStillMatches\(expectedUserId,epoch\)\)return false;.*?Promise\.all\(.*?if\(!await sessionStillMatches\(expectedUserId,epoch\)\)return false;.*?inventory=.*?render\(\);return true;/s,
+  'Leituras operacionais devem confirmar a mesma sessão antes da consulta e antes de aplicar dados na UI.');
+assert.match(sync,
+  /async function reconcilePendingAdjustment\(.*?if\(!await sessionStillMatches\(expectedUserId,epoch\)\)return false;.*?sb\.rpc\('padoka_adjust_inventory_once'.*?if\(!await sessionStillMatches\(expectedUserId,epoch\)\)return false;/s,
+  'Reconciliação idempotente de estoque deve revalidar a identidade antes e depois da RPC.');
+assert.match(sync,
+  /async function saveMeta\(.*?if\(!await sessionStillMatches\(userId,epoch\)\)return;.*?sb\.rpc\('padoka_update_inventory_metadata'.*?if\(!await sessionStillMatches\(userId,epoch\)\)return;/s,
+  'Metadados de estoque só podem ser aplicados após revalidação pré e pós-RPC da mesma identidade.');
+assert.match(sync,
+  /async function adjustQty\(.*?if\(!await sessionStillMatches\(userId,epoch\)\)return;.*?sb\.rpc\('padoka_adjust_inventory_once'.*?if\(!await sessionStillMatches\(userId,epoch\)\)return;/s,
+  'Ajustes de saldo devem revalidar a identidade antes e depois da RPC idempotente.');
+
 for (const forbidden of ['service_role', 'sb_secret_', 'auth.users']) {
   assert.ok(!nav.toLowerCase().includes(forbidden) && !sync.toLowerCase().includes(forbidden),
     `Runtime interno contém referência proibida: ${forbidden}`);
