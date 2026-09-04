@@ -2,6 +2,30 @@
   const root=document.getElementById('padokaInternalNav');
   if(!root)return;
 
+  // O painel interno usa um manifesto próprio para instalar como aplicativo
+  // separado do aplicativo público da PADOKA.
+  if(!document.querySelector('link[rel="manifest"][href*="admin-manifest"]')){
+    const manifest=document.createElement('link');
+    manifest.rel='manifest';
+    manifest.href='admin-manifest.webmanifest';
+    document.head.appendChild(manifest);
+  }
+  if(!document.querySelector('meta[name="application-name"]')){
+    const appName=document.createElement('meta');
+    appName.name='application-name';
+    appName.content='PADOKA ADM';
+    document.head.appendChild(appName);
+  }
+  if(!document.querySelector('link[rel="apple-touch-icon"]')){
+    const icon=document.createElement('link');
+    icon.rel='apple-touch-icon';
+    icon.href='assets/icon-192.png';
+    document.head.appendChild(icon);
+  }
+  if('serviceWorker'in navigator){
+    addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{scope:'./',updateViaCache:'none'}).catch(error=>console.warn('PADOKA ADM service worker:',error)),{once:true});
+  }
+
   const PADOKA_SUPABASE_ORIGIN='https://yncspxfsvlqdnodlsosb.supabase.co';
   const supabaseLib=window.supabase;
   if(supabaseLib?.createClient&&!supabaseLib.__padokaBackendPinned){
@@ -78,7 +102,7 @@
   document.documentElement.classList.add('padoka-staff-pending');
   if(targetNeedsRole)document.documentElement.classList.add('padoka-role-pending');
 
-  root.innerHTML=`<header class="padoka-topbar"><div class="padoka-topbar-inner"><button class="padoka-menu-btn" id="padokaMenuBtn" type="button" aria-label="Abrir menu" aria-expanded="false">☰</button><a class="padoka-brand-link" href="index.html#cardapio" aria-label="Ir para o cardápio"><img src="assets/logo-padoka.svg" alt="PADOKA DA VILLA"><span class="padoka-brand-copy"><strong>PADOKA DA VILLA</strong><small>${subtitle}</small></span></a><div class="padoka-top-actions"><a class="padoka-cardapio-link" href="index.html#cardapio">Cardápio</a></div></div></header><div class="padoka-nav-overlay" id="padokaNavOverlay"></div><aside class="padoka-drawer" id="padokaDrawer" aria-hidden="true"><div class="padoka-drawer-head"><img src="assets/logo-padoka.svg" alt=""><div><strong>PADOKA DA VILLA</strong><small>NAVEGAÇÃO INTERNA</small></div><button class="padoka-close-btn" id="padokaCloseBtn" type="button" aria-label="Fechar menu">×</button></div><nav class="padoka-nav-list">${items.map(([href,id,ico,label])=>`<a href="${href}" data-padoka-module="${id}" ${roleAccess[id]?'hidden':''} class="${current===id?'active':''}"><span class="nav-ico">${ico}</span>${label}</a>`).join('')}</nav><div class="padoka-drawer-foot"><a href="index.html#cardapio">Abrir cardápio do cliente</a><button type="button" id="padokaNavLogout">Sair da conta interna</button></div></aside>`;
+  root.innerHTML=`<header class="padoka-topbar"><div class="padoka-topbar-inner"><button class="padoka-menu-btn" id="padokaMenuBtn" type="button" aria-label="Abrir menu" aria-expanded="false">☰</button><a class="padoka-brand-link" href="index.html#cardapio" aria-label="Ir para o cardápio"><img src="assets/logo-padoka.svg" alt="PADOKA DA VILLA"><span class="padoka-brand-copy"><strong>PADOKA DA VILLA</strong><small>${subtitle}</small></span></a><div class="padoka-top-actions"><a class="padoka-cardapio-link" href="index.html#cardapio">Cardápio</a></div></div></header><div class="padoka-nav-overlay" id="padokaNavOverlay"></div><aside class="padoka-drawer" id="padokaDrawer" aria-hidden="true"><div class="padoka-drawer-head"><img src="assets/logo-padoka.svg" alt=""><div><strong>PADOKA DA VILLA</strong><small>NAVEGAÇÃO INTERNA</small></div><button class="padoka-close-btn" id="padokaCloseBtn" type="button" aria-label="Fechar menu">×</button></div><nav class="padoka-nav-list">${items.map(([href,id,ico,label])=>`<a href="${href}" data-padoka-module="${id}" ${roleAccess[id]?'hidden':''} class="${current===id?'active':''}"><span class="nav-ico">${ico}</span>${label}</a>`).join('')}</nav><div class="padoka-drawer-foot"><button type="button" class="padoka-install-admin" id="padokaInstallAdmin">Instalar app ADM</button><a href="index.html#cardapio">Abrir cardápio do cliente</a><button type="button" id="padokaNavLogout">Sair da conta interna</button></div></aside>`;
 
   const drawer=document.getElementById('padokaDrawer');
   const overlay=document.getElementById('padokaNavOverlay');
@@ -98,6 +122,32 @@
   document.getElementById('padokaNavLogout').onclick=async()=>{
     try{if(window.padokaSupabase)await window.padokaSupabase.auth.signOut()}catch{}
     location.href='internal.html';
+  };
+
+  const installAdminBtn=document.getElementById('padokaInstallAdmin');
+  let installAdminPrompt=null;
+  const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  if(standalone())installAdminBtn.hidden=true;
+  addEventListener('beforeinstallprompt',event=>{
+    event.preventDefault();
+    installAdminPrompt=event;
+    installAdminBtn.hidden=false;
+    installAdminBtn.textContent='Instalar app ADM';
+  });
+  addEventListener('appinstalled',()=>{
+    installAdminPrompt=null;
+    installAdminBtn.textContent='App ADM instalado';
+    setTimeout(()=>{installAdminBtn.hidden=true},1500);
+  });
+  installAdminBtn.onclick=async()=>{
+    if(installAdminPrompt){
+      const prompt=installAdminPrompt;
+      installAdminPrompt=null;
+      await prompt.prompt();
+      try{await prompt.userChoice}catch{}
+      return;
+    }
+    location.href='admin-install.html';
   };
 
   const moduleForHref=href=>{
