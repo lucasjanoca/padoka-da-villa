@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-R53VYkldA/7uHnTR6TiXVLUI6QFFlqSm8u/OJ+ghM7s='; style-src 'self' 'sha256-rlyP5V++egFOpKlWG9Yx5w8Y0BQFbsbWjAJUob/Aokk='; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'self' 'sha256-7rRiyhL8Vq82oA3H5M2aM8d3ZfsnDuVkENuVx8+e3NA='; style-src 'self' 'sha256-rlyP5V++egFOpKlWG9Yx5w8Y0BQFbsbWjAJUob/Aokk='; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self';">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="theme-color" content="#15120f">
 <meta name="application-name" content="PADOKA ADM">
@@ -21,14 +21,14 @@
 <div class="brand"><img src="assets/icon-192.png" alt=""><div><strong>PADOKA DA VILLA</strong><span>Aplicativo administrativo</span></div></div>
 <span class="badge">ADM • acesso restrito</span>
 <h1>Instale o painel ADM</h1>
-<p>Crie um aplicativo separado do site público para abrir a administração mais rápido, em modo de aplicativo.</p>
+<p>Este aplicativo é separado do app usado pelos clientes e abre direto na administração da PADOKA.</p>
 <div class="actions">
-<button id="install" type="button" hidden>Instalar app ADM</button>
+<button id="install" type="button">Instalar app ADM</button>
 <a href="internal.html">Abrir painel agora</a>
 </div>
-<div class="status" id="status" role="status" aria-live="polite">Preparando a instalação…</div>
-<div class="secure">O aplicativo não libera acesso administrativo: login, permissões e validações do painel continuam obrigatórios. As telas privadas não são preparadas para uso offline.</div>
+<div class="status" id="status" role="status" aria-live="polite">Toque em “Instalar app ADM”. Se o Chrome ainda estiver preparando a instalação, eu mostro o caminho pelo menu do navegador.</div>
+<div class="secure">Instalar o aplicativo não libera a administração: login, permissões e validações internas continuam obrigatórios.</div>
 </main>
-<script>(()=>{'use strict';const b=document.body,install=document.getElementById('install'),status=document.getElementById('status'),home=b.dataset.home,sw=b.dataset.sw,scope=b.dataset.scope;let promptEvent=null;const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;const ios=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);if('serviceWorker'in navigator){addEventListener('load',()=>navigator.serviceWorker.register(sw,{scope,updateViaCache:'none'}).catch(()=>{}))}addEventListener('beforeinstallprompt',e=>{e.preventDefault();promptEvent=e;install.hidden=false;status.textContent='Pronto para instalar o aplicativo ADM neste dispositivo.'});install.addEventListener('click',async()=>{if(promptEvent){const e=promptEvent;promptEvent=null;await e.prompt();try{const c=await e.userChoice;if(c?.outcome==='accepted')status.textContent='Aplicativo ADM instalado.'}catch{}return}status.textContent=ios()?'No Safari, toque em Compartilhar e depois em Adicionar à Tela de Início.':'No menu do navegador, escolha Instalar app ou Adicionar à tela inicial.'});addEventListener('appinstalled',()=>{status.textContent='Aplicativo ADM instalado com sucesso.'});if(standalone())location.replace(home);else setTimeout(()=>{if(!promptEvent)install.hidden=false},1200)})();</script>
+<script>(()=>{'use strict';const b=document.body,install=document.getElementById('install'),status=document.getElementById('status'),home=b.dataset.home,sw=b.dataset.sw,scope=b.dataset.scope;let promptEvent=null;const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;const ios=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);if('serviceWorker'in navigator){addEventListener('load',async()=>{try{await navigator.serviceWorker.register(sw,{scope,updateViaCache:'none'});await navigator.serviceWorker.ready}catch{}})}addEventListener('beforeinstallprompt',e=>{e.preventDefault();promptEvent=e;status.textContent='Pronto. Toque em “Instalar app ADM” para abrir a instalação do Android.'});install.addEventListener('click',async()=>{if(promptEvent){const e=promptEvent;promptEvent=null;await e.prompt();try{const c=await e.userChoice;if(c?.outcome==='accepted')status.textContent='Aplicativo ADM instalado.';else status.textContent='Instalação cancelada. Você pode tentar novamente pelo menu do Chrome.'}catch{}return}status.textContent=ios()?'No Safari: Compartilhar → Adicionar à Tela de Início.':'No Chrome: toque em ⋮ → Instalar app. Se aparecer “Adicionar à tela inicial”, use essa opção.'});addEventListener('appinstalled',()=>{status.textContent='Aplicativo ADM instalado com sucesso.'});if(standalone())location.replace(home)})();</script>
 </body>
 </html>
