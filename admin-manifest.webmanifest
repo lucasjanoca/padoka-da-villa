@@ -1,10 +1,10 @@
 {
-  "id": "./padoka-admin",
-  "name": "PADOKA ADM",
-  "short_name": "PADOKA ADM",
+  "id": "./adm-padoka",
+  "name": "ADM Padoka",
+  "short_name": "ADM Padoka",
   "description": "Aplicativo administrativo separado da PADOKA DA VILLA para pedidos, PDV, produtos e operação interna.",
   "lang": "pt-BR",
-  "start_url": "./internal.html",
+  "start_url": "./internal.html?app=adm-padoka",
   "scope": "./",
   "display": "standalone",
   "display_override": [
