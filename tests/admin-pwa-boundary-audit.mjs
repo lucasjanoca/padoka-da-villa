@@ -18,8 +18,9 @@ try {
 }
 
 if (manifest) {
-  ok(manifest.id === './padoka-admin', 'admin manifest: id dedicado do ADM ausente');
-  ok(manifest.start_url === './internal.html', 'admin manifest: start_url não aponta exclusivamente para internal.html');
+  ok(manifest.id === './adm-padoka', 'admin manifest: id dedicado do ADM Padoka ausente');
+  ok(manifest.name === 'ADM Padoka', 'admin manifest: nome ADM Padoka ausente');
+  ok(manifest.start_url === './internal.html?app=adm-padoka', 'admin manifest: start_url dedicado do ADM Padoka ausente');
   ok(manifest.scope === './', 'admin manifest: scope inesperado');
   ok(manifest.display === 'standalone', 'admin manifest: display standalone ausente');
 }
