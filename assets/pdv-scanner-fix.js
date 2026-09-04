@@ -116,7 +116,7 @@
       const formats=typeof BarcodeDetector.getSupportedFormats==='function'?await BarcodeDetector.getSupportedFormats():[];
       const wanted=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','codabar','qr_code'];const supported=formats.length?wanted.filter(x=>formats.includes(x)):wanted;
       if(!supported.length)return false;nativeDetector=new BarcodeDetector({formats:supported});nativeStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
-      const reader=document.getElementById('barcodeReader');reader.innerHTML='';nativeVideo=document.createElement('video');nativeVideo.autoplay=true;nativeVideo.muted=true;nativeVideo.playsInline=true;nativeVideo.setAttribute('playsinline','');nativeVideo.style.width='100%';nativeVideo.style.height='100%';nativeVideo.style.minHeight='230px';nativeVideo.style.objectFit='cover';nativeVideo.srcObject=nativeStream;reader.appendChild(nativeVideo);await nativeVideo.play();setCameraStatus('Câmera aberta. Aponte para um código de barras.','ok');nativeCameraLoop();return true
+      const reader=document.getElementById('barcodeReader');reader.innerHTML='';nativeVideo=document.createElement('video');nativeVideo.autoplay=true;nativeVideo.muted=true;nativeVideo.playsInline=true;nativeVideo.setAttribute('playsinline','');nativeVideo.srcObject=nativeStream;reader.appendChild(nativeVideo);await nativeVideo.play();setCameraStatus('Câmera aberta. Aponte para um código de barras.','ok');nativeCameraLoop();return true
     }catch(error){stopNativeCamera();throw error}
   }
 
