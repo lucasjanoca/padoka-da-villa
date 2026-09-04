@@ -44,7 +44,7 @@ for(const page of publicPages){
   need(/assets\/padoka-pwa\.js(?:\?v=\d+)?/.test(source),page+': cliente PWA ausente');
 }
 
-need(sw.includes("const CACHE_NAME = 'padoka-pwa-v8'"),'Service Worker: cache v8 ausente');
+need(sw.includes("const CACHE_NAME = 'padoka-pwa-v9'"),'Service Worker: cache v9 ausente');
 need(sw.includes('navigationPreload.enable()'),'Service Worker: navigation preload ausente');
 need(sw.includes('event.waitUntil(refresh)'),'Service Worker: stale-while-revalidate ausente');
 need(sw.includes('isCacheableRemoteRequest'),'Service Worker: cache remoto público controlado ausente');
