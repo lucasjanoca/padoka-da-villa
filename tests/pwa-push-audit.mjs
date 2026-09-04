@@ -19,7 +19,7 @@ need(!pwa.includes('installDismissedRecently'), 'PWA: cooldown de instalação r
 need(pwa.includes('pushManager.subscribe'), 'PWA: assinatura Web Push ausente');
 need(pwa.includes("Notification.requestPermission()"), 'PWA: pedido explícito de permissão push ausente');
 
-need(sw.includes("const CACHE_NAME = 'padoka-pwa-v8'"), 'Service Worker: versão de cache atual ausente');
+need(sw.includes("const CACHE_NAME = 'padoka-pwa-v9'"), 'Service Worker: versão de cache atual ausente');
 need(sw.includes("addEventListener('push'"), 'Service Worker: listener push ausente');
 need(sw.includes("addEventListener('notificationclick'"), 'Service Worker: clique em notificação ausente');
 
