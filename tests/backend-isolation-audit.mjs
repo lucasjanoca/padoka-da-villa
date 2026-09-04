@@ -40,8 +40,9 @@ ok(!/const url=cfg\.url\s*\+/.test(featureFlags), 'assets/feature-flags.js: aces
 
 // Migrations may document forbidden destinations (for example, "não aplicar no
 // InfoTech.io") and may name PostgreSQL roles. What they must not do is embed a
-// Supabase URL for another project or attach a PADOKA lifecycle trigger globally
-// to auth.users. Customer onboarding must remain explicit inside the PADOKA flow.
+// Supabase URL for another project, attach a PADOKA lifecycle trigger globally to
+// auth.users, or create generic public objects that can collide with other clients
+// in the shared Supabase project. PADOKA-owned public objects must keep padoka_.
 for (const rel of migrationFiles) {
   const source = fs.readFileSync(new URL(rel, root), 'utf8');
   for (const match of source.matchAll(/https:\/\/([a-z0-9]{20})\.supabase\.co/gi)) {
@@ -53,6 +54,14 @@ for (const rel of migrationFiles) {
     !/create\s+(?:or\s+replace\s+)?trigger\b[\s\S]{0,1200}?\bon\s+auth\.users\b/i.test(executableSql),
     `${rel}: trigger global em auth.users é proibido; onboarding PADOKA deve permanecer explícito`
   );
+
+  const publicObjectPattern = /create\s+(?:or\s+replace\s+)?(?:table|function|view|materialized\s+view|type|sequence)\s+(?:if\s+not\s+exists\s+)?public\.([a-z_][a-z0-9_$]*)/gi;
+  for (const match of executableSql.matchAll(publicObjectPattern)) {
+    ok(
+      match[1].toLowerCase().startsWith('padoka_'),
+      `${rel}: objeto public.${match[1]} viola o isolamento; objetos PADOKA devem usar prefixo padoka_`
+    );
+  }
 }
 
 const auth = fs.readFileSync(new URL('AUTH_STATUS.md', root), 'utf8');
