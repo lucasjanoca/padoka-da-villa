@@ -2,9 +2,9 @@
   "id": "./padoka-admin",
   "name": "PADOKA ADM",
   "short_name": "PADOKA ADM",
-  "description": "Aplicativo administrativo de PADOKA DA VILLA.",
+  "description": "Aplicativo administrativo separado da PADOKA DA VILLA para pedidos, PDV, produtos e operação interna.",
   "lang": "pt-BR",
-  "start_url": "./internal.html",
+  "start_url": "./internal.html?app=admin",
   "scope": "./",
   "display": "standalone",
   "display_override": [
@@ -38,6 +38,26 @@
     "business",
     "food",
     "productivity"
+  ],
+  "shortcuts": [
+    {
+      "name": "Caixa / PDV",
+      "short_name": "PDV",
+      "url": "./pdv.html?app=admin",
+      "icons": [{"src":"assets/icon-192.png","sizes":"192x192","type":"image/png"}]
+    },
+    {
+      "name": "Pedidos",
+      "short_name": "Pedidos",
+      "url": "./pedidos.html?app=admin",
+      "icons": [{"src":"assets/icon-192.png","sizes":"192x192","type":"image/png"}]
+    },
+    {
+      "name": "Produtos",
+      "short_name": "Produtos",
+      "url": "./gestao.html?tab=produtos&app=admin",
+      "icons": [{"src":"assets/icon-192.png","sizes":"192x192","type":"image/png"}]
+    }
   ],
   "prefer_related_applications": false
 }
