@@ -1,7 +1,9 @@
 (() => {
   'use strict';
 
-  if (window.top !== window.self) {
+  if (window.top === window.self) {
+    // Documento de nível superior: continua com o bootstrap normal abaixo.
+  } else {
     document.documentElement.classList.add('padoka-framed');
     try { window.top.location = window.location.href; } catch {}
     return;
