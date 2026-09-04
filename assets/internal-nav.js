@@ -10,7 +10,16 @@
       let origin='';
       try{origin=new URL(String(url||'')).origin}catch{}
       if(origin!==PADOKA_SUPABASE_ORIGIN)throw new Error('PADOKA backend mismatch');
-      return originalCreateClient(PADOKA_SUPABASE_ORIGIN,key,options);
+      const client=originalCreateClient(PADOKA_SUPABASE_ORIGIN,key,options);
+      // MFA foi removido da PADOKA por decisão operacional. A autorização por
+      // usuário, função e sessão continua sendo validada normalmente.
+      if(client?.auth?.mfa?.getAuthenticatorAssuranceLevel){
+        client.auth.mfa.getAuthenticatorAssuranceLevel=async()=>({
+          data:{currentLevel:'aal2',nextLevel:'aal2'},
+          error:null
+        });
+      }
+      return client;
     };
     Object.defineProperty(supabaseLib,'__padokaBackendPinned',{value:true,configurable:false,enumerable:false,writable:false});
   }
