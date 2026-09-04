@@ -37,6 +37,14 @@ for (const page of publicPages) {
   const source = read(page);
   ok(!/(?:href|action|formaction)=["'][^"']*admin-install\.html(?:[?#][^"']*)?["']/i.test(source), `${page}: anuncia instalador administrativo`);
   ok(!/rel=["']manifest["'][^>]*href=["'][^"']*admin-manifest\.webmanifest/i.test(source), `${page}: usa manifesto administrativo`);
+
+  for (const privatePage of privatePages) {
+    const escaped = privatePage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const directNavigation = new RegExp(`(?:href|action|formaction)=["'][^"']*(?:^|\\/|\\.\\/)${escaped}(?:[?#][^"']*)?["']`, 'i');
+    ok(!directNavigation.test(source), `${page}: expõe navegação pública direta para ${privatePage}`);
+  }
+
+  ok(!/<script\b[^>]*\bsrc=["'][^"']*assets\/(?:internal-nav|admin-dashboard-live|operational-sync|loss-registration|pdv-idempotency|staff-management|reporting|settings-sync)\.js(?:[?#][^"']*)?["'][^>]*>/i.test(source), `${page}: carrega runtime administrativo em página pública`);
 }
 
 for (const page of privatePages) {
