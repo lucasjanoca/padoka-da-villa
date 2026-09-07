@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -13,13 +14,15 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-import { BaseLoggger, Html5QrcodeResultFactory, Html5QrcodeErrorFactory, Html5QrcodeSupportedFormats, isValidHtml5QrcodeSupportedFormats, Html5QrcodeConstants, isNullOrUndefined } from "./core";
-import { Html5QrcodeStrings } from "./strings";
-import { VideoConstraintsUtil } from "./utils";
-import { Html5QrcodeShim } from "./code-decoder";
-import { CameraFactory } from "./camera/factories";
-import { CameraRetriever } from "./camera/retriever";
-import { StateManagerFactory, Html5QrcodeScannerState } from "./state-manager";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Html5Qrcode = void 0;
+var core_1 = require("./core");
+var strings_1 = require("./strings");
+var utils_1 = require("./utils");
+var code_decoder_1 = require("./code-decoder");
+var factories_1 = require("./camera/factories");
+var retriever_1 = require("./camera/retriever");
+var state_manager_1 = require("./state-manager");
 var Constants = (function (_super) {
     __extends(Constants, _super);
     function Constants() {
@@ -39,7 +42,7 @@ var Constants = (function (_super) {
     Constants.BORDER_SHADER_DEFAULT_COLOR = "#ffffff";
     Constants.BORDER_SHADER_MATCH_COLOR = "rgb(90, 193, 56)";
     return Constants;
-}(Html5QrcodeConstants));
+}(core_1.Html5QrcodeConstants));
 var InternalHtml5QrcodeConfig = (function () {
     function InternalHtml5QrcodeConfig(config, logger) {
         this.logger = logger;
@@ -62,10 +65,10 @@ var InternalHtml5QrcodeConfig = (function () {
             this.logger.logError("Empty videoConstraints", true);
             return false;
         }
-        return VideoConstraintsUtil.isMediaStreamConstraintsValid(this.videoConstraints, this.logger);
+        return utils_1.VideoConstraintsUtil.isMediaStreamConstraintsValid(this.videoConstraints, this.logger);
     };
     InternalHtml5QrcodeConfig.prototype.isShadedBoxEnabled = function () {
-        return !isNullOrUndefined(this.qrbox);
+        return !(0, core_1.isNullOrUndefined)(this.qrbox);
     };
     InternalHtml5QrcodeConfig.create = function (config, logger) {
         return new InternalHtml5QrcodeConfig(config, logger);
@@ -100,11 +103,11 @@ var Html5Qrcode = (function () {
             this.verbose = configObject.verbose === true;
             experimentalFeatureConfig = configObject.experimentalFeatures;
         }
-        this.logger = new BaseLoggger(this.verbose);
-        this.qrcode = new Html5QrcodeShim(this.getSupportedFormats(configOrVerbosityFlag), this.getUseBarCodeDetectorIfSupported(configObject), this.verbose, this.logger);
+        this.logger = new core_1.BaseLoggger(this.verbose);
+        this.qrcode = new code_decoder_1.Html5QrcodeShim(this.getSupportedFormats(configOrVerbosityFlag), this.getUseBarCodeDetectorIfSupported(configObject), this.verbose, this.logger);
         this.foreverScanTimeout;
         this.shouldScan = true;
-        this.stateManagerProxy = StateManagerFactory.create();
+        this.stateManagerProxy = state_manager_1.StateManagerFactory.create();
     }
     Html5Qrcode.prototype.start = function (cameraIdOrConfig, configuration, qrCodeSuccessCallback, qrCodeErrorCallback) {
         var _this = this;
@@ -143,7 +146,7 @@ var Html5Qrcode = (function () {
         this.shouldScan = true;
         this.element = element;
         var $this = this;
-        var toScanningStateChangeTransaction = this.stateManagerProxy.startTransition(Html5QrcodeScannerState.SCANNING);
+        var toScanningStateChangeTransaction = this.stateManagerProxy.startTransition(state_manager_1.Html5QrcodeScannerState.SCANNING);
         return new Promise(function (resolve, reject) {
             var videoConstraints = areVideoConstraintsEnabled
                 ? internalConfig.videoConstraints
@@ -164,7 +167,7 @@ var Html5Qrcode = (function () {
                     $this.foreverScan(internalConfig, qrCodeSuccessCallback, qrCodeErrorCallbackInternal);
                 }
             };
-            CameraFactory.failIfNotSupported().then(function (factory) {
+            factories_1.CameraFactory.failIfNotSupported().then(function (factory) {
                 factory.create(videoConstraints).then(function (camera) {
                     return camera.render(_this.element, cameraRenderingOptions, renderingCallbacks)
                         .then(function (renderedCamera) {
@@ -178,11 +181,11 @@ var Html5Qrcode = (function () {
                     });
                 }).catch(function (error) {
                     toScanningStateChangeTransaction.cancel();
-                    reject(Html5QrcodeStrings.errorGettingUserMedia(error));
+                    reject(strings_1.Html5QrcodeStrings.errorGettingUserMedia(error));
                 });
             }).catch(function (_) {
                 toScanningStateChangeTransaction.cancel();
-                reject(Html5QrcodeStrings.cameraStreamingNotSupported());
+                reject(strings_1.Html5QrcodeStrings.cameraStreamingNotSupported());
             });
         });
     };
@@ -190,9 +193,9 @@ var Html5Qrcode = (function () {
         if (!this.stateManagerProxy.isStrictlyScanning()) {
             throw "Cannot pause, scanner is not scanning.";
         }
-        this.stateManagerProxy.directTransition(Html5QrcodeScannerState.PAUSED);
+        this.stateManagerProxy.directTransition(state_manager_1.Html5QrcodeScannerState.PAUSED);
         this.showPausedState();
-        if (isNullOrUndefined(shouldPauseVideo) || shouldPauseVideo !== true) {
+        if ((0, core_1.isNullOrUndefined)(shouldPauseVideo) || shouldPauseVideo !== true) {
             shouldPauseVideo = false;
         }
         if (shouldPauseVideo && this.renderedCamera) {
@@ -208,7 +211,7 @@ var Html5Qrcode = (function () {
         }
         var $this = this;
         var transitionToScanning = function () {
-            $this.stateManagerProxy.directTransition(Html5QrcodeScannerState.SCANNING);
+            $this.stateManagerProxy.directTransition(state_manager_1.Html5QrcodeScannerState.SCANNING);
             $this.hidePausedState();
         };
         if (!this.renderedCamera.isPaused()) {
@@ -227,7 +230,7 @@ var Html5Qrcode = (function () {
         if (!this.stateManagerProxy.isScanning()) {
             throw "Cannot stop, scanner is not running or paused.";
         }
-        var toStoppedStateTransaction = this.stateManagerProxy.startTransition(Html5QrcodeScannerState.NOT_STARTED);
+        var toStoppedStateTransaction = this.stateManagerProxy.startTransition(state_manager_1.Html5QrcodeScannerState.NOT_STARTED);
         this.shouldScan = false;
         if (this.foreverScanTimeout) {
             clearTimeout(this.foreverScanTimeout);
@@ -271,7 +274,7 @@ var Html5Qrcode = (function () {
             throw "imageFile argument is mandatory and should be instance "
                 + "of File. Use 'event.target.files[0]'.";
         }
-        if (isNullOrUndefined(showImage)) {
+        if ((0, core_1.isNullOrUndefined)(showImage)) {
             showImage = true;
         }
         if (!this.stateManagerProxy.canScanFile()) {
@@ -319,7 +322,7 @@ var Html5Qrcode = (function () {
                 try {
                     _this.qrcode.decodeRobustlyAsync(hiddenCanvas)
                         .then(function (result) {
-                        resolve(Html5QrcodeResultFactory.createFromQrcodeResult(result));
+                        resolve(core_1.Html5QrcodeResultFactory.createFromQrcodeResult(result));
                     })
                         .catch(reject);
                 }
@@ -338,7 +341,7 @@ var Html5Qrcode = (function () {
         this.clearElement();
     };
     Html5Qrcode.getCameras = function () {
-        return CameraRetriever.retrieve();
+        return retriever_1.CameraRetriever.retrieve();
     };
     Html5Qrcode.prototype.getRunningTrackCapabilities = function () {
         return this.getRenderedCameraOrFail().getRunningTrackCapabilities();
@@ -353,7 +356,7 @@ var Html5Qrcode = (function () {
         if (!videoConstaints) {
             throw "videoConstaints is required argument.";
         }
-        else if (!VideoConstraintsUtil.isMediaStreamConstraintsValid(videoConstaints, this.logger)) {
+        else if (!utils_1.VideoConstraintsUtil.isMediaStreamConstraintsValid(videoConstaints, this.logger)) {
             throw "invalid videoConstaints passed, check logs for more details";
         }
         return this.getRenderedCameraOrFail().applyVideoConstraints(videoConstaints);
@@ -367,23 +370,23 @@ var Html5Qrcode = (function () {
     };
     Html5Qrcode.prototype.getSupportedFormats = function (configOrVerbosityFlag) {
         var allFormats = [
-            Html5QrcodeSupportedFormats.QR_CODE,
-            Html5QrcodeSupportedFormats.AZTEC,
-            Html5QrcodeSupportedFormats.CODABAR,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.CODE_93,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.DATA_MATRIX,
-            Html5QrcodeSupportedFormats.MAXICODE,
-            Html5QrcodeSupportedFormats.ITF,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.PDF_417,
-            Html5QrcodeSupportedFormats.RSS_14,
-            Html5QrcodeSupportedFormats.RSS_EXPANDED,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.UPC_EAN_EXTENSION,
+            core_1.Html5QrcodeSupportedFormats.QR_CODE,
+            core_1.Html5QrcodeSupportedFormats.AZTEC,
+            core_1.Html5QrcodeSupportedFormats.CODABAR,
+            core_1.Html5QrcodeSupportedFormats.CODE_39,
+            core_1.Html5QrcodeSupportedFormats.CODE_93,
+            core_1.Html5QrcodeSupportedFormats.CODE_128,
+            core_1.Html5QrcodeSupportedFormats.DATA_MATRIX,
+            core_1.Html5QrcodeSupportedFormats.MAXICODE,
+            core_1.Html5QrcodeSupportedFormats.ITF,
+            core_1.Html5QrcodeSupportedFormats.EAN_13,
+            core_1.Html5QrcodeSupportedFormats.EAN_8,
+            core_1.Html5QrcodeSupportedFormats.PDF_417,
+            core_1.Html5QrcodeSupportedFormats.RSS_14,
+            core_1.Html5QrcodeSupportedFormats.RSS_EXPANDED,
+            core_1.Html5QrcodeSupportedFormats.UPC_A,
+            core_1.Html5QrcodeSupportedFormats.UPC_E,
+            core_1.Html5QrcodeSupportedFormats.UPC_EAN_EXTENSION,
         ];
         if (!configOrVerbosityFlag
             || typeof configOrVerbosityFlag == "boolean") {
@@ -402,7 +405,7 @@ var Html5Qrcode = (function () {
         var supportedFormats = [];
         for (var _i = 0, _a = configOrVerbosityFlag.formatsToSupport; _i < _a.length; _i++) {
             var format = _a[_i];
-            if (isValidHtml5QrcodeSupportedFormats(format)) {
+            if ((0, core_1.isValidHtml5QrcodeSupportedFormats)(format)) {
                 supportedFormats.push(format);
             }
             else {
@@ -415,17 +418,17 @@ var Html5Qrcode = (function () {
         return supportedFormats;
     };
     Html5Qrcode.prototype.getUseBarCodeDetectorIfSupported = function (config) {
-        if (isNullOrUndefined(config)) {
+        if ((0, core_1.isNullOrUndefined)(config)) {
             return true;
         }
-        if (!isNullOrUndefined(config.useBarCodeDetectorIfSupported)) {
+        if (!(0, core_1.isNullOrUndefined)(config.useBarCodeDetectorIfSupported)) {
             return config.useBarCodeDetectorIfSupported !== false;
         }
-        if (isNullOrUndefined(config.experimentalFeatures)) {
+        if ((0, core_1.isNullOrUndefined)(config.experimentalFeatures)) {
             return true;
         }
         var experimentalFeatures = config.experimentalFeatures;
-        if (isNullOrUndefined(experimentalFeatures.useBarCodeDetectorIfSupported)) {
+        if ((0, core_1.isNullOrUndefined)(experimentalFeatures.useBarCodeDetectorIfSupported)) {
             return true;
         }
         return experimentalFeatures.useBarCodeDetectorIfSupported !== false;
@@ -485,7 +488,7 @@ var Html5Qrcode = (function () {
         if (internalConfig.isShadedBoxEnabled()) {
             this.validateQrboxSize(viewfinderWidth, viewfinderHeight, internalConfig);
         }
-        var qrboxSize = isNullOrUndefined(internalConfig.qrbox) ?
+        var qrboxSize = (0, core_1.isNullOrUndefined)(internalConfig.qrbox) ?
             { width: viewfinderWidth, height: viewfinderHeight } : internalConfig.qrbox;
         this.validateQrboxConfig(qrboxSize);
         var qrDimensions = this.toQrdimensions(viewfinderWidth, viewfinderHeight, qrboxSize);
@@ -521,7 +524,7 @@ var Html5Qrcode = (function () {
     };
     Html5Qrcode.prototype.createScannerPausedUiElement = function (rootElement) {
         var scannerPausedUiElement = document.createElement("div");
-        scannerPausedUiElement.innerText = Html5QrcodeStrings.scannerPaused();
+        scannerPausedUiElement.innerText = strings_1.Html5QrcodeStrings.scannerPaused();
         scannerPausedUiElement.style.display = "none";
         scannerPausedUiElement.style.position = "absolute";
         scannerPausedUiElement.style.top = "0px";
@@ -540,13 +543,13 @@ var Html5Qrcode = (function () {
         }
         return this.qrcode.decodeAsync(this.canvasElement)
             .then(function (result) {
-            qrCodeSuccessCallback(result.text, Html5QrcodeResultFactory.createFromQrcodeResult(result));
+            qrCodeSuccessCallback(result.text, core_1.Html5QrcodeResultFactory.createFromQrcodeResult(result));
             _this.possiblyUpdateShaders(true);
             return true;
         }).catch(function (error) {
             _this.possiblyUpdateShaders(false);
-            var errorMessage = Html5QrcodeStrings.codeParseError(error);
-            qrCodeErrorCallback(errorMessage, Html5QrcodeErrorFactory.createFrom(errorMessage));
+            var errorMessage = strings_1.Html5QrcodeStrings.codeParseError(error);
+            qrCodeErrorCallback(errorMessage, core_1.Html5QrcodeErrorFactory.createFrom(errorMessage));
             return false;
         });
     };
@@ -738,7 +741,7 @@ var Html5Qrcode = (function () {
         canvasElement.style.width = "".concat(canvasWidth, "px");
         canvasElement.style.height = "".concat(canvasHeight, "px");
         canvasElement.style.display = "none";
-        canvasElement.id = isNullOrUndefined(customId)
+        canvasElement.id = (0, core_1.isNullOrUndefined)(customId)
             ? "qr-canvas" : customId;
         return canvasElement;
     };
@@ -836,5 +839,5 @@ var Html5Qrcode = (function () {
     };
     return Html5Qrcode;
 }());
-export { Html5Qrcode };
+exports.Html5Qrcode = Html5Qrcode;
 //# sourceMappingURL=html5-qrcode.js.map
